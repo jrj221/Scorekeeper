@@ -23,7 +23,7 @@ import { getPlayerWinRate } from '@/utils/game';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { globalPlayers, games, deleteGame, removeGlobalPlayer, renameGlobalPlayer, resetGlobalPlayer } = useGamesContext();
+  const { globalPlayers, games, deleteGame, removeGlobalPlayer, renameGlobalPlayer } = useGamesContext();
   const theme = useTheme();
   const router = useRouter();
 
@@ -79,18 +79,7 @@ export default function PlayerDetailScreen() {
     );
   };
 
-  const confirmResetPlayer = () => {
-    Alert.alert(
-      'Reset Player',
-      `Clear all game history for "${player?.name}"? Their stats will reset to zero. This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Reset', style: 'destructive', onPress: () => resetGlobalPlayer(id) },
-      ],
-    );
-  };
-
-  if (!player) {
+if (!player) {
     return (
       <ThemedView style={shared.screen}>
         <Stack.Screen options={{ title: 'Player' }} />
@@ -154,12 +143,6 @@ export default function PlayerDetailScreen() {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
-            onPress={confirmResetPlayer}
-          >
-            <ThemedText type="small" themeColor="textSecondary">Reset Player</ThemedText>
-          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
             onPress={confirmDeletePlayer}

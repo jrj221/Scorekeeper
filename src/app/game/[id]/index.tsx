@@ -5,7 +5,6 @@ import { Alert, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } fro
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
-import { EditGameModal } from "@/components/edit-game-modal";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
@@ -32,14 +31,7 @@ export default function GameScreen() {
 	const theme = useTheme();
 	const {
 		game,
-		showEditGame,
-		openEditGame,
-		closeEditGame,
-		updateSettings,
 		endGame,
-		addPlayer,
-		deletePlayer,
-		renamePlayer,
 		updateScore,
 		totals,
 		sortedPlayers,
@@ -121,7 +113,7 @@ export default function GameScreen() {
 						{!finished && (
 							<TouchableOpacity
 								style={[styles.editGameBtn, { backgroundColor: theme.backgroundElement }]}
-								onPress={openEditGame}
+								onPress={() => router.push(`/game/${id}/edit`)}
 							>
 								<ThemedText type="small" themeColor="textSecondary">
 									Edit Game
@@ -227,7 +219,7 @@ export default function GameScreen() {
 								>
 									{columns.map((col, ci) => {
 										const s = getScore(col.roundIndex, p.id);
-										const Cell = col.isCurrent && !finished ? TouchableOpacity : View;
+										const Cell = !finished && col.roundIndex <= currentRoundIndex ? TouchableOpacity : View;
 										return (
 											<View key={col.roundIndex} style={styles.colWithDivider}>
 												{showCurrentInFront && ci === 1 && (
@@ -250,7 +242,7 @@ export default function GameScreen() {
 														},
 														col.isCurrent && !finished && { backgroundColor: CURRENT_TINT + "10" },
 													]}
-													{...(col.isCurrent
+													{...(!finished && col.roundIndex <= currentRoundIndex
 														? {
 																onPress: () =>
 																	setEditCell({
@@ -291,18 +283,6 @@ export default function GameScreen() {
 					</TouchableOpacity>
 				)}
 			</SafeAreaView>
-
-			<EditGameModal
-				visible={showEditGame}
-				players={game.players}
-				totalRounds={game.totalRounds}
-				rankByLowest={game.rankByLowest}
-				onAdd={addPlayer}
-				onDelete={deletePlayer}
-				onRename={renamePlayer}
-				onSaveSettings={updateSettings}
-				onClose={closeEditGame}
-			/>
 
 			<CellEditModal
 				visible={editCell !== null}
