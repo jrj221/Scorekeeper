@@ -1,7 +1,10 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+
+const STORAGE_KEY = '@scorekeeper/games';
 
 export type Player = { id: string; name: string };
-export type Round = Record<string, number>; // only keys that have been entered exist
+export type Round = Record<string, number>;
 
 export type Game = {
   id: string;
@@ -9,9 +12,10 @@ export type Game = {
   description?: string;
   players: Player[];
   rounds: Round[];
-  totalRounds?: number; // undefined = indefinite
+  totalRounds?: number;
   rankByLowest: boolean;
   createdAt: number;
+  finishedAt?: number; // set when game is ended — read-only after this
 };
 
 export type CreateGameOpts = {
@@ -24,6 +28,7 @@ export type CreateGameOpts = {
 
 type GamesContextValue = {
   games: Game[];
+  loaded: boolean;
   createGame: (opts: CreateGameOpts) => string;
   deleteGame: (id: string) => void;
   updateGame: (game: Game) => void;
@@ -34,6 +39,24 @@ const GamesContext = createContext<GamesContextValue | null>(null);
 
 export function GamesProvider({ children }: { children: React.ReactNode }) {
   const [games, setGames] = useState<Game[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  // Load from storage on mount
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then(json => {
+        if (json) {
+          try { setGames(JSON.parse(json)); } catch {}
+        }
+      })
+      .finally(() => setLoaded(true));
+  }, []);
+
+  // Persist on every change (after initial load)
+  useEffect(() => {
+    if (!loaded) return;
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(games));
+  }, [games, loaded]);
 
   const createGame = useCallback((opts: CreateGameOpts): string => {
     const id = Date.now().toString();
@@ -62,7 +85,7 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
   const getGame = useCallback((id: string) => games.find(g => g.id === id), [games]);
 
   return (
-    <GamesContext.Provider value={{ games, createGame, deleteGame, updateGame, getGame }}>
+    <GamesContext.Provider value={{ games, loaded, createGame, deleteGame, updateGame, getGame }}>
       {children}
     </GamesContext.Provider>
   );

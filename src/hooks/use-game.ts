@@ -11,6 +11,11 @@ export function useGame(id: string) {
   const openEditGame = useCallback(() => setShowEditGame(true), []);
   const closeEditGame = useCallback(() => setShowEditGame(false), []);
 
+  const endGame = useCallback(() => {
+    if (!game || game.finishedAt) return;
+    updateGame({ ...game, finishedAt: Date.now() });
+  }, [game, updateGame]);
+
   const updateSettings = useCallback(
     (totalRounds: number | undefined, rankByLowest: boolean) => {
       if (!game) return;
@@ -108,6 +113,7 @@ export function useGame(id: string) {
     showEditGame,
     openEditGame,
     closeEditGame,
+    endGame,
     updateSettings,
     addPlayer,
     deletePlayer,

@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
@@ -36,6 +36,7 @@ export default function GameScreen() {
 		openEditGame,
 		closeEditGame,
 		updateSettings,
+		endGame,
 		addPlayer,
 		deletePlayer,
 		renamePlayer,
@@ -46,6 +47,17 @@ export default function GameScreen() {
 	} = useGame(id);
 
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
+	const finished = !!game?.finishedAt;
+
+	const confirmEndGame = () =>
+		Alert.alert(
+			'End Game',
+			'Lock this game? Scores will be frozen and cannot be edited.',
+			[
+				{ text: 'Cancel', style: 'cancel' },
+				{ text: 'End Game', style: 'destructive', onPress: endGame },
+			],
+		);
 
 	if (!game) {
 		return (
@@ -105,16 +117,20 @@ export default function GameScreen() {
 			<SafeAreaView style={styles.safe} edges={["bottom"]}>
 				{/* Round label row */}
 				<View style={styles.roundLabelRow}>
-					<ThemedText style={styles.roundLabel}>{roundLabel}</ThemedText>
+					<ThemedText style={styles.roundLabel}>
+						{finished ? 'Finished' : roundLabel}
+					</ThemedText>
 					<View style={styles.headerBtns}>
 						<TouchableOpacity onPress={() => router.push(`/game/${id}/info`)} hitSlop={8}>
 							<SymbolView name="info.circle" size={20} tintColor={CURRENT_TINT} />
 						</TouchableOpacity>
-						<TouchableOpacity
-							style={[styles.editGameBtn, { backgroundColor: theme.backgroundElement }]}
-							onPress={openEditGame}>
-							<ThemedText type="small" themeColor="textSecondary">Edit Game</ThemedText>
-						</TouchableOpacity>
+						{!finished && (
+							<TouchableOpacity
+								style={[styles.editGameBtn, { backgroundColor: theme.backgroundElement }]}
+								onPress={openEditGame}>
+								<ThemedText type="small" themeColor="textSecondary">Edit Game</ThemedText>
+							</TouchableOpacity>
+						)}
 					</View>
 				</View>
 
@@ -203,7 +219,7 @@ export default function GameScreen() {
 								>
 									{columns.map((col, ci) => {
 										const s = getScore(col.roundIndex, p.id);
-										const Cell = col.isCurrent ? TouchableOpacity : View;
+										const Cell = col.isCurrent && !finished ? TouchableOpacity : View;
 										return (
 											<View key={col.roundIndex} style={styles.colWithDivider}>
 												{showCurrentInFront && ci === 1 && (
@@ -251,6 +267,15 @@ export default function GameScreen() {
 						</View>
 					</ScrollView>
 				</View>
+
+				{/* End Game */}
+				{!finished && (
+					<TouchableOpacity
+						style={[styles.endGameBtn, { borderColor: theme.backgroundSelected }]}
+						onPress={confirmEndGame}>
+						<ThemedText type="small" style={styles.endGameText}>End Game</ThemedText>
+					</TouchableOpacity>
+				)}
 			</SafeAreaView>
 
 			<EditGameModal
@@ -354,5 +379,16 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		textAlign: "center",
 		opacity: 0.3,
+	},
+	endGameBtn: {
+		alignItems: 'center',
+		paddingVertical: Spacing.two,
+		marginHorizontal: Spacing.three,
+		marginBottom: Spacing.two,
+		borderRadius: Spacing.two,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+	endGameText: {
+		color: '#C05050',
 	},
 });
