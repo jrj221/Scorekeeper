@@ -45,7 +45,9 @@ export function EditGameModal({
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [renameError, setRenameError] = useState('');
   const [addName, setAddName] = useState('');
+  const [addError, setAddError] = useState('');
   const [isIndefinite, setIsIndefinite] = useState(totalRounds === undefined);
   const [roundCount, setRoundCount] = useState<number | null>(totalRounds ?? null);
   const [rankByLowest, setRankByLowest] = useState(initialRankByLowest);
@@ -59,26 +61,47 @@ export function EditGameModal({
     setRankByLowest(initialRankByLowest);
     setEditingId(null);
     setEditingName('');
+    setRenameError('');
     setAddName('');
+    setAddError('');
   };
 
   const startRename = (p: Player) => {
     setEditingId(p.id);
     setEditingName(p.name);
+    setRenameError('');
   };
 
   const commitRename = () => {
-    if (editingId && editingName.trim()) onRename(editingId, editingName.trim());
+    if (!editingId) return;
+    const trimmed = editingName.trim();
+    if (!trimmed) { cancelRename(); return; }
+    const conflict = players.find(
+      p => p.id !== editingId && p.name.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (conflict) {
+      setRenameError(`"${trimmed}" is already in this game`);
+      return;
+    }
+    onRename(editingId, trimmed);
     setEditingId(null);
     setEditingName('');
+    setRenameError('');
   };
 
-  const cancelRename = () => { setEditingId(null); setEditingName(''); };
+  const cancelRename = () => { setEditingId(null); setEditingName(''); setRenameError(''); };
 
   const handleAdd = () => {
-    if (!addName.trim()) return;
-    onAdd(addName.trim());
+    const trimmed = addName.trim();
+    if (!trimmed) return;
+    const isDuplicate = players.some(p => p.name.toLowerCase() === trimmed.toLowerCase());
+    if (isDuplicate) {
+      setAddError(`"${trimmed}" is already in this game`);
+      return;
+    }
+    onAdd(trimmed);
     setAddName('');
+    setAddError('');
     addInputRef.current?.focus();
   };
 
@@ -125,16 +148,19 @@ export function EditGameModal({
                 <View key={p.id} style={[styles.playerRow, { borderBottomColor: theme.backgroundSelected }]}>
                   {editingId === p.id ? (
                     <>
-                      <TextInput
-                        style={[styles.renameInput, { backgroundColor: theme.background, color: theme.text }]}
-                        value={editingName}
-                        onChangeText={setEditingName}
-                        onSubmitEditing={commitRename}
-                        maxLength={15}
-                        autoFocus
-                        returnKeyType="done"
-                        selectTextOnFocus
-                      />
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <TextInput
+                          style={[styles.renameInput, { backgroundColor: theme.background, color: theme.text }]}
+                          value={editingName}
+                          onChangeText={v => { setEditingName(v); setRenameError(''); }}
+                          onSubmitEditing={commitRename}
+                          maxLength={15}
+                          autoFocus
+                          returnKeyType="done"
+                          selectTextOnFocus
+                        />
+                        {renameError ? <ThemedText style={styles.errorText}>{renameError}</ThemedText> : null}
+                      </View>
                       <TouchableOpacity style={styles.iconBtn} onPress={commitRename}>
                         <ThemedText style={[styles.iconText, { color: '#0077B6' }]}>✓</ThemedText>
                       </TouchableOpacity>
@@ -158,18 +184,21 @@ export function EditGameModal({
 
               {/* Add player */}
               <View style={styles.addRow}>
-                <TextInput
-                  ref={addInputRef}
-                  style={[styles.addInput, { backgroundColor: theme.background, color: theme.text }]}
-                  placeholder="New player name"
-                  placeholderTextColor={theme.textSecondary}
-                  value={addName}
-                  onChangeText={setAddName}
-                  onSubmitEditing={handleAdd}
-                  maxLength={15}
-                  returnKeyType="done"
-                  blurOnSubmit={false}
-                />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <TextInput
+                    ref={addInputRef}
+                    style={[styles.addInput, { backgroundColor: theme.background, color: theme.text }]}
+                    placeholder="New player name"
+                    placeholderTextColor={theme.textSecondary}
+                    value={addName}
+                    onChangeText={v => { setAddName(v); setAddError(''); }}
+                    onSubmitEditing={handleAdd}
+                    maxLength={15}
+                    returnKeyType="done"
+                    submitBehavior="submit"
+                  />
+                  {addError ? <ThemedText style={styles.errorText}>{addError}</ThemedText> : null}
+                </View>
                 <TouchableOpacity
                   style={[shared.button, { backgroundColor: addName.trim() ? '#0077B6' : theme.backgroundSelected }]}
                   onPress={handleAdd}
@@ -300,11 +329,15 @@ const styles = StyleSheet.create({
   },
   addRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.three,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#C05050',
   },
   addInput: {
     flex: 1,

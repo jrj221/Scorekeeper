@@ -50,14 +50,10 @@ export default function GameScreen() {
 	const finished = !!game?.finishedAt;
 
 	const confirmEndGame = () =>
-		Alert.alert(
-			'End Game',
-			'Lock this game? Scores will be frozen and cannot be edited.',
-			[
-				{ text: 'Cancel', style: 'cancel' },
-				{ text: 'End Game', style: 'destructive', onPress: endGame },
-			],
-		);
+		Alert.alert("End Game", "Lock this game? Scores will be frozen and cannot be edited.", [
+			{ text: "Cancel", style: "cancel" },
+			{ text: "End Game", style: "destructive", onPress: endGame },
+		]);
 
 	if (!game) {
 		return (
@@ -117,9 +113,7 @@ export default function GameScreen() {
 			<SafeAreaView style={styles.safe} edges={["bottom"]}>
 				{/* Round label row */}
 				<View style={styles.roundLabelRow}>
-					<ThemedText style={styles.roundLabel}>
-						{finished ? 'Finished' : roundLabel}
-					</ThemedText>
+					<ThemedText style={styles.roundLabel}>{finished ? "Finished" : roundLabel}</ThemedText>
 					<View style={styles.headerBtns}>
 						<TouchableOpacity onPress={() => router.push(`/game/${id}/info`)} hitSlop={8}>
 							<SymbolView name="info.circle" size={20} tintColor={CURRENT_TINT} />
@@ -127,8 +121,11 @@ export default function GameScreen() {
 						{!finished && (
 							<TouchableOpacity
 								style={[styles.editGameBtn, { backgroundColor: theme.backgroundElement }]}
-								onPress={openEditGame}>
-								<ThemedText type="small" themeColor="textSecondary">Edit Game</ThemedText>
+								onPress={openEditGame}
+							>
+								<ThemedText type="small" themeColor="textSecondary">
+									Edit Game
+								</ThemedText>
 							</TouchableOpacity>
 						)}
 					</View>
@@ -271,9 +268,15 @@ export default function GameScreen() {
 				{/* End Game */}
 				{!finished && (
 					<TouchableOpacity
-						style={[styles.endGameBtn, { borderColor: theme.backgroundSelected }]}
-						onPress={confirmEndGame}>
-						<ThemedText type="small" style={styles.endGameText}>End Game</ThemedText>
+						style={[
+							styles.endGameBtn,
+							{ borderColor: theme.backgroundElement, backgroundColor: theme.backgroundSelected },
+						]}
+						onPress={confirmEndGame}
+					>
+						<ThemedText type="small" style={styles.endGameText}>
+							End Game
+						</ThemedText>
 					</TouchableOpacity>
 				)}
 			</SafeAreaView>
@@ -322,8 +325,8 @@ const styles = StyleSheet.create({
 		letterSpacing: -0.3,
 	},
 	headerBtns: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: Spacing.two,
 	},
 	editGameBtn: {
@@ -381,7 +384,7 @@ const styles = StyleSheet.create({
 		opacity: 0.3,
 	},
 	endGameBtn: {
-		alignItems: 'center',
+		alignItems: "center",
 		paddingVertical: Spacing.two,
 		marginHorizontal: Spacing.three,
 		marginBottom: Spacing.two,
@@ -389,6 +392,6 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 	},
 	endGameText: {
-		color: '#C05050',
+		color: "#C05050",
 	},
 });

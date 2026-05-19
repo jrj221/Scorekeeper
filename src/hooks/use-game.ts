@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { Player, Round, useGamesContext } from '@/context/games-context';
 
 export function useGame(id: string) {
-  const { getGame, updateGame } = useGamesContext();
+  const { getGame, updateGame, renameGlobalPlayer } = useGamesContext();
   const game = getGame(id);
 
   const [showEditGame, setShowEditGame] = useState(false);
@@ -55,12 +55,10 @@ export function useGame(id: string) {
   const renamePlayer = useCallback(
     (playerId: string, newName: string) => {
       if (!game || !newName.trim()) return;
-      const players = game.players.map(p =>
-        p.id === playerId ? { ...p, name: newName.trim() } : p,
-      );
-      updateGame({ ...game, players });
+      // renameGlobalPlayer updates the player in globalPlayers + all games at once
+      renameGlobalPlayer(playerId, newName.trim());
     },
-    [game, updateGame],
+    [game, renameGlobalPlayer],
   );
 
   const updateScore = useCallback(

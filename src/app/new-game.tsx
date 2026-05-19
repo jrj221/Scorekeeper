@@ -23,12 +23,13 @@ import { shared } from "@/styles/shared";
 export default function NewGameScreen() {
 	const theme = useTheme();
 	const router = useRouter();
-	const { createGame } = useGamesContext();
+	const { createGame, globalPlayers, addGlobalPlayer } = useGamesContext();
 
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [players, setPlayers] = useState<Player[]>([]);
 	const [playerInput, setPlayerInput] = useState("");
+	const [playerError, setPlayerError] = useState('');
 	const [isIndefinite, setIsIndefinite] = useState(false);
 	const [roundCountStr, setRoundCountStr] = useState("10");
 	const [showRoundNumpad, setShowRoundNumpad] = useState(false);
@@ -36,13 +37,27 @@ export default function NewGameScreen() {
 
 	const playerInputRef = useRef<TextInput>(null);
 
+	const addPlayerByName = useCallback((name: string) => {
+		const trimmed = name.trim();
+		if (!trimmed) return;
+		if (players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) return;
+		const global = addGlobalPlayer(trimmed);
+		const player = global ?? { id: `p_${Date.now()}`, name: trimmed };
+		setPlayers((prev) => [...prev, player]);
+	}, [players, addGlobalPlayer]);
+
 	const addPlayer = useCallback(() => {
 		const trimmed = playerInput.trim();
 		if (!trimmed) return;
-		setPlayers((prev) => [...prev, { id: Date.now().toString(), name: trimmed }]);
+		if (players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
+			setPlayerError(`"${trimmed}" is already in this game`);
+			return;
+		}
+		setPlayerError('');
+		addPlayerByName(trimmed);
 		setPlayerInput("");
 		playerInputRef.current?.focus();
-	}, [playerInput]);
+	}, [playerInput, players, addPlayerByName]);
 
 	const removePlayer = useCallback((id: string) => {
 		setPlayers((prev) => prev.filter((p) => p.id !== id));
@@ -141,37 +156,64 @@ export default function NewGameScreen() {
 								))}
 							</View>
 						)}
-						<View style={[shared.row]}>
-							<TextInput
-								ref={playerInputRef}
-								style={[
-									shared.input,
-									{ flex: 1, backgroundColor: theme.backgroundElement, color: theme.text },
-								]}
-								placeholder="Player name"
-								placeholderTextColor={theme.textSecondary}
-								value={playerInput}
-								onChangeText={setPlayerInput}
-								onSubmitEditing={addPlayer}
-								maxLength={15}
-								returnKeyType="done"
-								blurOnSubmit={false}
-							/>
-							<TouchableOpacity
-								style={[
-									shared.button,
-									{ backgroundColor: playerInput.trim() ? "#0077B6" : theme.backgroundElement },
-								]}
-								onPress={addPlayer}
-								disabled={!playerInput.trim()}
-							>
-								<ThemedText
-									type="smallBold"
-									style={{ color: playerInput.trim() ? "#fff" : theme.textSecondary }}
-								>
-									Add
+						{/* Existing global players not yet in this game */}
+						{globalPlayers.filter((gp) =>
+							!players.some((p) => p.id === gp.id)
+						).length > 0 && (
+							<View style={{ gap: 6 }}>
+								<ThemedText style={[styles.label, { opacity: 0.6 }]} themeColor="textSecondary">
+									YOUR PLAYERS
 								</ThemedText>
-							</TouchableOpacity>
+								<View style={styles.chipRow}>
+									{globalPlayers
+										.filter((gp) => !players.some((p) => p.id === gp.id))
+										.map((gp) => (
+											<TouchableOpacity
+												key={gp.id}
+												style={[styles.chip, { backgroundColor: theme.backgroundElement, borderWidth: 1, borderColor: theme.backgroundSelected }]}
+												onPress={() => addPlayerByName(gp.name)}>
+												<ThemedText type="small">+ {gp.name}</ThemedText>
+											</TouchableOpacity>
+										))}
+								</View>
+							</View>
+						)}
+						<View style={{ gap: 4 }}>
+							<View style={[shared.row]}>
+								<TextInput
+									ref={playerInputRef}
+									style={[
+										shared.input,
+										{ flex: 1, backgroundColor: theme.backgroundElement, color: theme.text },
+									]}
+									placeholder="New player name"
+									placeholderTextColor={theme.textSecondary}
+									value={playerInput}
+									onChangeText={v => { setPlayerInput(v); setPlayerError(''); }}
+									onSubmitEditing={addPlayer}
+									maxLength={15}
+									returnKeyType="done"
+									submitBehavior="submit"
+								/>
+								<TouchableOpacity
+									style={[
+										shared.button,
+										{ backgroundColor: playerInput.trim() ? "#0077B6" : theme.backgroundElement },
+									]}
+									onPress={addPlayer}
+									disabled={!playerInput.trim()}
+								>
+									<ThemedText
+										type="smallBold"
+										style={{ color: playerInput.trim() ? "#fff" : theme.textSecondary }}
+									>
+										Add
+									</ThemedText>
+								</TouchableOpacity>
+							</View>
+							{playerError ? (
+								<ThemedText style={styles.playerError}>{playerError}</ThemedText>
+							) : null}
 						</View>
 					</View>
 
@@ -332,5 +374,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		paddingVertical: Spacing.three,
 		marginTop: Spacing.one,
+	},
+	playerError: {
+		fontSize: 12,
+		color: '#C05050',
 	},
 });

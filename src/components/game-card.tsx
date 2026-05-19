@@ -1,8 +1,10 @@
+import { SymbolView } from 'expo-symbols';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { Game } from '@/context/games-context';
-import { homeStyles } from '@/styles/home';
 import { useTheme } from '@/hooks/use-theme';
+import { homeStyles } from '@/styles/home';
+import { getGameWinnerLabel } from '@/utils/game';
 import { ThemedText } from './themed-text';
 
 type Props = {
@@ -26,6 +28,7 @@ const sameDay = (a: number, b: number) => {
 export function GameCard({ game, onPress, onDelete }: Props) {
   const theme = useTheme();
   const finished = !!game.finishedAt;
+  const winnerLabel = finished ? getGameWinnerLabel(game) : '';
 
   const subtitle = finished
     ? sameDay(game.createdAt, game.finishedAt!)
@@ -38,13 +41,16 @@ export function GameCard({ game, onPress, onDelete }: Props) {
       style={[homeStyles.card, { backgroundColor: theme.backgroundElement }, finished && styles.finished]}
       onPress={onPress}>
       <View style={homeStyles.cardContent}>
-        <ThemedText type="default" style={finished ? { opacity: 0.7 } : undefined}>
+        <ThemedText type="default" style={finished ? { opacity: 0.75 } : undefined}>
           {game.name}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{subtitle}</ThemedText>
+        {finished && winnerLabel ? (
+          <ThemedText type="small" themeColor="textSecondary">{winnerLabel}</ThemedText>
+        ) : null}
       </View>
       <TouchableOpacity onPress={onDelete} hitSlop={8}>
-        <ThemedText type="small" themeColor="textSecondary">Delete</ThemedText>
+        <SymbolView name="trash" size={16} tintColor={theme.textSecondary} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -52,6 +58,6 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 
 const styles = StyleSheet.create({
   finished: {
-    opacity: 0.8,
+    opacity: 0.85,
   },
 });
