@@ -155,10 +155,19 @@ export default function GameScreen() {
 						{sortedPlayers.map((p, i) => (
 							<View key={p.id} style={[styles.playerRow, { height: ROW_H, backgroundColor: rowBg(i) }]}>
 								<View style={[styles.cell, { width: PLAYER_COL }]}>
-									<ThemedText style={styles.playerName} numberOfLines={1}>
-										{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
-										{p.name}
-									</ThemedText>
+									{finished ? (
+										<TouchableOpacity onPress={() => router.push(`/player/${p.id}`)}>
+											<ThemedText style={styles.playerName} numberOfLines={1}>
+												{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
+												{p.name}
+											</ThemedText>
+										</TouchableOpacity>
+									) : (
+										<ThemedText style={styles.playerName} numberOfLines={1}>
+											{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
+											{p.name}
+										</ThemedText>
+									)}
 								</View>
 								<View
 									style={[

@@ -11,7 +11,7 @@ import { shared } from '@/styles/shared';
 
 export default function GameInfoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getGame, saveGameAsTemplate } = useGamesContext();
+  const { getGame, saveGameAsTemplate, templates } = useGamesContext();
   const theme = useTheme();
   const game = getGame(id);
 
@@ -24,6 +24,13 @@ export default function GameInfoScreen() {
       </ThemedView>
     );
   }
+
+  const matchingTemplate = templates.some(t =>
+    t.name === game.name &&
+    (t.description ?? '') === (game.description ?? '') &&
+    t.totalRounds === game.totalRounds &&
+    t.rankByLowest === game.rankByLowest,
+  );
 
   const handleSaveAsTemplate = () => {
     saveGameAsTemplate(id);
@@ -64,12 +71,14 @@ export default function GameInfoScreen() {
 
         </View>
 
-        <TouchableOpacity
-          style={[styles.templateBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}
-          onPress={handleSaveAsTemplate}
-        >
-          <ThemedText type="small" style={{ color: '#0077B6' }}>Save as Template</ThemedText>
-        </TouchableOpacity>
+        {!matchingTemplate && (
+          <TouchableOpacity
+            style={[styles.templateBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}
+            onPress={handleSaveAsTemplate}
+          >
+            <ThemedText type="small" style={{ color: '#0077B6' }}>Save as Template</ThemedText>
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
     </ThemedView>
   );

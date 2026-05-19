@@ -105,7 +105,7 @@ export default function PlayerDetailScreen() {
     <ThemedView style={shared.screen}>
       <Stack.Screen
         options={{
-          headerBackTitle: 'Players',
+          title: player.name,
           headerTitle: () => (
             <TouchableOpacity style={styles.headerTitle} onPress={openRenameDialog} hitSlop={8}>
               <ThemedText style={styles.headerName}>{player.name}</ThemedText>
