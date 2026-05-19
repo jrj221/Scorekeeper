@@ -5,8 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { GameCard } from "@/components/game-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Game } from "@/context/games-context";
 import { Spacing } from "@/constants/theme";
+import { Game } from "@/context/games-context";
 import { useGames } from "@/hooks/use-games";
 import { useTheme } from "@/hooks/use-theme";
 import { homeStyles } from "@/styles/home";
@@ -17,20 +17,14 @@ export default function HomeScreen() {
 	const theme = useTheme();
 
 	const confirmDelete = (game: Game) => {
-		Alert.alert(
-			"Delete Game",
-			`Delete "${game.name}"? This can't be undone.`,
-			[
-				{ text: "Cancel", style: "cancel" },
-				{ text: "Delete", style: "destructive", onPress: () => deleteGame(game.id) },
-			],
-		);
+		Alert.alert("Delete Game", `Delete "${game.name}"? This can't be undone.`, [
+			{ text: "Cancel", style: "cancel" },
+			{ text: "Delete", style: "destructive", onPress: () => deleteGame(game.id) },
+		]);
 	};
 
 	const active = games.filter((g) => !g.finishedAt);
-	const finished = games
-		.filter((g) => !!g.finishedAt)
-		.sort((a, b) => b.finishedAt! - a.finishedAt!);
+	const finished = games.filter((g) => !!g.finishedAt).sort((a, b) => b.finishedAt! - a.finishedAt!);
 
 	const sections = [
 		...(active.length > 0 ? [{ title: "In Progress", data: active }] : []),
@@ -42,7 +36,7 @@ export default function HomeScreen() {
 	return (
 		<ThemedView style={shared.screen}>
 			<Stack.Screen options={{ title: "Scorekeeper" }} />
-			<SafeAreaView style={shared.safeArea}>
+			<SafeAreaView style={shared.safeArea} edges={["bottom"]}>
 				{isEmpty ? (
 					<ThemedView style={homeStyles.emptyState}>
 						<ThemedText type="subtitle">No games yet</ThemedText>
@@ -56,10 +50,13 @@ export default function HomeScreen() {
 						keyExtractor={(g) => g.id}
 						contentContainerStyle={homeStyles.list}
 						stickySectionHeadersEnabled={false}
-						renderSectionHeader={({ section: { title } }) => (
-							<View style={styles.sectionHeader}>
+						renderSectionHeader={({ section }) => (
+							<View style={[
+								styles.sectionHeader,
+								sections[0]?.title !== section.title && styles.sectionHeaderGap,
+							]}>
 								<ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-									{title.toUpperCase()}
+									{section.title.toUpperCase()}
 								</ThemedText>
 							</View>
 						)}
@@ -70,13 +67,11 @@ export default function HomeScreen() {
 								onDelete={() => confirmDelete(item)}
 							/>
 						)}
-						SectionSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
+						ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
 					/>
 				)}
 
-				<TouchableOpacity
-					style={[homeStyles.fab, { backgroundColor: "#0077B6" }]}
-					onPress={openNewGame}>
+				<TouchableOpacity style={[homeStyles.fab, { backgroundColor: "#0077B6" }]} onPress={openNewGame}>
 					<ThemedText type="subtitle" style={{ color: "#fff", lineHeight: 32 }}>
 						+
 					</ThemedText>
@@ -88,8 +83,10 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
 	sectionHeader: {
-		paddingTop: Spacing.two,
 		paddingBottom: Spacing.one,
+	},
+	sectionHeaderGap: {
+		marginTop: Spacing.three,
 	},
 	sectionTitle: {
 		fontSize: 11,
