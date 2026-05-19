@@ -1,26 +1,37 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { Alert, SectionList, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GameCard } from "@/components/game-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { DEV_TOOLS_ENABLED } from "@/constants/dev";
 import { Spacing } from "@/constants/theme";
-import { Game } from "@/context/games-context";
+import { Game, useGamesContext } from "@/context/games-context";
 import { useGames } from "@/hooks/use-games";
 import { useTheme } from "@/hooks/use-theme";
 import { homeStyles } from "@/styles/home";
 import { shared } from "@/styles/shared";
 
 export default function HomeScreen() {
-	const { games, openNewGame, handleOpen, deleteGame } = useGames();
+	const { games, handleOpen, deleteGame } = useGames();
+	const { templates, seedData, resetData } = useGamesContext();
 	const theme = useTheme();
+	const router = useRouter();
 
 	const confirmDelete = (game: Game) => {
 		Alert.alert("Delete Game", `Delete "${game.name}"? This can't be undone.`, [
 			{ text: "Cancel", style: "cancel" },
 			{ text: "Delete", style: "destructive", onPress: () => deleteGame(game.id) },
 		]);
+	};
+
+	const handleFabPress = () => {
+		if (templates.length === 0) {
+			router.push('/new-game');
+		} else {
+			router.push('/new-game-start');
+		}
 	};
 
 	const active = games.filter((g) => !g.finishedAt);
@@ -71,10 +82,30 @@ export default function HomeScreen() {
 					/>
 				)}
 
-				<TouchableOpacity style={[homeStyles.fab, { backgroundColor: "#0077B6" }]} onPress={openNewGame}>
-					<ThemedText type="subtitle" style={{ color: "#fff", lineHeight: 32 }}>
-						+
-					</ThemedText>
+				{DEV_TOOLS_ENABLED && (
+					<View style={styles.devBar}>
+						<TouchableOpacity
+							style={[styles.devBtn, { backgroundColor: theme.backgroundElement }]}
+							onPress={seedData}
+						>
+							<ThemedText type="small" style={{ color: '#0077B6' }}>Seed Data</ThemedText>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[styles.devBtn, { backgroundColor: theme.backgroundElement }]}
+							onPress={() =>
+								Alert.alert('Reset All Data', 'Delete all games, players, and templates?', [
+									{ text: 'Cancel', style: 'cancel' },
+									{ text: 'Reset', style: 'destructive', onPress: resetData },
+								])
+							}
+						>
+							<ThemedText type="small" style={{ color: '#C05050' }}>Reset</ThemedText>
+						</TouchableOpacity>
+					</View>
+				)}
+
+				<TouchableOpacity style={[homeStyles.fab, { backgroundColor: "#0077B6" }]} onPress={handleFabPress}>
+					<ThemedText type="subtitle" style={{ color: "#fff", lineHeight: 32 }}>+</ThemedText>
 				</TouchableOpacity>
 			</SafeAreaView>
 		</ThemedView>
@@ -92,5 +123,15 @@ const styles = StyleSheet.create({
 		fontSize: 11,
 		fontWeight: "600",
 		letterSpacing: 0.8,
+	},
+	devBar: {
+		flexDirection: 'row',
+		gap: Spacing.two,
+		paddingBottom: Spacing.two,
+	},
+	devBtn: {
+		borderRadius: Spacing.two,
+		paddingVertical: Spacing.one,
+		paddingHorizontal: Spacing.two,
 	},
 });

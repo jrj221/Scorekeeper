@@ -1,4 +1,5 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,66 +10,56 @@ import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
 
-export default function GameInfoScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { getGame, saveGameAsTemplate } = useGamesContext();
+export default function TemplateScreen() {
   const theme = useTheme();
-  const game = getGame(id);
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { getTemplate } = useGamesContext();
 
-  if (!game) {
-    return (
-      <ThemedView style={shared.screen}>
-        <SafeAreaView style={shared.safeArea}>
-          <ThemedText type="default">Game not found.</ThemedText>
-        </SafeAreaView>
-      </ThemedView>
-    );
-  }
+  const template = getTemplate(id);
 
-  const handleSaveAsTemplate = () => {
-    saveGameAsTemplate(id);
-    Alert.alert('Template Saved', `"${game.name}" has been saved as a template.`);
-  };
+  useEffect(() => {
+    if (!template) {
+      Alert.alert('Not found', 'This template no longer exists.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    }
+  }, []);
+
+  if (!template) return null;
 
   return (
     <ThemedView style={shared.screen}>
-      <Stack.Screen options={{ title: 'Game Info' }} />
+      <Stack.Screen options={{ title: template.name }} />
       <SafeAreaView style={[shared.safeArea, { paddingTop: Spacing.three }]} edges={['bottom']}>
         <View style={styles.sections}>
-
-          {game.description ? (
+          {template.description ? (
             <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
               <ThemedText style={styles.label} themeColor="textSecondary">DESCRIPTION</ThemedText>
-              <ThemedText type="default">{game.description}</ThemedText>
+              <ThemedText type="default">{template.description}</ThemedText>
             </View>
           ) : null}
 
           <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
             <ThemedText style={styles.label} themeColor="textSecondary">WIN CONDITION</ThemedText>
             <ThemedText type="default">
-              {game.rankByLowest ? 'Lowest score wins' : 'Highest score wins'}
+              {template.rankByLowest ? 'Lowest score wins' : 'Highest score wins'}
             </ThemedText>
           </View>
 
           <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
             <ThemedText style={styles.label} themeColor="textSecondary">GAME LENGTH</ThemedText>
             <ThemedText type="default">
-              {game.totalRounds !== undefined ? `${game.totalRounds} rounds` : 'Indefinite'}
+              {template.totalRounds !== undefined ? `${template.totalRounds} rounds` : 'Indefinite'}
             </ThemedText>
           </View>
-
-          <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
-            <ThemedText style={styles.label} themeColor="textSecondary">PLAYERS</ThemedText>
-            <ThemedText type="default">{game.players.length}</ThemedText>
-          </View>
-
         </View>
 
         <TouchableOpacity
-          style={[styles.templateBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}
-          onPress={handleSaveAsTemplate}
+          style={[styles.editBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}
+          onPress={() => router.push(`/edit-template/${id}`)}
         >
-          <ThemedText type="small" style={{ color: '#0077B6' }}>Save as Template</ThemedText>
+          <ThemedText type="small" style={{ color: '#0077B6' }}>Edit Template</ThemedText>
         </TouchableOpacity>
       </SafeAreaView>
     </ThemedView>
@@ -90,7 +81,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.8,
   },
-  templateBtn: {
+  editBtn: {
     borderRadius: Spacing.two,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.three,

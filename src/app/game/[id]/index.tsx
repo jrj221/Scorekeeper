@@ -144,10 +144,11 @@ export default function GameScreen() {
 								style={[
 									styles.cell,
 									styles.borderLeft,
-									{ width: TOTAL_COL, borderColor: theme.background },
+									{ width: TOTAL_COL, height: ROW_H, borderColor: theme.background },
+									finished && { backgroundColor: CURRENT_TINT + "28" },
 								]}
 							>
-								<ThemedText style={styles.colHeader}>Total</ThemedText>
+								<ThemedText style={[styles.colHeader, finished && { color: CURRENT_TINT }]}>Total</ThemedText>
 							</View>
 						</View>
 
@@ -163,10 +164,11 @@ export default function GameScreen() {
 									style={[
 										styles.cell,
 										styles.borderLeft,
-										{ width: TOTAL_COL, borderColor: theme.backgroundSelected },
+										{ width: TOTAL_COL, height: ROW_H, borderColor: theme.backgroundSelected },
+										finished && { backgroundColor: CURRENT_TINT + "10" },
 									]}
 								>
-									<ThemedText style={styles.totalScore}>{totals[p.id] ?? 0}</ThemedText>
+									<ThemedText style={[styles.totalScore, finished && { color: CURRENT_TINT }]}>{totals[p.id] ?? 0}</ThemedText>
 								</View>
 							</View>
 						))}
@@ -195,11 +197,11 @@ export default function GameScreen() {
 												styles.cell,
 												ci > 0 && styles.borderLeft,
 												{ width: ROUND_COL, height: ROW_H, borderColor: theme.background },
-												col.isCurrent && { backgroundColor: CURRENT_TINT + "28" },
+												col.isCurrent && !finished && { backgroundColor: CURRENT_TINT + "28" },
 											]}
 										>
 											<ThemedText
-												style={[styles.colHeader, col.isCurrent && { color: CURRENT_TINT }]}
+												style={[styles.colHeader, col.isCurrent && !finished && { color: CURRENT_TINT }]}
 											>
 												{col.roundIndex + 1}
 											</ThemedText>
@@ -237,7 +239,7 @@ export default function GameScreen() {
 															height: ROW_H,
 															borderColor: theme.backgroundSelected,
 														},
-														col.isCurrent && { backgroundColor: CURRENT_TINT + "10" },
+														col.isCurrent && !finished && { backgroundColor: CURRENT_TINT + "10" },
 													]}
 													{...(col.isCurrent
 														? {

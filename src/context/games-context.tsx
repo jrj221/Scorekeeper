@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { buildSeedData } from '@/utils/seed-data';
 
 const STORAGE_KEY = '@scorekeeper/v2';
 
@@ -20,6 +21,21 @@ export type Game = {
 
 export type GlobalPlayer = { id: string; name: string };
 
+export type GameTemplate = {
+  id: string;
+  name: string;
+  description?: string;
+  totalRounds?: number;
+  rankByLowest: boolean;
+  createdAt: number;
+};
+
+export type PlayerGroup = {
+  id: string;
+  name: string;
+  playerIds: string[];
+};
+
 export type CreateGameOpts = {
   name: string;
   description?: string;
@@ -31,6 +47,7 @@ export type CreateGameOpts = {
 type GamesContextValue = {
   games: Game[];
   globalPlayers: GlobalPlayer[];
+  templates: GameTemplate[];
   loaded: boolean;
   createGame: (opts: CreateGameOpts) => string;
   deleteGame: (id: string) => void;
@@ -41,6 +58,19 @@ type GamesContextValue = {
   removeGlobalPlayer: (id: string) => void;
   // Renames a player everywhere: global list + all games that reference them by ID
   renameGlobalPlayer: (id: string, newName: string) => void;
+  // Removes the player from all game records, resetting their stats
+  resetGlobalPlayer: (id: string) => void;
+  createTemplate: (opts: Omit<GameTemplate, 'id' | 'createdAt'>) => string;
+  updateTemplate: (template: GameTemplate) => void;
+  deleteTemplate: (id: string) => void;
+  saveGameAsTemplate: (gameId: string) => string | null;
+  getTemplate: (id: string) => GameTemplate | undefined;
+  groups: PlayerGroup[];
+  createGroup: (name: string, playerIds: string[]) => PlayerGroup;
+  updateGroup: (group: PlayerGroup) => void;
+  deleteGroup: (id: string) => void;
+  seedData: () => void;
+  resetData: () => void;
 };
 
 const GamesContext = createContext<GamesContextValue | null>(null);
@@ -48,6 +78,8 @@ const GamesContext = createContext<GamesContextValue | null>(null);
 export function GamesProvider({ children }: { children: React.ReactNode }) {
   const [games, setGames] = useState<Game[]>([]);
   const [globalPlayers, setGlobalPlayers] = useState<GlobalPlayer[]>([]);
+  const [templates, setTemplates] = useState<GameTemplate[]>([]);
+  const [groups, setGroups] = useState<PlayerGroup[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -58,6 +90,8 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
             const data = JSON.parse(json);
             setGames(data.games ?? []);
             setGlobalPlayers(data.globalPlayers ?? []);
+            setTemplates(data.templates ?? []);
+            setGroups(data.groups ?? []);
           } catch {}
         }
       })
@@ -66,8 +100,8 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loaded) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ games, globalPlayers }));
-  }, [games, globalPlayers, loaded]);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ games, globalPlayers, templates, groups }));
+  }, [games, globalPlayers, templates, groups, loaded]);
 
   const createGame = useCallback((opts: CreateGameOpts): string => {
     const id = Date.now().toString();
@@ -108,6 +142,17 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
     setGlobalPlayers(prev => prev.filter(p => p.id !== id));
   }, []);
 
+  const resetGlobalPlayer = useCallback((id: string) => {
+    setGames(prev => prev.map(g => ({
+      ...g,
+      players: g.players.filter(p => p.id !== id),
+      rounds: g.rounds.map(r => {
+        const { [id]: _, ...remaining } = r;
+        return remaining;
+      }),
+    })));
+  }, []);
+
   const renameGlobalPlayer = useCallback((id: string, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed) return;
@@ -118,11 +163,83 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
     })));
   }, []);
 
+  const createTemplate = useCallback((opts: Omit<GameTemplate, 'id' | 'createdAt'>): string => {
+    const id = `tmpl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    setTemplates(prev => [{
+      id, ...opts, createdAt: Date.now(),
+    }, ...prev]);
+    return id;
+  }, []);
+
+  const updateTemplate = useCallback((updated: GameTemplate) => {
+    setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t));
+  }, []);
+
+  const deleteTemplate = useCallback((id: string) => {
+    setTemplates(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const saveGameAsTemplate = useCallback((gameId: string): string | null => {
+    const game = games.find(g => g.id === gameId);
+    if (!game) return null;
+    const id = `tmpl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    setTemplates(prev => [{
+      id,
+      name: game.name,
+      description: game.description,
+      totalRounds: game.totalRounds,
+      rankByLowest: game.rankByLowest,
+      createdAt: Date.now(),
+    }, ...prev]);
+    return id;
+  }, [games]);
+
+  const createGroup = useCallback((name: string, playerIds: string[]): PlayerGroup => {
+    const group: PlayerGroup = {
+      id: `grp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: name.trim(),
+      playerIds,
+    };
+    setGroups(prev => [...prev, group]);
+    return group;
+  }, []);
+
+  const updateGroup = useCallback((updated: PlayerGroup) => {
+    setGroups(prev => prev.map(g => g.id === updated.id ? updated : g));
+  }, []);
+
+  const deleteGroup = useCallback((id: string) => {
+    setGroups(prev => prev.filter(g => g.id !== id));
+  }, []);
+
+  const getTemplate = useCallback((id: string) => templates.find(t => t.id === id), [templates]);
+
+  const seedData = useCallback(() => {
+    const seed = buildSeedData();
+    setGlobalPlayers(prev => {
+      const existingIds = new Set(prev.map(p => p.id));
+      return [...prev, ...seed.globalPlayers.filter(p => !existingIds.has(p.id))];
+    });
+    setGames(prev => [...seed.games, ...prev]);
+    setTemplates(prev => [...seed.templates, ...prev]);
+    setGroups(prev => [...seed.groups, ...prev]);
+  }, []);
+
+  const resetData = useCallback(() => {
+    setGames([]);
+    setGlobalPlayers([]);
+    setTemplates([]);
+    setGroups([]);
+  }, []);
+
   return (
     <GamesContext.Provider value={{
-      games, globalPlayers, loaded,
+      games, globalPlayers, templates, groups, loaded,
       createGame, deleteGame, updateGame, getGame,
-      addGlobalPlayer, removeGlobalPlayer, renameGlobalPlayer,
+      addGlobalPlayer, removeGlobalPlayer, renameGlobalPlayer, resetGlobalPlayer,
+      createTemplate, updateTemplate, deleteTemplate, saveGameAsTemplate, getTemplate,
+      createGroup, updateGroup, deleteGroup,
+      seedData, resetData,
     }}>
       {children}
     </GamesContext.Provider>

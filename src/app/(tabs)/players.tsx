@@ -1,15 +1,18 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -17,32 +20,31 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
+import { homeStyles } from '@/styles/home';
 import { shared } from '@/styles/shared';
 import { getPlayerWinRate } from '@/utils/game';
 
 export default function PlayersScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { globalPlayers, addGlobalPlayer, removeGlobalPlayer, renameGlobalPlayer, games } = useGamesContext();
+  const { globalPlayers, addGlobalPlayer, games, groups, deleteGroup } = useGamesContext();
+
   const [nameInput, setNameInput] = useState('');
   const [addError, setAddError] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
-  const [renameError, setRenameError] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const inputRef = useRef<TextInput>(null);
-
-  const keyboard = useAnimatedKeyboard();
   const tabBarHeight = useBottomTabBarHeight();
 
-  const bottomStyle = useAnimatedStyle(() => ({
-    paddingBottom: Math.max(0, keyboard.height.value - tabBarHeight),
-  }));
+  useEffect(() => {
+    if (showAddDialog) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [showAddDialog]);
 
   const handleAdd = () => {
     const trimmed = nameInput.trim();
     if (!trimmed) return;
-    const isDuplicate = globalPlayers.some(p => p.name.toLowerCase() === trimmed.toLowerCase());
-    if (isDuplicate) {
+    if (globalPlayers.some(p => p.name.toLowerCase() === trimmed.toLowerCase())) {
       setAddError(`"${trimmed}" is already a player`);
       return;
     }
@@ -52,48 +54,67 @@ export default function PlayersScreen() {
     inputRef.current?.focus();
   };
 
-  const startRename = (id: string, name: string) => {
-    setEditingId(id);
-    setEditingName(name);
-    setRenameError('');
+  const closeAddDialog = () => {
+    setShowAddDialog(false);
+    setNameInput('');
+    setAddError('');
   };
 
-  const commitRename = () => {
-    if (!editingId) return;
-    const trimmed = editingName.trim();
-    if (!trimmed) { cancelRename(); return; }
-    const conflict = globalPlayers.find(
-      p => p.id !== editingId && p.name.toLowerCase() === trimmed.toLowerCase(),
-    );
-    if (conflict) {
-      setRenameError(`"${trimmed}" is already a player`);
-      return;
-    }
-    renameGlobalPlayer(editingId, trimmed);
-    setEditingId(null);
-    setEditingName('');
-    setRenameError('');
-  };
-
-  const cancelRename = () => {
-    setEditingId(null);
-    setEditingName('');
-    setRenameError('');
-  };
-
-  const confirmRemove = (id: string, name: string) => {
-    Alert.alert('Remove Player', `Remove "${name}" from your players list?`, [
+  const confirmDeleteGroup = (id: string, name: string) => {
+    Alert.alert('Delete Group', `Delete "${name}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => {
-        if (editingId === id) cancelRename();
-        removeGlobalPlayer(id);
-      }},
+      { text: 'Delete', style: 'destructive', onPress: () => deleteGroup(id) },
     ]);
   };
 
+  const GroupsFooter = (
+    <View style={styles.groupsSection}>
+      <View style={styles.groupsHeader}>
+        <ThemedText style={styles.sectionLabel} themeColor="textSecondary">GROUPS</ThemedText>
+        <TouchableOpacity onPress={() => router.push('/new-group')}>
+          <ThemedText type="small" style={{ color: '#0077B6' }}>+ New Group</ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      {groups.length === 0 ? (
+        <ThemedText type="small" themeColor="textSecondary" style={styles.emptyGroups}>
+          No groups yet
+        </ThemedText>
+      ) : (
+        groups.map(g => {
+          const memberNames = g.playerIds
+            .map(id => globalPlayers.find(p => p.id === id)?.name)
+            .filter(Boolean)
+            .join(', ');
+          return (
+            <TouchableOpacity
+              key={g.id}
+              style={[styles.groupCard, { backgroundColor: theme.backgroundElement }]}
+              onPress={() => router.push(`/group/${g.id}`)}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <ThemedText type="default">{g.name}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                  {memberNames || 'No members'}
+                </ThemedText>
+              </View>
+              <TouchableOpacity hitSlop={8} onPress={() => confirmDeleteGroup(g.id, g.name)}>
+                <SymbolView name="trash" size={16} tintColor={theme.textSecondary} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          );
+        })
+      )}
+    </View>
+  );
+
   return (
     <ThemedView style={shared.screen}>
-      <Animated.View style={[{ flex: 1 }, bottomStyle]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={tabBarHeight}
+      >
         <FlatList
           style={{ flex: 1 }}
           data={globalPlayers}
@@ -106,84 +127,82 @@ export default function PlayersScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <ThemedText type="small" themeColor="textSecondary">
-                No players yet — add some below
+                No players yet — tap + to add one
               </ThemedText>
             </View>
           }
+          ListFooterComponent={GroupsFooter}
           renderItem={({ item }) => (
-            <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
-              {editingId === item.id ? (
-                <View style={styles.renameRow}>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <TextInput
-                      style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
-                      value={editingName}
-                      onChangeText={v => { setEditingName(v); setRenameError(''); }}
-                      onSubmitEditing={commitRename}
-                      maxLength={15}
-                      autoFocus
-                      returnKeyType="done"
-                      selectTextOnFocus
-                    />
-                    {renameError ? <ThemedText style={styles.error}>{renameError}</ThemedText> : null}
-                  </View>
-                  <TouchableOpacity style={styles.iconBtn} onPress={commitRename}>
-                    <ThemedText style={[styles.iconText, { color: '#0077B6' }]}>✓</ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.iconBtn} onPress={cancelRename}>
-                    <ThemedText style={styles.iconText} themeColor="textSecondary">✕</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.cardContent}
-                  onPress={() => router.push(`/player/${item.id}`)}>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <ThemedText type="default">{item.name}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {getPlayerWinRate(item.id, games)}
-                    </ThemedText>
-                  </View>
-                  <TouchableOpacity hitSlop={8} onPress={() => startRename(item.id, item.name)}>
-                    <ThemedText type="small" themeColor="textSecondary">rename</ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity hitSlop={8} onPress={() => confirmRemove(item.id, item.name)}>
-                    <ThemedText type="small" themeColor="textSecondary">✕</ThemedText>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              )}
-            </View>
+            <TouchableOpacity
+              style={[styles.card, { backgroundColor: theme.backgroundElement }]}
+              onPress={() => router.push(`/player/${item.id}`)}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <ThemedText type="default">{item.name}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {getPlayerWinRate(item.id, games)}
+                </ThemedText>
+              </View>
+            </TouchableOpacity>
           )}
         />
 
-        <View style={[styles.addRow, { borderTopColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <TextInput
-              ref={inputRef}
-              style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
-              placeholder="Player name"
-              placeholderTextColor={theme.textSecondary}
-              value={nameInput}
-              onChangeText={v => { setNameInput(v); setAddError(''); }}
-              onSubmitEditing={handleAdd}
-              maxLength={15}
-              returnKeyType="done"
-              submitBehavior="submit"
-            />
-            {addError ? <ThemedText style={styles.error}>{addError}</ThemedText> : null}
-          </View>
-          <TouchableOpacity
-            style={[shared.button, { backgroundColor: nameInput.trim() ? '#0077B6' : theme.backgroundSelected }]}
-            onPress={handleAdd}
-            disabled={!nameInput.trim()}>
-            <ThemedText type="smallBold" style={{ color: nameInput.trim() ? '#fff' : theme.textSecondary }}>
-              Add
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+        <TouchableOpacity
+          style={[homeStyles.fab, { backgroundColor: '#0077B6' }]}
+          onPress={() => setShowAddDialog(true)}
+        >
+          <ThemedText type="subtitle" style={{ color: '#fff', lineHeight: 32 }}>+</ThemedText>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
 
-      <SafeAreaView edges={['bottom']} style={{ backgroundColor: theme.backgroundElement }} />
+      <SafeAreaView edges={['bottom']} />
+
+      {/* Centered add player dialog */}
+      <Modal
+        visible={showAddDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={closeAddDialog}
+      >
+        <KeyboardAvoidingView style={styles.dialogOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeAddDialog} />
+          <View style={[styles.dialogCard, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText style={styles.dialogTitle} themeColor="textSecondary">ADD PLAYER</ThemedText>
+            <View style={{ gap: 4 }}>
+              <TextInput
+                ref={inputRef}
+                style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
+                placeholder="Player name"
+                placeholderTextColor={theme.textSecondary}
+                value={nameInput}
+                onChangeText={v => { setNameInput(v); setAddError(''); }}
+                onSubmitEditing={handleAdd}
+                maxLength={15}
+                returnKeyType="done"
+                submitBehavior="submit"
+              />
+              {addError ? <ThemedText style={styles.error}>{addError}</ThemedText> : null}
+            </View>
+            <View style={styles.dialogBtns}>
+              <TouchableOpacity
+                style={[shared.button, styles.dialogCancel, { backgroundColor: theme.backgroundSelected }]}
+                onPress={closeAddDialog}
+              >
+                <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[shared.button, styles.dialogAdd, { backgroundColor: nameInput.trim() ? '#0077B6' : theme.backgroundSelected }]}
+                onPress={handleAdd}
+                disabled={!nameInput.trim()}
+              >
+                <ThemedText type="smallBold" style={{ color: nameInput.trim() ? '#fff' : theme.textSecondary }}>
+                  Add
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </ThemedView>
   );
 }
@@ -192,10 +211,9 @@ const styles = StyleSheet.create({
   listContent: {
     padding: Spacing.three,
     gap: Spacing.two,
+    paddingBottom: Spacing.six + Spacing.four,
   },
-  emptyContainer: {
-    flex: 1,
-  },
+  emptyContainer: { flex: 1 },
   empty: {
     flex: 1,
     alignItems: 'center',
@@ -207,34 +225,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
   },
-  cardContent: {
+  groupCard: {
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
-  renameRow: {
+  error: { fontSize: 12, color: '#C05050' },
+  sectionLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
+  groupsSection: { marginTop: Spacing.four, gap: Spacing.two },
+  groupsHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.two,
-  },
-  iconBtn: {
-    width: 32,
-    height: 40,
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  emptyGroups: { opacity: 0.6, paddingTop: Spacing.one },
+  dialogOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
+    padding: Spacing.four,
   },
-  iconText: {
-    fontSize: 16,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.two,
+  dialogCard: {
+    borderRadius: Spacing.three,
     padding: Spacing.three,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.three,
   },
-  error: {
-    fontSize: 12,
-    color: '#C05050',
-  },
+  dialogTitle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textAlign: 'center' },
+  dialogBtns: { flexDirection: 'row', gap: Spacing.two },
+  dialogCancel: { flex: 1, alignItems: 'center', paddingVertical: Spacing.two },
+  dialogAdd: { flex: 2, alignItems: 'center', paddingVertical: Spacing.two },
 });
