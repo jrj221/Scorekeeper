@@ -12,6 +12,7 @@ import { Player } from "@/context/games-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
+import { getTurnState } from "@/utils/game";
 
 const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
@@ -29,16 +30,10 @@ export default function GameScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const theme = useTheme();
-	const {
-		game,
-		endGame,
-		updateScore,
-		totals,
-		sortedPlayers,
-		visibleRoundCount,
-	} = useGame(id);
+	const { game, endGame, updateScore, totals, sortedPlayers, visibleRoundCount } = useGame(id);
 
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
+	const [viewMode, setViewMode] = useState<"scores" | "turns">("scores");
 	const finished = !!game?.finishedAt;
 
 	const confirmEndGame = () =>
@@ -123,150 +118,302 @@ export default function GameScreen() {
 					</View>
 				</View>
 
-				{/* Table: fixed left + scrollable rounds */}
-				<View style={styles.tableOuter}>
-					{/* Fixed left: player name + total */}
-					<View>
-						{/* Header */}
-						<View style={[styles.headerRow, { height: ROW_H, backgroundColor: theme.backgroundSelected }]}>
-							<View style={[styles.cell, { width: PLAYER_COL }]}>
-								<ThemedText style={styles.colHeader}>Player</ThemedText>
-							</View>
-							<View
-								style={[
-									styles.cell,
-									styles.borderLeft,
-									{ width: TOTAL_COL, height: ROW_H, borderColor: theme.background },
-									finished && { backgroundColor: CURRENT_TINT + "28" },
-								]}
+				{/* Scores / Current Turn tab toggle (in-progress only) */}
+				{!finished && game.turnOrder && (
+					<View style={styles.viewToggle}>
+						<TouchableOpacity
+							style={[
+								styles.viewTab,
+								viewMode === "scores" && { backgroundColor: theme.backgroundSelected },
+							]}
+							onPress={() => setViewMode("scores")}
+						>
+							<ThemedText
+								type="small"
+								style={{ color: viewMode === "scores" ? theme.text : theme.textSecondary }}
 							>
-								<ThemedText style={[styles.colHeader, finished && { color: CURRENT_TINT }]}>Total</ThemedText>
-							</View>
-						</View>
-
-						{sortedPlayers.map((p, i) => (
-							<View key={p.id} style={[styles.playerRow, { height: ROW_H, backgroundColor: rowBg(i) }]}>
-								<View style={[styles.cell, { width: PLAYER_COL }]}>
-									{finished ? (
-										<TouchableOpacity onPress={() => router.push(`/player/${p.id}`)}>
-											<ThemedText style={styles.playerName} numberOfLines={1}>
-												{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
-												{p.name}
-											</ThemedText>
-										</TouchableOpacity>
-									) : (
-										<ThemedText style={styles.playerName} numberOfLines={1}>
-											{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
-											{p.name}
-										</ThemedText>
-									)}
-								</View>
-								<View
-									style={[
-										styles.cell,
-										styles.borderLeft,
-										{ width: TOTAL_COL, height: ROW_H, borderColor: theme.backgroundSelected },
-										finished && { backgroundColor: CURRENT_TINT + "10" },
-									]}
-								>
-									<ThemedText style={[styles.totalScore, finished && { color: CURRENT_TINT }]}>{totals[p.id] ?? 0}</ThemedText>
-								</View>
-							</View>
-						))}
+								Scorecard
+							</ThemedText>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[
+								styles.viewTab,
+								viewMode === "turns" && { backgroundColor: theme.backgroundSelected },
+							]}
+							onPress={() => setViewMode("turns")}
+						>
+							<ThemedText
+								type="small"
+								style={{ color: viewMode === "turns" ? theme.text : theme.textSecondary }}
+							>
+								Current Turn
+							</ThemedText>
+						</TouchableOpacity>
 					</View>
+				)}
 
-					{/* Scrollable rounds */}
-					<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+				{/* Current Turn view */}
+				{viewMode === "turns" && !finished && game.turnOrder
+					? (() => {
+							const { firstPlayerId, dealerId } = getTurnState(game, currentRoundIndex);
+							const playerMap = Object.fromEntries(game.players.map((p) => [p.id, p]));
+							// Use fixed turnOrder for display — don't rotate
+							const displayOrder = game.turnOrder;
+							return (
+								<View style={{ flex: 1 }}>
+									<View style={[styles.turnList, { flex: 1 }]}>
+										{displayOrder.map((pid, i) => {
+											const p = playerMap[pid];
+											if (!p) return null;
+											const isFirst = pid === firstPlayerId;
+											const isDealer = pid === dealerId;
+											return (
+												<View
+													key={pid}
+													style={[
+														styles.turnRow,
+														{ borderBottomColor: theme.backgroundSelected },
+														isFirst && { backgroundColor: CURRENT_TINT + "12" },
+													]}
+												>
+													<ThemedText
+														style={[
+															styles.turnIndicator,
+															{ color: isFirst ? CURRENT_TINT : "transparent" },
+														]}
+													>
+														→
+													</ThemedText>
+													<View style={styles.turnNameRow}>
+														<ThemedText
+															style={[
+																styles.turnName,
+																isFirst && { color: CURRENT_TINT, fontWeight: "600" },
+															]}
+															numberOfLines={1}
+														>
+															{p.name}
+														</ThemedText>
+														{isDealer && (
+															<View
+																style={[
+																	styles.dealerBadge,
+																	{ backgroundColor: CURRENT_TINT + "20" },
+																]}
+															>
+																<ThemedText
+																	style={[
+																		styles.dealerLabel,
+																		{ color: CURRENT_TINT },
+																	]}
+																>
+																	DEALER
+																</ThemedText>
+															</View>
+														)}
+													</View>
+													<View style={styles.turnScoreArea}>
+														<ThemedText style={[styles.turnScore, isFirst && { color: CURRENT_TINT }]}>
+															{totals[pid] ?? 0}
+														</ThemedText>
+														{getScore(currentRoundIndex, pid) === null && (
+															<TouchableOpacity
+																style={[styles.addScoreBtn, { backgroundColor: CURRENT_TINT + "20" }]}
+																onPress={() => setEditCell({ roundIndex: currentRoundIndex, player: p })}
+															>
+																<ThemedText style={[styles.addScoreLabel, { color: CURRENT_TINT }]}>+ Score</ThemedText>
+															</TouchableOpacity>
+														)}
+													</View>
+												</View>
+											);
+										})}
+									</View>
+									<TouchableOpacity
+										style={[
+											styles.editOrderBtn,
+											{
+												borderColor: theme.backgroundSelected,
+												backgroundColor: theme.backgroundElement,
+											},
+										]}
+										onPress={() => router.push(`/game/${id}/turn-order`)}
+									>
+										<ThemedText type="small" themeColor="textSecondary">
+											Edit Turn Order
+										</ThemedText>
+									</TouchableOpacity>
+								</View>
+							);
+						})()
+					: null}
+
+				{/* Table: fixed left + scrollable rounds */}
+				{viewMode === "scores" || finished ? (
+					<View style={styles.tableOuter}>
+						{/* Fixed left: player name + total */}
 						<View>
 							{/* Header */}
 							<View
 								style={[styles.headerRow, { height: ROW_H, backgroundColor: theme.backgroundSelected }]}
 							>
-								{columns.map((col, ci) => (
-									<View key={col.roundIndex} style={styles.colWithDivider}>
-										{showCurrentInFront && ci === 1 && (
-											<View
-												style={{
-													width: DIVIDER_W,
-													height: ROW_H,
-													backgroundColor: CURRENT_TINT + "70",
-												}}
-											/>
-										)}
-										<View
-											style={[
-												styles.cell,
-												ci > 0 && styles.borderLeft,
-												{ width: ROUND_COL, height: ROW_H, borderColor: theme.background },
-												col.isCurrent && !finished && { backgroundColor: CURRENT_TINT + "28" },
-											]}
-										>
-											<ThemedText
-												style={[styles.colHeader, col.isCurrent && !finished && { color: CURRENT_TINT }]}
-											>
-												{col.roundIndex + 1}
-											</ThemedText>
-										</View>
-									</View>
-								))}
+								<View style={[styles.cell, { width: PLAYER_COL }]}>
+									<ThemedText style={styles.colHeader}>Player</ThemedText>
+								</View>
+								<View
+									style={[
+										styles.cell,
+										styles.borderLeft,
+										{ width: TOTAL_COL, height: ROW_H, borderColor: theme.background },
+										finished && { backgroundColor: CURRENT_TINT + "28" },
+									]}
+								>
+									<ThemedText style={[styles.colHeader, finished && { color: CURRENT_TINT }]}>
+										Total
+									</ThemedText>
+								</View>
 							</View>
 
-							{/* Player rows */}
-							{sortedPlayers.map((p, pi) => (
+							{sortedPlayers.map((p, i) => (
 								<View
 									key={p.id}
-									style={[styles.playerRow, { height: ROW_H, backgroundColor: rowBg(pi) }]}
+									style={[styles.playerRow, { height: ROW_H, backgroundColor: rowBg(i) }]}
 								>
-									{columns.map((col, ci) => {
-										const s = getScore(col.roundIndex, p.id);
-										const Cell = !finished && col.roundIndex <= currentRoundIndex ? TouchableOpacity : View;
-										return (
-											<View key={col.roundIndex} style={styles.colWithDivider}>
-												{showCurrentInFront && ci === 1 && (
-													<View
-														style={{
-															width: DIVIDER_W,
-															height: ROW_H,
-															backgroundColor: CURRENT_TINT + "70",
-														}}
-													/>
-												)}
-												<Cell
-													style={[
-														styles.cell,
-														ci > 0 && styles.borderLeft,
-														{
-															width: ROUND_COL,
-															height: ROW_H,
-															borderColor: theme.backgroundSelected,
-														},
-														col.isCurrent && !finished && { backgroundColor: CURRENT_TINT + "10" },
-													]}
-													{...(!finished && col.roundIndex <= currentRoundIndex
-														? {
-																onPress: () =>
-																	setEditCell({
-																		roundIndex: col.roundIndex,
-																		player: p,
-																	}),
-															}
-														: {})}
-												>
-													<ThemedText
-														style={s === null ? styles.emptyScore : styles.score}
-														themeColor={s === null ? "textSecondary" : "text"}
-													>
-														{s !== null ? s : "–"}
-													</ThemedText>
-												</Cell>
-											</View>
-										);
-									})}
+									<View style={[styles.cell, { width: PLAYER_COL }]}>
+										{finished ? (
+											<TouchableOpacity onPress={() => router.push(`/player/${p.id}`)}>
+												<ThemedText style={styles.playerName} numberOfLines={1}>
+													{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
+													{p.name}
+												</ThemedText>
+											</TouchableOpacity>
+										) : (
+											<ThemedText style={styles.playerName} numberOfLines={1}>
+												{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
+												{p.name}
+											</ThemedText>
+										)}
+									</View>
+									<View
+										style={[
+											styles.cell,
+											styles.borderLeft,
+											{ width: TOTAL_COL, height: ROW_H, borderColor: theme.backgroundSelected },
+											finished && { backgroundColor: CURRENT_TINT + "10" },
+										]}
+									>
+										<ThemedText style={[styles.totalScore, finished && { color: CURRENT_TINT }]}>
+											{totals[p.id] ?? 0}
+										</ThemedText>
+									</View>
 								</View>
 							))}
 						</View>
-					</ScrollView>
-				</View>
+
+						{/* Scrollable rounds */}
+						<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+							<View>
+								{/* Header */}
+								<View
+									style={[
+										styles.headerRow,
+										{ height: ROW_H, backgroundColor: theme.backgroundSelected },
+									]}
+								>
+									{columns.map((col, ci) => (
+										<View key={col.roundIndex} style={styles.colWithDivider}>
+											{showCurrentInFront && ci === 1 && (
+												<View
+													style={{
+														width: DIVIDER_W,
+														height: ROW_H,
+														backgroundColor: CURRENT_TINT + "70",
+													}}
+												/>
+											)}
+											<View
+												style={[
+													styles.cell,
+													ci > 0 && styles.borderLeft,
+													{ width: ROUND_COL, height: ROW_H, borderColor: theme.background },
+													col.isCurrent &&
+														!finished && { backgroundColor: CURRENT_TINT + "28" },
+												]}
+											>
+												<ThemedText
+													style={[
+														styles.colHeader,
+														col.isCurrent && !finished && { color: CURRENT_TINT },
+													]}
+												>
+													{col.roundIndex + 1}
+												</ThemedText>
+											</View>
+										</View>
+									))}
+								</View>
+
+								{/* Player rows */}
+								{sortedPlayers.map((p, pi) => (
+									<View
+										key={p.id}
+										style={[styles.playerRow, { height: ROW_H, backgroundColor: rowBg(pi) }]}
+									>
+										{columns.map((col, ci) => {
+											const s = getScore(col.roundIndex, p.id);
+											const Cell =
+												!finished && col.roundIndex <= currentRoundIndex
+													? TouchableOpacity
+													: View;
+											return (
+												<View key={col.roundIndex} style={styles.colWithDivider}>
+													{showCurrentInFront && ci === 1 && (
+														<View
+															style={{
+																width: DIVIDER_W,
+																height: ROW_H,
+																backgroundColor: CURRENT_TINT + "70",
+															}}
+														/>
+													)}
+													<Cell
+														style={[
+															styles.cell,
+															ci > 0 && styles.borderLeft,
+															{
+																width: ROUND_COL,
+																height: ROW_H,
+																borderColor: theme.backgroundSelected,
+															},
+															col.isCurrent &&
+																!finished && { backgroundColor: CURRENT_TINT + "10" },
+														]}
+														{...(!finished && col.roundIndex <= currentRoundIndex
+															? {
+																	onPress: () =>
+																		setEditCell({
+																			roundIndex: col.roundIndex,
+																			player: p,
+																		}),
+																}
+															: {})}
+													>
+														<ThemedText
+															style={s === null ? styles.emptyScore : styles.score}
+															themeColor={s === null ? "textSecondary" : "text"}
+														>
+															{s !== null ? s : "–"}
+														</ThemedText>
+													</Cell>
+												</View>
+											);
+										})}
+									</View>
+								))}
+							</View>
+						</ScrollView>
+					</View>
+				) : null}
 
 				{/* End Game */}
 				{!finished && (
@@ -328,6 +475,81 @@ const styles = StyleSheet.create({
 	tableOuter: {
 		flexDirection: "row",
 		flex: 1,
+	},
+	viewToggle: {
+		flexDirection: "row",
+		borderRadius: 8,
+		overflow: "hidden",
+		marginBottom: 8,
+	},
+	viewTab: {
+		flex: 1,
+		alignItems: "center",
+		paddingVertical: 4,
+		borderRadius: 8,
+	},
+	turnList: {
+		borderRadius: 8,
+		overflow: "hidden",
+	},
+	turnRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderBottomWidth: 0.5,
+		gap: 8,
+	},
+	turnIndicator: {
+		fontSize: 18,
+		width: 22,
+		textAlign: "center",
+	},
+	turnNameRow: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+	},
+	turnName: {
+		flexShrink: 1,
+		fontSize: 17,
+	},
+	turnScoreArea: {
+		alignItems: "flex-end",
+		gap: 4,
+	},
+	addScoreBtn: {
+		borderRadius: 6,
+		paddingHorizontal: 10,
+		paddingVertical: 4,
+	},
+	addScoreLabel: {
+		fontSize: 13,
+		fontWeight: "600",
+	},
+	dealerBadge: {
+		borderRadius: 4,
+		paddingHorizontal: 4,
+		paddingVertical: 2,
+	},
+	dealerLabel: {
+		fontSize: 10,
+		fontWeight: "700",
+		letterSpacing: 0.5,
+	},
+	turnScore: {
+		fontSize: 22,
+		fontWeight: "600",
+		minWidth: 50,
+		textAlign: "right",
+	},
+	editOrderBtn: {
+		borderRadius: 8,
+		borderWidth: 0.5,
+		paddingVertical: 8,
+		alignItems: "center",
+		marginTop: 8,
 	},
 	headerRow: {
 		flexDirection: "row",

@@ -14,7 +14,7 @@ const KEY_W = Math.floor((SCREEN_W - SHEET_PAD * 2 - KEY_GAP * 2) / 3);
 
 // Fixed overhead (px): paddingTop + header + displayArea + doneBtn + section gaps + key-row gaps
 // Calculated so sheet top lands at ~50% of screen height
-const FIXED_OVERHEAD = SHEET_PAD + 20 + 64 + 44 + KEY_GAP * 3 + Spacing.two * 3;
+const FIXED_OVERHEAD = SHEET_PAD + 20 + 64 + 88 + KEY_GAP * 3 + Spacing.two * 3;
 
 const ROWS = [
   ['1', '2', '3'],
@@ -43,11 +43,11 @@ export function CellEditModal({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  // Compute KEY_H so the total sheet height ≈ 50% of screen
+  // Square buttons: use KEY_W as target height, capped so sheet fits on screen
   const KEY_H = useMemo(() => {
     const bottomPad = insets.bottom + Spacing.two;
-    const available = SCREEN_H * 0.5 - FIXED_OVERHEAD - bottomPad;
-    return Math.max(40, Math.floor(available / 4));
+    const maxForScreen = Math.floor((SCREEN_H - FIXED_OVERHEAD - bottomPad) / 4);
+    return Math.max(44, Math.min(KEY_W, maxForScreen));
   }, [insets.bottom]);
 
   const [numStr, setNumStr] = useState('');
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   doneBtn: {
-    height: 44,
+    height: 88,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',

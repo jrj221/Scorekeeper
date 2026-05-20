@@ -37,3 +37,47 @@ export function getPlayerWinRate(playerId: string, games: Game[]): string {
   }
   return `${Math.round((wins / finished.length) * 100)}%`;
 }
+
+/** Returns the effective turn order, first player, and dealer for a given round. */
+export function getTurnState(game: Game, roundIndex: number): {
+  orderedIds: string[];
+  firstPlayerId: string | null;
+  dealerId: string | null;
+} {
+  const order = game.turnOrder?.length ? game.turnOrder : game.players.map(p => p.id);
+  const n = order.length;
+  if (n === 0) return { orderedIds: [], firstPlayerId: null, dealerId: null };
+
+  let baseIndex = 0;
+  if (game.firstPlayerId) {
+    const idx = order.indexOf(game.firstPlayerId);
+    if (idx !== -1) baseIndex = idx;
+  }
+
+  const firstIdx = (baseIndex + roundIndex) % n;
+  const firstPlayerId = order[firstIdx];
+  const orderedIds = [...order.slice(firstIdx), ...order.slice(0, firstIdx)];
+
+  let dealerId: string | null = null;
+  if (game.dealerEnabled) {
+    switch (game.dealerMode) {
+      case 'fixed':
+        dealerId = game.fixedDealerId ?? null;
+        break;
+      case 'random': {
+        // Deterministic seed so dealer is stable across re-renders
+        const seed = (parseInt(game.id.replace(/\D/g, '').slice(-8) || '0') + roundIndex * 7919);
+        dealerId = order[Math.abs(seed) % n];
+        break;
+      }
+      case 'right-of-first':
+      default: {
+        const dealerIdx = (firstIdx - 1 + n) % n;
+        dealerId = order[dealerIdx];
+        break;
+      }
+    }
+  }
+
+  return { orderedIds, firstPlayerId, dealerId };
+}

@@ -113,7 +113,19 @@ export default function EditGameScreen() {
 			}
 		}
 
-		updateGame({ ...game, name: name.trim(), description: description.trim() || undefined, players, totalRounds, rankByLowest, rounds });
+		// Update turnOrder: keep existing order, remove deleted players, append new ones
+		const existingTurnOrder = game.turnOrder ?? game.players.map(p => p.id);
+		const updatedTurnOrder = [
+			...existingTurnOrder.filter(pid => newIds.has(pid)),
+			...players.filter(p => !origIds.has(p.id)).map(p => p.id),
+		];
+
+		// If firstPlayerId was removed, clear it
+		const updatedFirstPlayerId = game.firstPlayerId && newIds.has(game.firstPlayerId)
+			? game.firstPlayerId
+			: undefined;
+
+		updateGame({ ...game, name: name.trim(), description: description.trim() || undefined, players, totalRounds, rankByLowest, rounds, turnOrder: updatedTurnOrder, firstPlayerId: updatedFirstPlayerId });
 		router.back();
 	}, [game, name, description, players, isIndefinite, roundCountStr, rankByLowest, updateGame, router]);
 

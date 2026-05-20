@@ -17,6 +17,11 @@ export type Game = {
   rankByLowest: boolean;
   createdAt: number;
   finishedAt?: number;
+  dealerEnabled?: boolean;
+  dealerMode?: DealerMode;
+  fixedDealerId?: string;
+  firstPlayerId?: string;
+  turnOrder?: string[];
 };
 
 export type GlobalPlayer = { id: string; name: string };
@@ -36,12 +41,19 @@ export type PlayerGroup = {
   playerIds: string[];
 };
 
+export type DealerMode = 'fixed' | 'random' | 'right-of-first';
+
 export type CreateGameOpts = {
   name: string;
   description?: string;
   players: Player[];
   totalRounds?: number;
   rankByLowest: boolean;
+  dealerEnabled?: boolean;
+  dealerMode?: DealerMode;
+  fixedDealerId?: string;
+  firstPlayerId?: string;
+  turnOrder?: string[];
 };
 
 type GamesContextValue = {
@@ -109,6 +121,11 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
       id, name: opts.name, description: opts.description,
       players: opts.players, rounds: [], totalRounds: opts.totalRounds,
       rankByLowest: opts.rankByLowest, createdAt: Date.now(),
+      dealerEnabled: opts.dealerEnabled,
+      dealerMode: opts.dealerMode,
+      fixedDealerId: opts.fixedDealerId,
+      firstPlayerId: opts.firstPlayerId,
+      turnOrder: opts.turnOrder,
     }, ...prev]);
     return id;
   }, []);
