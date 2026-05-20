@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Alert, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -16,11 +16,7 @@ import { getTurnState } from "@/utils/game";
 
 const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
-const PLAYER_COL = 96;
-const TOTAL_COL = 40;
-const DIVIDER_W = 3;
-const ROUND_COL = Math.floor((SCREEN_W - H_PAD - PLAYER_COL - TOTAL_COL - DIVIDER_W) / 5);
-// All rows (header + player rows) share the same height
+const ROUND_LABEL_W = 48;
 const ROW_H = 44;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -35,6 +31,11 @@ export default function GameScreen() {
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
 	const [viewMode, setViewMode] = useState<"scores" | "turns">("scores");
 	const finished = !!game?.finishedAt;
+	const leftScrollRef = useRef<ScrollView>(null);
+	const mainScrollRef = useRef<ScrollView>(null);
+	const handleMainScroll = useCallback((e: any) => {
+		leftScrollRef.current?.scrollTo({ y: e.nativeEvent.contentOffset.y, animated: false });
+	}, []);
 
 	const confirmEndGame = () =>
 		Alert.alert("End Game", "Lock this game? Scores will be frozen and cannot be edited.", [
@@ -69,30 +70,24 @@ export default function GameScreen() {
 		}
 	}
 
-	const showCurrentInFront = currentRoundIndex >= 5;
-
-	type Col = { roundIndex: number; isCurrent: boolean };
-	const columns: Col[] = [];
-	if (!showCurrentInFront) {
-		for (let i = 0; i < visibleRoundCount; i++) {
-			columns.push({ roundIndex: i, isCurrent: i === currentRoundIndex });
-		}
-	} else {
-		columns.push({ roundIndex: currentRoundIndex, isCurrent: true });
-		for (let i = 0; i < visibleRoundCount; i++) {
-			if (i !== currentRoundIndex) columns.push({ roundIndex: i, isCurrent: false });
-		}
-	}
+	// Build round rows (all visible rounds in order)
+	const rounds = Array.from({ length: visibleRoundCount }, (_, i) => i);
 
 	const firstRoundComplete =
 		game.players.length > 0 && game.players.every((p) => (game.rounds[0] ?? {})[p.id] !== undefined);
-
-	const rowBg = (i: number) => (i % 2 === 0 ? theme.background : theme.backgroundElement + "55");
 
 	const roundLabel =
 		game.totalRounds !== undefined
 			? `Round ${currentRoundIndex + 1} of ${game.totalRounds}`
 			: `Round ${currentRoundIndex + 1}`;
+
+	// Column width: fill evenly for ≤4 players, fixed for 5+
+	const availableW = SCREEN_W - H_PAD - ROUND_LABEL_W;
+	const visibleCols = Math.min(sortedPlayers.length, 4);
+	const colW = visibleCols > 0 ? Math.floor(availableW / visibleCols) : availableW;
+	const needsHScroll = sortedPlayers.length > 4;
+
+	const rowBg = (i: number) => (i % 2 === 0 ? theme.background : theme.backgroundElement + "55");
 
 	return (
 		<ThemedView style={shared.screen}>
@@ -118,7 +113,7 @@ export default function GameScreen() {
 					</View>
 				</View>
 
-				{/* Scores / Current Turn tab toggle (in-progress only) */}
+				{/* Scores / Current Turn tab toggle */}
 				{!finished && game.turnOrder && (
 					<View style={styles.viewToggle}>
 						<TouchableOpacity
@@ -157,12 +152,14 @@ export default function GameScreen() {
 					? (() => {
 							const { firstPlayerId, dealerId } = getTurnState(game, currentRoundIndex);
 							const playerMap = Object.fromEntries(game.players.map((p) => [p.id, p]));
-							// Use fixed turnOrder for display — don't rotate
 							const displayOrder = game.turnOrder;
 							return (
 								<View style={{ flex: 1 }}>
-									<View style={[styles.turnList, { flex: 1 }]}>
-										{displayOrder.map((pid, i) => {
+									<ScrollView
+										style={[styles.turnList, { flex: 1 }]}
+										showsVerticalScrollIndicator={false}
+									>
+										{displayOrder.map((pid) => {
 											const p = playerMap[pid];
 											if (!p) return null;
 											const isFirst = pid === firstPlayerId;
@@ -213,22 +210,42 @@ export default function GameScreen() {
 														)}
 													</View>
 													<View style={styles.turnScoreArea}>
-														<ThemedText style={[styles.turnScore, isFirst && { color: CURRENT_TINT }]}>
+														<ThemedText
+															style={[
+																styles.turnScore,
+																isFirst && { color: CURRENT_TINT },
+															]}
+														>
 															{totals[pid] ?? 0}
 														</ThemedText>
 														{getScore(currentRoundIndex, pid) === null && (
 															<TouchableOpacity
-																style={[styles.addScoreBtn, { backgroundColor: CURRENT_TINT + "20" }]}
-																onPress={() => setEditCell({ roundIndex: currentRoundIndex, player: p })}
+																style={[
+																	styles.addScoreBtn,
+																	{ backgroundColor: CURRENT_TINT + "20" },
+																]}
+																onPress={() =>
+																	setEditCell({
+																		roundIndex: currentRoundIndex,
+																		player: p,
+																	})
+																}
 															>
-																<ThemedText style={[styles.addScoreLabel, { color: CURRENT_TINT }]}>+ Score</ThemedText>
+																<ThemedText
+																	style={[
+																		styles.addScoreLabel,
+																		{ color: CURRENT_TINT },
+																	]}
+																>
+																	+ Score
+																</ThemedText>
 															</TouchableOpacity>
 														)}
 													</View>
 												</View>
 											);
 										})}
-									</View>
+									</ScrollView>
 									<TouchableOpacity
 										style={[
 											styles.editOrderBtn,
@@ -248,185 +265,110 @@ export default function GameScreen() {
 						})()
 					: null}
 
-				{/* Table: fixed left + scrollable rounds */}
-				{viewMode === "scores" || finished ? (
-					<View style={styles.tableOuter}>
-						{/* Fixed left: player name + total */}
-						<View>
-							{/* Header */}
-							<View
-								style={[styles.headerRow, { height: ROW_H, backgroundColor: theme.backgroundSelected }]}
-							>
-								<View style={[styles.cell, { width: PLAYER_COL }]}>
-									<ThemedText style={styles.colHeader}>Player</ThemedText>
-								</View>
-								<View
-									style={[
-										styles.cell,
-										styles.borderLeft,
-										{ width: TOTAL_COL, height: ROW_H, borderColor: theme.background },
-										finished && { backgroundColor: CURRENT_TINT + "28" },
-									]}
+				{/* Scorecard: players as columns, rounds as rows */}
+				{viewMode === "scores" || finished ? (() => {
+					const MAX_VISIBLE_ROWS = 10;
+					const CURRENT_ROW_BG = CURRENT_TINT + "40";
+					return (
+						<View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+							{/* Fixed left: round number column */}
+							<View style={{ width: ROUND_LABEL_W }}>
+								<View style={[styles.labelCell, { height: ROW_H, backgroundColor: theme.backgroundSelected }]} />
+								<ScrollView
+									ref={leftScrollRef}
+									scrollEnabled={false}
+									showsVerticalScrollIndicator={false}
+									style={{ maxHeight: MAX_VISIBLE_ROWS * ROW_H }}
 								>
-									<ThemedText style={[styles.colHeader, finished && { color: CURRENT_TINT }]}>
-										Total
-									</ThemedText>
+									{rounds.map((ri) => {
+										const isCurrent = ri === currentRoundIndex && !finished;
+										return (
+											<View key={ri} style={[styles.labelCell, { height: ROW_H, backgroundColor: rowBg(ri) }, isCurrent && { backgroundColor: CURRENT_ROW_BG }]}>
+												<ThemedText style={[styles.labelText, isCurrent && { color: CURRENT_TINT }]}>{ri + 1}</ThemedText>
+											</View>
+										);
+									})}
+								</ScrollView>
+								<View style={[styles.labelCell, { height: ROW_H, backgroundColor: theme.backgroundSelected }, finished && { backgroundColor: CURRENT_TINT + "28" }]}>
+									<ThemedText style={[styles.labelText, { fontWeight: "700" }, finished && { color: CURRENT_TINT }]}>Total</ThemedText>
 								</View>
 							</View>
 
-							{sortedPlayers.map((p, i) => (
-								<View
-									key={p.id}
-									style={[styles.playerRow, { height: ROW_H, backgroundColor: rowBg(i) }]}
-								>
-									<View style={[styles.cell, { width: PLAYER_COL }]}>
-										{finished ? (
-											<TouchableOpacity onPress={() => router.push(`/player/${p.id}`)}>
-												<ThemedText style={styles.playerName} numberOfLines={1}>
-													{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
-													{p.name}
-												</ThemedText>
-											</TouchableOpacity>
-										) : (
-											<ThemedText style={styles.playerName} numberOfLines={1}>
-												{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}
-												{p.name}
-											</ThemedText>
-										)}
-									</View>
-									<View
-										style={[
-											styles.cell,
-											styles.borderLeft,
-											{ width: TOTAL_COL, height: ROW_H, borderColor: theme.backgroundSelected },
-											finished && { backgroundColor: CURRENT_TINT + "10" },
-										]}
-									>
-										<ThemedText style={[styles.totalScore, finished && { color: CURRENT_TINT }]}>
-											{totals[p.id] ?? 0}
-										</ThemedText>
-									</View>
-								</View>
-							))}
-						</View>
-
-						{/* Scrollable rounds */}
-						<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-							<View>
-								{/* Header */}
-								<View
-									style={[
-										styles.headerRow,
-										{ height: ROW_H, backgroundColor: theme.backgroundSelected },
-									]}
-								>
-									{columns.map((col, ci) => (
-										<View key={col.roundIndex} style={styles.colWithDivider}>
-											{showCurrentInFront && ci === 1 && (
-												<View
-													style={{
-														width: DIVIDER_W,
-														height: ROW_H,
-														backgroundColor: CURRENT_TINT + "70",
-													}}
-												/>
-											)}
-											<View
-												style={[
-													styles.cell,
-													ci > 0 && styles.borderLeft,
-													{ width: ROUND_COL, height: ROW_H, borderColor: theme.background },
-													col.isCurrent &&
-														!finished && { backgroundColor: CURRENT_TINT + "28" },
-												]}
-											>
-												<ThemedText
-													style={[
-														styles.colHeader,
-														col.isCurrent && !finished && { color: CURRENT_TINT },
-													]}
-												>
-													{col.roundIndex + 1}
-												</ThemedText>
+							{/* Horizontally scrollable player columns */}
+							<ScrollView
+								horizontal
+								scrollEnabled={sortedPlayers.length > 4}
+								directionalLockEnabled
+								showsHorizontalScrollIndicator={false}
+								style={{ flex: 1 }}
+							>
+								<View style={{ alignItems: "flex-start" }}>
+									{/* Player names header */}
+									<View style={[styles.headerRow, { backgroundColor: theme.backgroundSelected }]}>
+										{sortedPlayers.map((p, i) => (
+											<View key={p.id} style={[styles.nameCell, { width: colW, height: ROW_H }]}>
+												{finished ? (
+													<TouchableOpacity onPress={() => router.push(`/player/${p.id}`)}>
+														<ThemedText style={styles.colHeader} numberOfLines={1}>{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}{p.name}</ThemedText>
+													</TouchableOpacity>
+												) : (
+													<ThemedText style={styles.colHeader} numberOfLines={1}>{firstRoundComplete && i < MEDALS.length ? MEDALS[i] + " " : ""}{p.name}</ThemedText>
+												)}
 											</View>
-										</View>
-									))}
-								</View>
+										))}
+									</View>
 
-								{/* Player rows */}
-								{sortedPlayers.map((p, pi) => (
-									<View
-										key={p.id}
-										style={[styles.playerRow, { height: ROW_H, backgroundColor: rowBg(pi) }]}
+									{/* Score rows */}
+									<ScrollView
+										ref={mainScrollRef}
+										onScroll={handleMainScroll}
+										scrollEventThrottle={16}
+										showsVerticalScrollIndicator={false}
+										style={{ maxHeight: MAX_VISIBLE_ROWS * ROW_H }}
+										scrollEnabled={rounds.length > MAX_VISIBLE_ROWS}
+										directionalLockEnabled
+										nestedScrollEnabled
 									>
-										{columns.map((col, ci) => {
-											const s = getScore(col.roundIndex, p.id);
-											const Cell =
-												!finished && col.roundIndex <= currentRoundIndex
-													? TouchableOpacity
-													: View;
+										{rounds.map((ri) => {
+											const isCurrent = ri === currentRoundIndex && !finished;
 											return (
-												<View key={col.roundIndex} style={styles.colWithDivider}>
-													{showCurrentInFront && ci === 1 && (
-														<View
-															style={{
-																width: DIVIDER_W,
-																height: ROW_H,
-																backgroundColor: CURRENT_TINT + "70",
-															}}
-														/>
-													)}
-													<Cell
-														style={[
-															styles.cell,
-															ci > 0 && styles.borderLeft,
-															{
-																width: ROUND_COL,
-																height: ROW_H,
-																borderColor: theme.backgroundSelected,
-															},
-															col.isCurrent &&
-																!finished && { backgroundColor: CURRENT_TINT + "10" },
-														]}
-														{...(!finished && col.roundIndex <= currentRoundIndex
-															? {
-																	onPress: () =>
-																		setEditCell({
-																			roundIndex: col.roundIndex,
-																			player: p,
-																		}),
-																}
-															: {})}
-													>
-														<ThemedText
-															style={s === null ? styles.emptyScore : styles.score}
-															themeColor={s === null ? "textSecondary" : "text"}
-														>
-															{s !== null ? s : "–"}
-														</ThemedText>
-													</Cell>
+												<View key={ri} style={[styles.scoreRow, { backgroundColor: rowBg(ri) }, isCurrent && { backgroundColor: CURRENT_ROW_BG }]}>
+													{sortedPlayers.map((p) => {
+														const s = getScore(ri, p.id);
+														const tappable = !finished && ri <= currentRoundIndex;
+														const Cell = tappable ? TouchableOpacity : View;
+														return (
+															<Cell key={p.id} style={[styles.scoreCell, { width: colW, height: ROW_H }]} {...(tappable ? { onPress: () => setEditCell({ roundIndex: ri, player: p }) } : {})}>
+																<ThemedText style={s === null ? styles.emptyScore : styles.score} themeColor={s === null ? "textSecondary" : "text"}>{s !== null ? s : "–"}</ThemedText>
+															</Cell>
+														);
+													})}
 												</View>
 											);
 										})}
+									</ScrollView>
+
+									{/* Total row */}
+									<View style={[styles.scoreRow, { backgroundColor: theme.backgroundSelected }, finished && { backgroundColor: CURRENT_TINT + "10" }]}>
+										{sortedPlayers.map((p) => (
+											<View key={p.id} style={[styles.scoreCell, { width: colW, height: ROW_H }]}>
+												<ThemedText style={[styles.totalScore, finished && { color: CURRENT_TINT }]}>{totals[p.id] ?? 0}</ThemedText>
+											</View>
+										))}
 									</View>
-								))}
-							</View>
-						</ScrollView>
-					</View>
-				) : null}
+								</View>
+							</ScrollView>
+						</View>
+					);
+				})() : null}
 
 				{/* End Game */}
 				{!finished && (
 					<TouchableOpacity
-						style={[
-							styles.endGameBtn,
-							{ borderColor: theme.backgroundElement, backgroundColor: theme.backgroundSelected },
-						]}
+						style={[styles.endGameBtn, { borderColor: theme.backgroundElement, backgroundColor: theme.backgroundSelected }]}
 						onPress={confirmEndGame}
 					>
-						<ThemedText type="small" style={styles.endGameText}>
-							End Game
-						</ThemedText>
+						<ThemedText type="small" style={styles.endGameText}>End Game</ThemedText>
 					</TouchableOpacity>
 				)}
 			</SafeAreaView>
@@ -444,7 +386,6 @@ export default function GameScreen() {
 		</ThemedView>
 	);
 }
-
 const styles = StyleSheet.create({
 	safe: {
 		flex: 1,
@@ -456,9 +397,10 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
+		padding: 5,
 	},
 	roundLabel: {
-		fontSize: 22,
+		fontSize: 25,
 		fontWeight: "700",
 		letterSpacing: -0.3,
 	},
@@ -472,33 +414,85 @@ const styles = StyleSheet.create({
 		paddingHorizontal: Spacing.two,
 		paddingVertical: Spacing.one,
 	},
-	tableOuter: {
-		flexDirection: "row",
-		flex: 1,
-	},
 	viewToggle: {
 		flexDirection: "row",
-		borderRadius: 8,
+		borderRadius: Spacing.two,
 		overflow: "hidden",
-		marginBottom: 8,
 	},
 	viewTab: {
 		flex: 1,
 		alignItems: "center",
-		paddingVertical: 4,
-		borderRadius: 8,
+		paddingVertical: Spacing.one,
+		borderRadius: Spacing.two,
 	},
+	// Scorecard
+	labelCell: {
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	labelText: {
+		fontSize: 12,
+		fontWeight: "600",
+		textAlign: "center",
+	},
+	headerRow: {
+		flexDirection: "row",
+	},
+	nameCell: {
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 4,
+	},
+	colHeader: {
+		fontSize: 12,
+		fontWeight: "600",
+		textAlign: "center",
+	},
+	scoreRow: {
+		flexDirection: "row",
+	},
+	scoreCell: {
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	score: {
+		fontSize: 13,
+		fontWeight: "500",
+		textAlign: "center",
+	},
+	emptyScore: {
+		fontSize: 13,
+		textAlign: "center",
+		opacity: 0.3,
+	},
+	totalScore: {
+		fontSize: 13,
+		fontWeight: "700",
+		textAlign: "center",
+	},
+	endGameBtn: {
+		alignItems: "center",
+		paddingVertical: Spacing.two,
+		marginHorizontal: Spacing.three,
+		marginBottom: Spacing.two,
+		borderRadius: Spacing.two,
+		borderWidth: StyleSheet.hairlineWidth,
+	},
+	endGameText: {
+		color: "#C05050",
+	},
+	// Current Turn view
 	turnList: {
-		borderRadius: 8,
+		borderRadius: Spacing.two,
 		overflow: "hidden",
 	},
 	turnRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 10,
-		borderBottomWidth: 0.5,
-		gap: 8,
+		paddingHorizontal: Spacing.three,
+		paddingVertical: Spacing.two + 2,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		gap: Spacing.two,
 	},
 	turnIndicator: {
 		fontSize: 18,
@@ -515,9 +509,25 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 		fontSize: 17,
 	},
+	dealerBadge: {
+		borderRadius: Spacing.one,
+		paddingHorizontal: Spacing.one,
+		paddingVertical: 2,
+	},
+	dealerLabel: {
+		fontSize: 10,
+		fontWeight: "700",
+		letterSpacing: 0.5,
+	},
 	turnScoreArea: {
 		alignItems: "flex-end",
 		gap: 4,
+	},
+	turnScore: {
+		fontSize: 22,
+		fontWeight: "600",
+		minWidth: 50,
+		textAlign: "right",
 	},
 	addScoreBtn: {
 		borderRadius: 6,
@@ -528,83 +538,11 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		fontWeight: "600",
 	},
-	dealerBadge: {
-		borderRadius: 4,
-		paddingHorizontal: 4,
-		paddingVertical: 2,
-	},
-	dealerLabel: {
-		fontSize: 10,
-		fontWeight: "700",
-		letterSpacing: 0.5,
-	},
-	turnScore: {
-		fontSize: 22,
-		fontWeight: "600",
-		minWidth: 50,
-		textAlign: "right",
-	},
 	editOrderBtn: {
-		borderRadius: 8,
-		borderWidth: 0.5,
-		paddingVertical: 8,
-		alignItems: "center",
-		marginTop: 8,
-	},
-	headerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	playerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	colWithDivider: {
-		flexDirection: "row",
-		alignItems: "stretch",
-	},
-	cell: {
-		justifyContent: "center",
-		alignItems: "center",
-		paddingHorizontal: 4,
-	},
-	borderLeft: {
-		borderLeftWidth: StyleSheet.hairlineWidth,
-	},
-	colHeader: {
-		fontSize: 12,
-		fontWeight: "600",
-		textAlign: "center",
-		letterSpacing: 0.2,
-	},
-	playerName: {
-		fontSize: 13,
-		fontWeight: "500",
-	},
-	totalScore: {
-		fontSize: 13,
-		fontWeight: "700",
-		textAlign: "center",
-	},
-	score: {
-		fontSize: 13,
-		fontWeight: "500",
-		textAlign: "center",
-	},
-	emptyScore: {
-		fontSize: 13,
-		textAlign: "center",
-		opacity: 0.3,
-	},
-	endGameBtn: {
-		alignItems: "center",
-		paddingVertical: Spacing.two,
-		marginHorizontal: Spacing.three,
-		marginBottom: Spacing.two,
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
-	},
-	endGameText: {
-		color: "#C05050",
+		paddingVertical: Spacing.two,
+		alignItems: "center",
+		marginTop: Spacing.two,
 	},
 });

@@ -10,11 +10,12 @@ const SCREEN_W = Dimensions.get('window').width;
 const SCREEN_H = Dimensions.get('window').height;
 const SHEET_PAD = Spacing.three;
 const KEY_GAP = 8;
-const KEY_W = Math.floor((SCREEN_W - SHEET_PAD * 2 - KEY_GAP * 2) / 3);
 
-// Fixed overhead (px): paddingTop + header + displayArea + doneBtn + section gaps + key-row gaps
-// Calculated so sheet top lands at ~50% of screen height
-const FIXED_OVERHEAD = SHEET_PAD + 20 + 64 + 88 + KEY_GAP * 3 + Spacing.two * 3;
+// Fixed non-key content: paddingTop + header + display + done + 3 gaps between sections + 3 inter-row gaps
+const FIXED_H = SHEET_PAD + 20 + 64 + 88 + Spacing.two * 3 + KEY_GAP * 3;
+
+// Max key width if filling the full sheet width with 3 columns
+const MAX_KEY_W = Math.floor((SCREEN_W - SHEET_PAD * 2 - KEY_GAP * 2) / 3);
 
 const ROWS = [
   ['1', '2', '3'],
@@ -43,11 +44,11 @@ export function CellEditModal({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  // Square buttons: use KEY_W as target height, capped so sheet fits on screen
-  const KEY_H = useMemo(() => {
+  // Keys fill full width; height sized so sheet takes ~50% of screen
+  const keySize = useMemo(() => {
     const bottomPad = insets.bottom + Spacing.two;
-    const maxForScreen = Math.floor((SCREEN_H - FIXED_OVERHEAD - bottomPad) / 4);
-    return Math.max(44, Math.min(KEY_W, maxForScreen));
+    const availableForKeys = SCREEN_H * 0.5 - FIXED_H - bottomPad;
+    return Math.max(36, Math.floor(availableForKeys / 4));
   }, [insets.bottom]);
 
   const [numStr, setNumStr] = useState('');
@@ -118,7 +119,7 @@ export function CellEditModal({
                   return (
                     <TouchableOpacity
                       key={key}
-                      style={[styles.key, { width: KEY_W, height: KEY_H, backgroundColor: bg }]}
+                      style={[styles.key, { width: MAX_KEY_W, height: keySize, backgroundColor: bg }]}
                       onPress={() => !disabled && pressKey(key)}
                       activeOpacity={disabled ? 1 : 0.6}>
                       <ThemedText style={[
