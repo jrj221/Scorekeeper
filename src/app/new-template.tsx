@@ -22,6 +22,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { forms } from '@/styles/forms';
+import { getDealerHintText, getTurnHintText } from "@/utils/game";
 
 export default function NewTemplateScreen() {
 	const theme = useTheme();
@@ -142,7 +143,7 @@ export default function NewTemplateScreen() {
 						)}
 						<HapticButton style={[forms.toggleRow, inner]} onPress={() => setIsIndefinite(v => !v)}>
 							<ThemedText type="default">Endless Mode</ThemedText>
-							<View style={[forms.toggle, { backgroundColor: isIndefinite ? "#0077B6" : theme.backgroundElement }]}>
+							<View style={[forms.toggle, { backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement }]}>
 								<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
 							</View>
 						</HapticButton>
@@ -153,14 +154,14 @@ export default function NewTemplateScreen() {
 						<ThemedText style={forms.label} themeColor="textSecondary">WINNER</ThemedText>
 						<View style={forms.segmentRow}>
 							<HapticButton
-								style={[forms.segLeft, { backgroundColor: !rankByLowest ? "#0077B6" : inner.backgroundColor }]}
+								style={[forms.segLeft, { backgroundColor: !rankByLowest ? theme.accent : inner.backgroundColor }]}
 								onPress={() => setRankByLowest(false)}
 							>
 								<ThemedText type="small" style={{ color: !rankByLowest ? "#fff" : theme.text }}>Highest score</ThemedText>
 							</HapticButton>
 							<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
 							<HapticButton
-								style={[forms.segRight, { backgroundColor: rankByLowest ? "#0077B6" : inner.backgroundColor }]}
+								style={[forms.segRight, { backgroundColor: rankByLowest ? theme.accent : inner.backgroundColor }]}
 								onPress={() => setRankByLowest(true)}
 							>
 								<ThemedText type="small" style={{ color: rankByLowest ? "#fff" : theme.text }}>Lowest score</ThemedText>
@@ -176,7 +177,7 @@ export default function NewTemplateScreen() {
 						</View>
 						<HapticButton style={[forms.toggleRow, inner]} onPress={() => setDealerEnabled(v => !v)}>
 							<ThemedText type="default">Track dealer</ThemedText>
-							<View style={[forms.toggle, { backgroundColor: dealerEnabled ? "#0077B6" : theme.backgroundElement }]}>
+							<View style={[forms.toggle, { backgroundColor: dealerEnabled ? theme.accent : theme.backgroundElement }]}>
 								<View style={[forms.toggleThumb, dealerEnabled && forms.toggleThumbOn]} />
 							</View>
 						</HapticButton>
@@ -185,14 +186,14 @@ export default function NewTemplateScreen() {
 								<ThemedText style={forms.subLabel} themeColor="textSecondary">DEALER IS</ThemedText>
 								<View style={forms.segmentRow}>
 									<HapticButton
-										style={[forms.segLeft, { backgroundColor: dealerMode === "rotation" ? "#0077B6" : inner.backgroundColor }]}
+										style={[forms.segLeft, { backgroundColor: dealerMode === "rotation" ? theme.accent : inner.backgroundColor }]}
 										onPress={() => setDealerMode("rotation")}
 									>
 										<ThemedText type="small" style={{ color: dealerMode === "rotation" ? "#fff" : theme.text }}>Rotation</ThemedText>
 									</HapticButton>
 									<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
 									<HapticButton
-										style={[forms.segRight, { backgroundColor: dealerMode === "random" ? "#0077B6" : inner.backgroundColor }]}
+										style={[forms.segRight, { backgroundColor: dealerMode === "random" ? theme.accent : inner.backgroundColor }]}
 										onPress={() => setDealerMode("random")}
 									>
 										<ThemedText type="small" style={{ color: dealerMode === "random" ? "#fff" : theme.text }}>Random</ThemedText>
@@ -211,7 +212,7 @@ export default function NewTemplateScreen() {
 						</View>
 						<HapticButton style={[forms.toggleRow, inner]} onPress={() => setTurnOrderEnabled(v => !v)}>
 							<ThemedText type="default">Track who goes first</ThemedText>
-							<View style={[forms.toggle, { backgroundColor: turnOrderEnabled ? "#0077B6" : theme.backgroundElement }]}>
+							<View style={[forms.toggle, { backgroundColor: turnOrderEnabled ? theme.accent : theme.backgroundElement }]}>
 								<View style={[forms.toggleThumb, turnOrderEnabled && forms.toggleThumbOn]} />
 							</View>
 						</HapticButton>
@@ -222,7 +223,7 @@ export default function NewTemplateScreen() {
 									{dealerEnabled && (
 										<>
 											<HapticButton
-												style={[forms.segLeft, { backgroundColor: firstPlayerSetting === "left-of-dealer" ? "#0077B6" : inner.backgroundColor }]}
+												style={[forms.segLeft, { backgroundColor: firstPlayerSetting === "left-of-dealer" ? theme.accent : inner.backgroundColor }]}
 												onPress={() => setFirstPlayerSetting("left-of-dealer")}
 											>
 												<ThemedText type="small" style={{ color: firstPlayerSetting === "left-of-dealer" ? "#fff" : theme.text }}>Left of Dealer</ThemedText>
@@ -231,14 +232,14 @@ export default function NewTemplateScreen() {
 										</>
 									)}
 									<HapticButton
-										style={[dealerEnabled ? forms.segMid : forms.segLeft, { backgroundColor: firstPlayerSetting === "rotation" ? "#0077B6" : inner.backgroundColor }]}
+										style={[dealerEnabled ? forms.segMid : forms.segLeft, { backgroundColor: firstPlayerSetting === "rotation" ? theme.accent : inner.backgroundColor }]}
 										onPress={() => setFirstPlayerSetting("rotation")}
 									>
 										<ThemedText type="small" style={{ color: firstPlayerSetting === "rotation" ? "#fff" : theme.text }}>Rotation</ThemedText>
 									</HapticButton>
 									<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
 									<HapticButton
-										style={[forms.segRight, { backgroundColor: firstPlayerSetting === "random" ? "#0077B6" : inner.backgroundColor }]}
+										style={[forms.segRight, { backgroundColor: firstPlayerSetting === "random" ? theme.accent : inner.backgroundColor }]}
 										onPress={() => setFirstPlayerSetting("random")}
 									>
 										<ThemedText type="small" style={{ color: firstPlayerSetting === "random" ? "#fff" : theme.text }}>Random</ThemedText>
@@ -251,7 +252,7 @@ export default function NewTemplateScreen() {
 
 					{/* Create */}
 					<HapticButton
-						style={[shared.button, forms.createBtn, { backgroundColor: "#0077B6" }]}
+						style={[shared.button, forms.createBtn, { backgroundColor: theme.accent }]}
 						onPress={handleCreate}
 					>
 						<ThemedText type="smallBold" style={{ color: "#fff" }}>Create Template</ThemedText>

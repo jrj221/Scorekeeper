@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '@/hooks/use-theme';
 
 export function useUnsavedChangesScroll(
   isDirty: boolean,
   scrollRef: React.RefObject<ScrollView | null>,
 ) {
   const navigation = useNavigation();
+  const theme = useTheme();
   const [highlighted, setHighlighted] = useState(false);
 
   // Disable swipe-back gesture while dirty so the gesture can't start a
@@ -38,7 +40,7 @@ export function useUnsavedChangesScroll(
   const highlightStyle = {
     borderWidth: 2,
     borderRadius: 10,
-    borderColor: highlighted ? '#0077B6' : 'transparent',
+    borderColor: highlighted ? theme.accent : 'transparent',
     padding: 4,
   };
 

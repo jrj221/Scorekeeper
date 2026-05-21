@@ -1,8 +1,8 @@
 import * as Haptics from "expo-haptics";
-import { Stack, Tabs } from "expo-router";
+import { Stack, Tabs, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { type BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
-import { Pressable } from "react-native";
+import { Pressable, TouchableOpacity } from "react-native";
 
 import { useTheme } from "@/hooks/use-theme";
 
@@ -23,6 +23,7 @@ function HapticTabButton({ onPress, children, style, accessibilityState }: Botto
 
 export default function TabLayout() {
 	const theme = useTheme();
+	const router = useRouter();
 	return (
 		<>
 			{/* Hide the root Stack header; title is used as the back button label on child screens */}
@@ -37,9 +38,24 @@ export default function TabLayout() {
 						backgroundColor: theme.backgroundElement,
 						borderTopColor: theme.backgroundSelected,
 					},
-					tabBarActiveTintColor: "#0077B6",
+					tabBarActiveTintColor: theme.accent,
 					tabBarInactiveTintColor: theme.textSecondary,
 					tabBarButton: HapticTabButton,
+					headerRight: () => (
+						<TouchableOpacity
+							onPress={() => router.push("/settings")}
+							hitSlop={8}
+							activeOpacity={0.6}
+							style={{ paddingRight: 16 }}
+						>
+							<SymbolView
+								name="gearshape"
+								size={20}
+								tintColor={theme.textSecondary}
+								style={{ backgroundColor: "transparent" }}
+							/>
+						</TouchableOpacity>
+					),
 				}}
 			>
 				<Tabs.Screen

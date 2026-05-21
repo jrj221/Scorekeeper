@@ -23,7 +23,7 @@ export default function NewGameStartScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
           <HapticButton
-            style={[styles.freshBtn, { backgroundColor: '#0077B6' }]}
+            style={[styles.freshBtn, { backgroundColor: theme.accent }]}
             onPress={() => router.replace('/new-game')}
           >
             <ThemedText type="default" style={{ color: '#fff', fontWeight: '600' }}>Start Fresh</ThemedText>
@@ -57,7 +57,7 @@ export default function NewGameStartScreen() {
                         </ThemedText>
                       ) : null}
                     </View>
-                    <ThemedText type="small" style={{ color: '#0077B6' }}>→</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.accent }}>→</ThemedText>
                   </HapticButton>
                 ))}
               </View>

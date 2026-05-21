@@ -42,7 +42,7 @@ export function AddPlayerModal({ visible, playerName, onChangeName, onAdd, onCan
                   <ThemedText type="small">Cancel</ThemedText>
                 </HapticButton>
                 <HapticButton
-                  style={[shared.button, { backgroundColor: '#0077B6' }]}
+                  style={[shared.button, { backgroundColor: theme.accent }]}
                   onPress={onAdd}
                   disabled={!playerName.trim()}>
                   <ThemedText type="smallBold" style={{ color: '#fff' }}>

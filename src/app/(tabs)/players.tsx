@@ -9,9 +9,8 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  TextInputView,
-	View,
-	TextInput
+  TextInput,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -74,7 +73,7 @@ export default function PlayersScreen() {
       <View style={styles.groupsHeader}>
         <ThemedText style={styles.sectionLabel} themeColor="textSecondary">GROUPS</ThemedText>
         <HapticButton onPress={() => router.push('/new-group')}>
-          <ThemedText type="small" style={{ color: '#0077B6' }}>+ New Group</ThemedText>
+          <ThemedText type="small" style={{ color: theme.accent }}>+ New Group</ThemedText>
         </HapticButton>
       </View>
 
@@ -150,7 +149,7 @@ export default function PlayersScreen() {
         />
 
         <HapticButton
-          style={[homeStyles.fab, { backgroundColor: '#0077B6' }]}
+          style={[homeStyles.fab, { backgroundColor: theme.accent }]}
           onPress={() => setShowAddDialog(true)}
         >
           <ThemedText type="subtitle" style={{ color: '#fff', lineHeight: 32 }}>+</ThemedText>
@@ -193,7 +192,7 @@ export default function PlayersScreen() {
                 <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
               </HapticButton>
               <HapticButton
-                style={[shared.button, styles.dialogAdd, { backgroundColor: nameInput.trim() ? '#0077B6' : theme.backgroundSelected }]}
+                style={[shared.button, styles.dialogAdd, { backgroundColor: nameInput.trim() ? theme.accent : theme.backgroundSelected }]}
                 onPress={handleAdd}
                 disabled={!nameInput.trim()}
               >

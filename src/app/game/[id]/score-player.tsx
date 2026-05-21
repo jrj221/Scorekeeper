@@ -24,7 +24,6 @@ const ROWS = [
 	["±", "0", "⌫"],
 ] as const;
 
-const CURRENT_TINT = "#0077B6";
 
 export default function ScorePlayerScreen() {
 	const { id, playerId, roundIndex: roundIndexStr } = useLocalSearchParams<{
@@ -34,6 +33,7 @@ export default function ScorePlayerScreen() {
 	}>();
 	const router = useRouter();
 	const theme = useTheme();
+	const CURRENT_TINT = theme.accent;
 	const insets = useSafeAreaInsets();
 	const { game, updateScore } = useGame(id);
 
@@ -114,7 +114,7 @@ export default function ScorePlayerScreen() {
 	};
 
 	const hasValue = numStr.length > 0;
-	const displayColor = hasValue && negative ? "#4CABD4" : theme.text;
+	const displayColor = hasValue && negative ? theme.negative : theme.text;
 	const displayText = hasValue ? `${negative ? "−" : ""}${numStr}` : "–";
 
 	return (

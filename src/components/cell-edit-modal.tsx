@@ -118,7 +118,7 @@ export function CellEditModal({
   };
 
   const hasValue = numStr.length > 0;
-  const displayColor = hasValue && negative ? '#4CABD4' : theme.text;
+  const displayColor = hasValue && negative ? theme.negative : theme.text;
   const displayText = hasValue ? `${negative ? '−' : ''}${numStr}` : '–';
 
   return (
@@ -148,7 +148,7 @@ export function CellEditModal({
                   const bg = disabled
                     ? theme.backgroundElement
                     : signActive
-                    ? '#0077B6'
+                    ? theme.accent
                     : isSign || isBack
                     ? theme.backgroundSelected
                     : theme.background;
@@ -171,7 +171,7 @@ export function CellEditModal({
             ))}
           </View>
 
-          <HapticButton style={[styles.doneBtn, { backgroundColor: '#0077B6' }]} onPress={handleDone}>
+          <HapticButton style={[styles.doneBtn, { backgroundColor: theme.accent }]} onPress={handleDone}>
             <ThemedText type="smallBold" style={{ color: '#fff', fontSize: 16 }}>Done</ThemedText>
           </HapticButton>
 

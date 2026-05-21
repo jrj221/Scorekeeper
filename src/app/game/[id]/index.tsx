@@ -21,12 +21,12 @@ const ROUND_LABEL_W = 48;
 const ROW_H = 44;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
-const CURRENT_TINT = "#0077B6";
 
 export default function GameScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const theme = useTheme();
+	const CURRENT_TINT = theme.accent;
 	const { game, endGame, updateScore, advanceRound, totals, sortedPlayers, visibleRoundCount, currentRoundIndex } =
 		useGame(id);
 
@@ -115,7 +115,7 @@ export default function GameScreen() {
 				{!finished && (
 					<View style={[styles.viewToggle, { backgroundColor: theme.backgroundElement }]}>
 						<HapticButton
-							style={[styles.viewTab, viewMode === "scores" && styles.viewTabActive]}
+							style={[styles.viewTab, viewMode === "scores" && { backgroundColor: CURRENT_TINT }]}
 							onPress={() => setViewMode("scores")}
 						>
 							<ThemedText
@@ -126,7 +126,7 @@ export default function GameScreen() {
 							</ThemedText>
 						</HapticButton>
 						<HapticButton
-							style={[styles.viewTab, viewMode === "turns" && styles.viewTabActive]}
+							style={[styles.viewTab, viewMode === "turns" && { backgroundColor: CURRENT_TINT }]}
 							onPress={() => setViewMode("turns")}
 						>
 							<ThemedText
@@ -202,7 +202,7 @@ export default function GameScreen() {
 															{p.name}
 														</ThemedText>
 														{hasScore && (
-															<ThemedText style={styles.turnCheckmark}>✓</ThemedText>
+															<ThemedText style={[styles.turnCheckmark, { color: CURRENT_TINT }]}>✓</ThemedText>
 														)}
 														{isDealer && (
 															<View
@@ -238,7 +238,7 @@ export default function GameScreen() {
 																				{
 																					color:
 																						roundScore < 0
-																							? "#C05050"
+																							? theme.danger
 																							: theme.text },
 																			]}
 																		>
@@ -564,8 +564,6 @@ const styles = StyleSheet.create({
 		paddingVertical: Spacing.one + 2,
 		margin: 2,
 		borderRadius: Spacing.two - 3 },
-	viewTabActive: {
-		backgroundColor: "#0077B6" },
 	// Scorecard
 	labelCell: {
 		alignItems: "center",
@@ -608,8 +606,7 @@ const styles = StyleSheet.create({
 		marginBottom: Spacing.two,
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth },
-	endGameText: {
-		color: "#C05050" },
+	endGameText: {},
 	// Current Turn view
 	turnList: {
 		borderRadius: Spacing.two,
@@ -673,7 +670,6 @@ const styles = StyleSheet.create({
 		marginTop: Spacing.two },
 	turnCheckmark: {
 		fontSize: 16,
-		color: CURRENT_TINT,
 		fontWeight: "700" },
 	goesFirstLabel: {
 		fontSize: 14,

@@ -6,9 +6,8 @@ import {
   FlatList,
   Modal,
   StyleSheet,
-  TextInputView,
-	View,
-	TextInput
+  TextInput,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -147,7 +146,7 @@ if (!player) {
             style={[styles.actionBtn, { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
             onPress={confirmDeletePlayer}
           >
-            <ThemedText type="small" style={{ color: '#C05050' }}>Delete Player</ThemedText>
+            <ThemedText type="small" style={{ color: theme.danger }}>Delete Player</ThemedText>
           </HapticButton>
         </View>
       </SafeAreaView>
@@ -186,7 +185,7 @@ if (!player) {
                 <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
               </HapticButton>
               <HapticButton
-                style={[shared.button, styles.dialogSave, { backgroundColor: renameInput.trim() ? '#0077B6' : theme.backgroundSelected }]}
+                style={[shared.button, styles.dialogSave, { backgroundColor: renameInput.trim() ? theme.accent : theme.backgroundSelected }]}
                 onPress={commitRename}
                 disabled={!renameInput.trim()}
               >

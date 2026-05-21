@@ -6,9 +6,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  TextInputView,
-	View,
-	TextInput
+  TextInput,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -109,8 +108,8 @@ export default function EditGroupScreen() {
                 <ThemedText type="default">{item.name}</ThemedText>
                 <View style={[
                   styles.checkbox,
-                  { borderColor: selected ? '#0077B6' : theme.backgroundSelected },
-                  selected && { backgroundColor: '#0077B6' },
+                  { borderColor: selected ? theme.accent : theme.backgroundSelected },
+                  selected && { backgroundColor: theme.accent },
                 ]}>
                   {selected && <ThemedText style={styles.checkmark}>✓</ThemedText>}
                 </View>
@@ -126,7 +125,7 @@ export default function EditGroupScreen() {
                 <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
               </HapticButton>
               <HapticButton
-                style={[shared.button, styles.saveBtn, { backgroundColor: canSave ? '#0077B6' : theme.backgroundSelected }]}
+                style={[shared.button, styles.saveBtn, { backgroundColor: canSave ? theme.accent : theme.backgroundSelected }]}
                 onPress={handleSave}
                 disabled={!canSave}
               >

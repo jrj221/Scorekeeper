@@ -42,7 +42,7 @@ export function NewGameModal({ visible, gameName, onChangeName, onCreate, onCanc
                   <ThemedText type="small">Cancel</ThemedText>
                 </HapticButton>
                 <HapticButton
-                  style={[shared.button, { backgroundColor: '#0077B6' }]}
+                  style={[shared.button, { backgroundColor: theme.accent }]}
                   onPress={onCreate}
                   disabled={!gameName.trim()}>
                   <ThemedText type="smallBold" style={{ color: '#fff' }}>

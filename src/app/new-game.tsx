@@ -7,9 +7,8 @@ import {
 	Platform,
 	ScrollView,
 	StyleSheet,
-	TextInputView,
+	TextInput,
 	View,
-	TextInput
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,6 +24,7 @@ import { usePlayerSearch } from "@/hooks/use-player-search";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { HapticButton } from "@/components/haptic-button";
 import { forms } from '@/styles/forms';
+import { getDealerHintText, getTurnHintText } from "@/utils/game";
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 
@@ -229,13 +229,13 @@ export default function NewGameScreen() {
 							{
 								backgroundColor: theme.backgroundElement,
 								borderColor:
-									playersError && players.length === 0 ? "#C05050" : theme.backgroundSelected,
+									playersError && players.length === 0 ? theme.danger : theme.backgroundSelected,
 								borderWidth: playersError && players.length === 0 ? 1.5 : StyleSheet.hairlineWidth },
 						]}
 					>
 						<View style={forms.labelRow}>
 							<ThemedText
-								style={[forms.label, playersError && { color: "#C05050" }]}
+								style={[forms.label, playersError && { color: theme.danger }]}
 								themeColor={playersError ? undefined : "textSecondary"}
 							>
 								PLAYERS
@@ -281,10 +281,10 @@ export default function NewGameScreen() {
 								]}
 								onPress={() => toggleDropdown("player")}
 							>
-								<ThemedText type="small" style={{ color: "#0077B6" }}>
+								<ThemedText type="small" style={{ color: theme.accent }}>
 									Add Player
 								</ThemedText>
-								<ThemedText style={forms.chevron}>
+								<ThemedText style={[forms.chevron, { color: theme.accent }]}>
 									{activeDropdown === "player" ? "▴" : "▾"}
 								</ThemedText>
 							</HapticButton>
@@ -297,10 +297,10 @@ export default function NewGameScreen() {
 									]}
 									onPress={() => toggleDropdown("group")}
 								>
-									<ThemedText type="small" style={{ color: "#0077B6" }}>
+									<ThemedText type="small" style={{ color: theme.accent }}>
 										Add Group
 									</ThemedText>
-									<ThemedText style={forms.chevron}>
+									<ThemedText style={[forms.chevron, { color: theme.accent }]}>
 										{activeDropdown === "group" ? "▴" : "▾"}
 									</ThemedText>
 								</HapticButton>
@@ -344,7 +344,7 @@ export default function NewGameScreen() {
 												onPress={() => addExistingPlayer(gp.id, gp.name)}
 											>
 												<ThemedText type="default">{gp.name}</ThemedText>
-												<ThemedText type="small" style={{ color: "#0077B6" }}>
+												<ThemedText type="small" style={{ color: theme.accent }}>
 													+ Add
 												</ThemedText>
 											</HapticButton>
@@ -420,7 +420,7 @@ export default function NewGameScreen() {
 														</ThemedText>
 													) : null}
 												</View>
-												<ThemedText type="small" style={{ color: "#0077B6" }}>
+												<ThemedText type="small" style={{ color: theme.accent }}>
 													+ Add
 												</ThemedText>
 											</HapticButton>
@@ -454,7 +454,7 @@ export default function NewGameScreen() {
 							<View
 								style={[
 									forms.toggle,
-									{ backgroundColor: isIndefinite ? "#0077B6" : theme.backgroundElement },
+									{ backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement },
 								]}
 							>
 								<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
@@ -471,7 +471,7 @@ export default function NewGameScreen() {
 							<HapticButton
 								style={[
 									forms.segLeft,
-									{ backgroundColor: !rankByLowest ? "#0077B6" : theme.backgroundSelected },
+									{ backgroundColor: !rankByLowest ? theme.accent : theme.backgroundSelected },
 								]}
 								onPress={() => setRankByLowest(false)}
 							>
@@ -482,7 +482,7 @@ export default function NewGameScreen() {
 							<HapticButton
 								style={[
 									forms.segRight,
-									{ backgroundColor: rankByLowest ? "#0077B6" : theme.backgroundSelected },
+									{ backgroundColor: rankByLowest ? theme.accent : theme.backgroundSelected },
 								]}
 								onPress={() => setRankByLowest(true)}
 							>
@@ -515,7 +515,7 @@ export default function NewGameScreen() {
 							<View
 								style={[
 									forms.toggle,
-									{ backgroundColor: dealerEnabled ? "#0077B6" : theme.backgroundElement },
+									{ backgroundColor: dealerEnabled ? theme.accent : theme.backgroundElement },
 								]}
 							>
 								<View style={[forms.toggleThumb, dealerEnabled && forms.toggleThumbOn]} />
@@ -533,7 +533,7 @@ export default function NewGameScreen() {
 											forms.segLeft,
 											{
 												backgroundColor:
-													dealerMode === "rotation" ? "#0077B6" : theme.backgroundSelected },
+													dealerMode === "rotation" ? theme.accent : theme.backgroundSelected },
 										]}
 										onPress={() => {
 											setDealerMode("rotation");
@@ -553,7 +553,7 @@ export default function NewGameScreen() {
 											forms.segMid,
 											{
 												backgroundColor:
-													dealerMode === "random" ? "#0077B6" : theme.backgroundSelected },
+													dealerMode === "random" ? theme.accent : theme.backgroundSelected },
 										]}
 										onPress={() => setDealerMode("random")}
 									>
@@ -570,7 +570,7 @@ export default function NewGameScreen() {
 											forms.segRight,
 											{
 												backgroundColor:
-													dealerMode === "fixed" ? "#0077B6" : theme.backgroundSelected },
+													dealerMode === "fixed" ? theme.accent : theme.backgroundSelected },
 										]}
 										onPress={() => {
 											setDealerMode("fixed");
@@ -595,13 +595,13 @@ export default function NewGameScreen() {
 											]}
 											onPress={() => toggleDropdown("fixedDealer")}
 										>
-											<ThemedText type="small" style={{ color: "#0077B6" }}>
+											<ThemedText type="small" style={{ color: theme.accent }}>
 												{fixedDealerId
 													? (players.find((p) => p.id === fixedDealerId)?.name ??
 														"Pick Dealer")
 													: "Pick Dealer"}
 											</ThemedText>
-											<ThemedText style={forms.chevron}>
+											<ThemedText style={[forms.chevron, { color: theme.accent }]}>
 												{activeDropdown === "fixedDealer" ? "▴" : "▾"}
 											</ThemedText>
 										</HapticButton>
@@ -638,7 +638,7 @@ export default function NewGameScreen() {
 														>
 															<ThemedText type="default">{p.name}</ThemedText>
 															{fixedDealerId === p.id && (
-																<ThemedText type="small" style={{ color: "#0077B6" }}>
+																<ThemedText type="small" style={{ color: theme.accent }}>
 																	✓
 																</ThemedText>
 															)}
@@ -676,7 +676,7 @@ export default function NewGameScreen() {
 							<View
 								style={[
 									forms.toggle,
-									{ backgroundColor: turnOrderEnabled ? "#0077B6" : theme.backgroundElement },
+									{ backgroundColor: turnOrderEnabled ? theme.accent : theme.backgroundElement },
 								]}
 							>
 								<View style={[forms.toggleThumb, turnOrderEnabled && forms.toggleThumbOn]} />
@@ -694,7 +694,7 @@ export default function NewGameScreen() {
 													{
 														backgroundColor:
 															firstPlayerMode === "left-of-dealer"
-																? "#0077B6"
+																? theme.accent
 																: theme.backgroundSelected },
 												]}
 												onPress={() => setFirstPlayerMode("left-of-dealer")}
@@ -717,7 +717,7 @@ export default function NewGameScreen() {
 											{
 												backgroundColor:
 													firstPlayerMode === "rotation"
-														? "#0077B6"
+														? theme.accent
 														: theme.backgroundSelected },
 										]}
 										onPress={() => {
@@ -739,7 +739,7 @@ export default function NewGameScreen() {
 											forms.segRight,
 											{
 												backgroundColor:
-													firstPlayerMode === "random" ? "#0077B6" : theme.backgroundSelected },
+													firstPlayerMode === "random" ? theme.accent : theme.backgroundSelected },
 										]}
 										onPress={() => setFirstPlayerMode("random")}
 									>
@@ -761,13 +761,13 @@ export default function NewGameScreen() {
 											]}
 											onPress={() => toggleDropdown("firstPlayer")}
 										>
-											<ThemedText type="small" style={{ color: "#0077B6" }}>
+											<ThemedText type="small" style={{ color: theme.accent }}>
 												{firstPlayerSpecificId
 													? (players.find((p) => p.id === firstPlayerSpecificId)?.name ??
 														"Pick Player")
 													: "Pick Player"}
 											</ThemedText>
-											<ThemedText style={forms.chevron}>
+											<ThemedText style={[forms.chevron, { color: theme.accent }]}>
 												{activeDropdown === "firstPlayer" ? "▴" : "▾"}
 											</ThemedText>
 										</HapticButton>
@@ -804,7 +804,7 @@ export default function NewGameScreen() {
 														>
 															<ThemedText type="default">{p.name}</ThemedText>
 															{firstPlayerSpecificId === p.id && (
-																<ThemedText type="small" style={{ color: "#0077B6" }}>
+																<ThemedText type="small" style={{ color: theme.accent }}>
 																	✓
 																</ThemedText>
 															)}
@@ -822,7 +822,7 @@ export default function NewGameScreen() {
 
 					{/* Create */}
 					<HapticButton
-						style={[shared.button, forms.createBtn, { backgroundColor: "#0077B6" }]}
+						style={[shared.button, forms.createBtn, { backgroundColor: theme.accent }]}
 						onPress={handleCreate}
 					>
 						<ThemedText type="smallBold" style={{ color: "#fff" }}>

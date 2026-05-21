@@ -71,7 +71,7 @@ export default function TemplatesScreen() {
         />
 
         <HapticButton
-          style={[homeStyles.fab, { backgroundColor: '#0077B6' }]}
+          style={[homeStyles.fab, { backgroundColor: theme.accent }]}
           onPress={() => router.push('/new-template')}
         >
           <ThemedText type="subtitle" style={{ color: '#fff', lineHeight: 32 }}>+</ThemedText>

@@ -21,7 +21,6 @@ import { useUnsavedChangesScroll } from "@/hooks/use-unsaved-changes-scroll";
 import { forms } from "@/styles/forms";
 import { shared } from "@/styles/shared";
 
-const TINT = "#0077B6";
 type Section = "winCondition" | "gameLength" | "players" | "dealer" | "turns" | null;
 type ActiveDropdown = "player" | "fixedDealer" | "firstPlayer" | null;
 
@@ -30,6 +29,7 @@ export default function GameInfoScreen() {
 	const { getGame, updateGame, globalPlayers } = useGamesContext();
 	const theme = useTheme();
 	const router = useRouter();
+	const TINT = theme.accent;
 	const game = getGame(id);
 
 	const { draft, patch, isDirty, save: saveDraft, reset: resetDraft } = useDraft(game, updateGame);
@@ -364,7 +364,7 @@ export default function GameInfoScreen() {
 									<ThemedText type="small" style={{ color: TINT }}>
 										Add Player
 									</ThemedText>
-									<ThemedText style={forms.chevron}>
+									<ThemedText style={[forms.chevron, { color: theme.accent }]}>
 										{activeDropdown === "player" ? "▴" : "▾"}
 									</ThemedText>
 								</HapticButton>
@@ -567,7 +567,7 @@ export default function GameInfoScreen() {
 																"Pick Dealer")
 															: "Pick Dealer"}
 													</ThemedText>
-													<ThemedText style={forms.chevron}>
+													<ThemedText style={[forms.chevron, { color: theme.accent }]}>
 														{activeDropdown === "fixedDealer" ? "▴" : "▾"}
 													</ThemedText>
 												</HapticButton>
@@ -762,7 +762,7 @@ export default function GameInfoScreen() {
 														{players.find((p) => p.id === firstPlayerId)?.name ??
 															"Pick Player"}
 													</ThemedText>
-													<ThemedText style={forms.chevron}>
+													<ThemedText style={[forms.chevron, { color: theme.accent }]}>
 														{activeDropdown === "firstPlayer" ? "▴" : "▾"}
 													</ThemedText>
 												</HapticButton>
@@ -872,7 +872,7 @@ export default function GameInfoScreen() {
 
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
-	hintError: { fontSize: 12, color: "#C05050" },
+	hintError: { fontSize: 12, color: '#C05050' },
 	actionsContainer: {
 		gap: Spacing.two,
 		padding: Spacing.one,

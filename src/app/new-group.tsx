@@ -92,8 +92,8 @@ export default function NewGroupScreen() {
                 <ThemedText type="default">{item.name}</ThemedText>
                 <View style={[
                   styles.checkbox,
-                  { borderColor: selected ? '#0077B6' : theme.backgroundSelected },
-                  selected && { backgroundColor: '#0077B6' },
+                  { borderColor: selected ? theme.accent : theme.backgroundSelected },
+                  selected && { backgroundColor: theme.accent },
                 ]}>
                   {selected && <ThemedText style={styles.checkmark}>✓</ThemedText>}
                 </View>
@@ -102,7 +102,7 @@ export default function NewGroupScreen() {
           }}
           ListFooterComponent={
             <HapticButton
-              style={[shared.button, forms.createBtn, { backgroundColor: canCreate ? '#0077B6' : theme.backgroundElement }]}
+              style={[shared.button, forms.createBtn, { backgroundColor: canCreate ? theme.accent : theme.backgroundElement }]}
               onPress={handleCreate}
               disabled={!canCreate}
             >

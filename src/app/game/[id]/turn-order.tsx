@@ -79,7 +79,7 @@ export default function TurnOrderScreen() {
 
 					<View style={styles.footer}>
 						<HapticButton
-							style={[shared.button, styles.saveBtn, { backgroundColor: "#0077B6" }]}
+							style={[shared.button, styles.saveBtn, { backgroundColor: theme.accent }]}
 							onPress={handleSave}
 						>
 							<ThemedText type="smallBold" style={{ color: "#fff" }}>

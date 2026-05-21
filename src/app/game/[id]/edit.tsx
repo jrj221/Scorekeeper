@@ -220,8 +220,8 @@ export default function EditGameScreen() {
 								]}
 								onPress={() => toggleDropdown('player')}
 							>
-								<ThemedText type="small" style={{ color: '#0077B6' }}>Add Player</ThemedText>
-								<ThemedText style={forms.chevron}>{activeDropdown === 'player' ? '▴' : '▾'}</ThemedText>
+								<ThemedText type="small" style={{ color: theme.accent }}>Add Player</ThemedText>
+								<ThemedText style={[forms.chevron, { color: theme.accent }]}>{activeDropdown === 'player' ? '▴' : '▾'}</ThemedText>
 							</HapticButton>
 
 							{groups.length > 0 && (
@@ -233,8 +233,8 @@ export default function EditGameScreen() {
 									]}
 									onPress={() => toggleDropdown('group')}
 								>
-									<ThemedText type="small" style={{ color: '#0077B6' }}>Add Group</ThemedText>
-									<ThemedText style={forms.chevron}>{activeDropdown === 'group' ? '▴' : '▾'}</ThemedText>
+									<ThemedText type="small" style={{ color: theme.accent }}>Add Group</ThemedText>
+									<ThemedText style={[forms.chevron, { color: theme.accent }]}>{activeDropdown === 'group' ? '▴' : '▾'}</ThemedText>
 								</HapticButton>
 							)}
 						</View>
@@ -271,7 +271,7 @@ export default function EditGameScreen() {
 												onPress={() => addExistingPlayer(gp.id, gp.name)}
 											>
 												<ThemedText type="default">{gp.name}</ThemedText>
-												<ThemedText type="small" style={{ color: '#0077B6' }}>+ Add</ThemedText>
+												<ThemedText type="small" style={{ color: theme.accent }}>+ Add</ThemedText>
 											</HapticButton>
 										))}
 									</View>
@@ -324,7 +324,7 @@ export default function EditGameScreen() {
 														</ThemedText>
 													) : null}
 												</View>
-												<ThemedText type="small" style={{ color: '#0077B6' }}>+ Add</ThemedText>
+												<ThemedText type="small" style={{ color: theme.accent }}>+ Add</ThemedText>
 											</HapticButton>
 										);
 									})
@@ -338,13 +338,13 @@ export default function EditGameScreen() {
 						<ThemedText style={forms.label} themeColor="textSecondary">ROUNDS</ThemedText>
 						<View style={forms.segmentRow}>
 							<HapticButton
-								style={[forms.segLeft, { backgroundColor: isIndefinite ? '#0077B6' : theme.backgroundElement }]}
+								style={[forms.segLeft, { backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement }]}
 								onPress={() => setIsIndefinite(true)}
 							>
 								<ThemedText type="small" style={{ color: isIndefinite ? '#fff' : theme.text }}>Indefinite</ThemedText>
 							</HapticButton>
 							<HapticButton
-								style={[forms.segRight, { backgroundColor: !isIndefinite ? '#0077B6' : theme.backgroundElement }]}
+								style={[forms.segRight, { backgroundColor: !isIndefinite ? theme.accent : theme.backgroundElement }]}
 								onPress={() => setIsIndefinite(false)}
 							>
 								<ThemedText type="small" style={{ color: !isIndefinite ? '#fff' : theme.text }}>Set number</ThemedText>
@@ -367,13 +367,13 @@ export default function EditGameScreen() {
 						<ThemedText style={forms.label} themeColor="textSecondary">WINNER</ThemedText>
 						<View style={forms.segmentRow}>
 							<HapticButton
-								style={[forms.segLeft, { backgroundColor: !rankByLowest ? '#0077B6' : theme.backgroundElement }]}
+								style={[forms.segLeft, { backgroundColor: !rankByLowest ? theme.accent : theme.backgroundElement }]}
 								onPress={() => setRankByLowest(false)}
 							>
 								<ThemedText type="small" style={{ color: !rankByLowest ? '#fff' : theme.text }}>Highest score</ThemedText>
 							</HapticButton>
 							<HapticButton
-								style={[forms.segRight, { backgroundColor: rankByLowest ? '#0077B6' : theme.backgroundElement }]}
+								style={[forms.segRight, { backgroundColor: rankByLowest ? theme.accent : theme.backgroundElement }]}
 								onPress={() => setRankByLowest(true)}
 							>
 								<ThemedText type="small" style={{ color: rankByLowest ? '#fff' : theme.text }}>Lowest score</ThemedText>
@@ -383,7 +383,7 @@ export default function EditGameScreen() {
 
 					{/* Save */}
 					<HapticButton
-						style={[shared.button, styles.saveBtn, { backgroundColor: canSave ? '#0077B6' : theme.backgroundElement }]}
+						style={[shared.button, styles.saveBtn, { backgroundColor: canSave ? theme.accent : theme.backgroundElement }]}
 						onPress={handleSave}
 						disabled={!canSave}
 					>

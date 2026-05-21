@@ -72,7 +72,7 @@ export const forms = StyleSheet.create({
     gap: Spacing.one,
   },
   dropdownTriggerActive: { opacity: 0.75 },
-  chevron: { fontSize: 18, color: '#0077B6', lineHeight: 22 },
+  chevron: { fontSize: 18, lineHeight: 22 },
   dropdown: {
     borderRadius: Spacing.two,
     borderWidth: StyleSheet.hairlineWidth,

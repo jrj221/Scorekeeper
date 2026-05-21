@@ -3,20 +3,19 @@ import { Alert, SectionList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GameCard } from "@/components/game-card";
+import { HapticButton } from "@/components/haptic-button";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { DEV_TOOLS_ENABLED } from "@/constants/dev";
 import { Spacing } from "@/constants/theme";
 import { Game, useGamesContext } from "@/context/games-context";
 import { useGames } from "@/hooks/use-games";
 import { useTheme } from "@/hooks/use-theme";
 import { homeStyles } from "@/styles/home";
 import { shared } from "@/styles/shared";
-import { HapticButton } from "@/components/haptic-button";
 
 export default function HomeScreen() {
 	const { games, handleOpen, deleteGame } = useGames();
-	const { templates, seedData, resetData } = useGamesContext();
+	const { templates } = useGamesContext();
 	const theme = useTheme();
 	const router = useRouter();
 
@@ -29,9 +28,9 @@ export default function HomeScreen() {
 
 	const handleFabPress = () => {
 		if (templates.length === 0) {
-			router.push('/new-game');
+			router.push("/new-game");
 		} else {
-			router.push('/new-game-start');
+			router.push("/new-game-start");
 		}
 	};
 
@@ -60,13 +59,16 @@ export default function HomeScreen() {
 					<SectionList
 						sections={sections}
 						keyExtractor={(g) => g.id}
+						style={{ flex: 1 }}
 						contentContainerStyle={homeStyles.list}
 						stickySectionHeadersEnabled={false}
 						renderSectionHeader={({ section }) => (
-							<View style={[
-								styles.sectionHeader,
-								sections[0]?.title !== section.title && styles.sectionHeaderGap,
-							]}>
+							<View
+								style={[
+									styles.sectionHeader,
+									sections[0]?.title !== section.title && styles.sectionHeaderGap,
+								]}
+							>
 								<ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>
 									{section.title.toUpperCase()}
 								</ThemedText>
@@ -83,30 +85,10 @@ export default function HomeScreen() {
 					/>
 				)}
 
-				{DEV_TOOLS_ENABLED && (
-					<View style={styles.devBar}>
-						<HapticButton
-							style={[styles.devBtn, { backgroundColor: theme.backgroundElement }]}
-							onPress={seedData}
-						>
-							<ThemedText type="small" style={{ color: '#0077B6' }}>Seed Data</ThemedText>
-						</HapticButton>
-						<HapticButton
-							style={[styles.devBtn, { backgroundColor: theme.backgroundElement }]}
-							onPress={() =>
-								Alert.alert('Reset All Data', 'Delete all games, players, and templates?', [
-									{ text: 'Cancel', style: 'cancel' },
-									{ text: 'Reset', style: 'destructive', onPress: resetData },
-								])
-							}
-						>
-							<ThemedText type="small" style={{ color: '#C05050' }}>Reset</ThemedText>
-						</HapticButton>
-					</View>
-				)}
-
-				<HapticButton style={[homeStyles.fab, { backgroundColor: "#0077B6" }]} onPress={handleFabPress}>
-					<ThemedText type="subtitle" style={{ color: "#fff", lineHeight: 32 }}>+</ThemedText>
+				<HapticButton style={[homeStyles.fab, { backgroundColor: theme.accent }]} onPress={handleFabPress}>
+					<ThemedText type="subtitle" style={{ color: "#fff", lineHeight: 32 }}>
+						+
+					</ThemedText>
 				</HapticButton>
 			</SafeAreaView>
 		</ThemedView>
@@ -115,18 +97,14 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
 	sectionHeader: {
-		paddingBottom: Spacing.one },
+		paddingBottom: Spacing.one,
+	},
 	sectionHeaderGap: {
-		marginTop: Spacing.three },
+		marginTop: Spacing.three,
+	},
 	sectionTitle: {
 		fontSize: 11,
 		fontWeight: "600",
-		letterSpacing: 0.8 },
-	devBar: {
-		flexDirection: 'row',
-		gap: Spacing.two,
-		paddingBottom: Spacing.two },
-	devBtn: {
-		borderRadius: Spacing.two,
-		paddingVertical: Spacing.one,
-		paddingHorizontal: Spacing.two } });
+		letterSpacing: 0.8,
+	},
+});

@@ -27,13 +27,13 @@ import { shared } from "@/styles/shared";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { forms } from '@/styles/forms';
 
-const TINT = "#0077B6";
 type Section = "winCondition" | "gameLength" | "dealer" | "turns" | null;
 
 export default function TemplateScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { getTemplate, updateTemplate } = useGamesContext();
 	const theme = useTheme();
+	const TINT = theme.accent;
 	const router = useRouter();
 	const template = getTemplate(id);
 

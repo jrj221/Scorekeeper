@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ColorSchemeProvider } from "@/context/color-scheme-context";
 import { GamesProvider } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -68,7 +69,8 @@ function CustomHeader({ options, back, route }: { options: any; back?: { title: 
 	);
 }
 
-export default function RootLayout() {
+// Inner shell — can safely call useTheme() because it renders inside ColorSchemeProvider
+function AppShell() {
 	const theme = useTheme();
 
 	useEffect(() => {
@@ -83,12 +85,21 @@ export default function RootLayout() {
 						headerShadowVisible: false,
 						contentStyle: { backgroundColor: theme.background },
 						header: ({ options, back, route }) => (
-							<CustomHeader options={options} back={back} route={route} />
+							<CustomHeader options={options} back={back as any} route={route} />
 						),
 					}}
 				/>
 			</View>
 		</GamesProvider>
+	);
+}
+
+// Outer shell — provides context before any useTheme() calls
+export default function RootLayout() {
+	return (
+		<ColorSchemeProvider>
+			<AppShell />
+		</ColorSchemeProvider>
 	);
 }
 
