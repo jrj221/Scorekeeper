@@ -21,6 +21,7 @@ export type Game = {
   dealerMode?: DealerMode;
   fixedDealerId?: string;
   firstPlayerId?: string;
+  firstPlayerMode?: 'left-of-dealer';
   turnOrder?: string[];
   currentRound?: number;
 };
@@ -42,7 +43,7 @@ export type PlayerGroup = {
   playerIds: string[];
 };
 
-export type DealerMode = 'fixed' | 'random' | 'right-of-first';
+export type DealerMode = 'fixed' | 'random' | 'rotation';
 
 export type CreateGameOpts = {
   name: string;
@@ -54,6 +55,7 @@ export type CreateGameOpts = {
   dealerMode?: DealerMode;
   fixedDealerId?: string;
   firstPlayerId?: string;
+  firstPlayerMode?: 'left-of-dealer';
   turnOrder?: string[];
 };
 
@@ -126,6 +128,7 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
       dealerMode: opts.dealerMode,
       fixedDealerId: opts.fixedDealerId,
       firstPlayerId: opts.firstPlayerId,
+      firstPlayerMode: opts.firstPlayerMode,
       turnOrder: opts.turnOrder,
     }, ...prev]);
     return id;

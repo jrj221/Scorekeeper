@@ -22,7 +22,7 @@ export default function NewGameStartScreen() {
 
           <TouchableOpacity
             style={[styles.freshBtn, { backgroundColor: '#0077B6' }]}
-            onPress={() => router.push('/new-game')}
+            onPress={() => router.replace('/new-game')}
           >
             <ThemedText type="default" style={{ color: '#fff', fontWeight: '600' }}>Start Fresh</ThemedText>
             <ThemedText type="small" style={{ color: 'rgba(255,255,255,0.7)' }}>Create a new game from scratch</ThemedText>
@@ -36,7 +36,7 @@ export default function NewGameStartScreen() {
                   <TouchableOpacity
                     key={t.id}
                     style={[styles.templateCard, { backgroundColor: theme.backgroundElement }]}
-                    onPress={() => router.push(`/new-game?templateId=${t.id}`)}
+                    onPress={() => router.replace(`/new-game?templateId=${t.id}`)}
                   >
                     <View style={{ flex: 1, gap: 3 }}>
                       <ThemedText type="default">{t.name}</ThemedText>

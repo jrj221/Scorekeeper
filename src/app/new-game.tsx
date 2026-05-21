@@ -35,17 +35,21 @@ export default function NewGameScreen() {
 	const [roundCountStr, setRoundCountStr] = useState("10");
 	const [showRoundNumpad, setShowRoundNumpad] = useState(false);
 	const [rankByLowest, setRankByLowest] = useState(false);
+	const [playersError, setPlayersError] = useState(false);
 
 	const [activeDropdown, setActiveDropdown] = useState<ActiveDropdown>(null);
 	const [playerSearch, setPlayerSearch] = useState("");
 	const [playerSearchError, setPlayerSearchError] = useState("");
 	const playerSearchRef = useRef<TextInput>(null);
 
-	// Dealer / turns
+	// Dealer (optional)
 	const [dealerEnabled, setDealerEnabled] = useState(false);
-	const [dealerMode, setDealerMode] = useState<DealerMode>('right-of-first');
+	const [dealerMode, setDealerMode] = useState<DealerMode>("rotation");
 	const [fixedDealerId, setFixedDealerId] = useState<string | null>(null);
-	const [firstPlayerRandom, setFirstPlayerRandom] = useState(true);
+
+	// Turn order (optional)
+	const [turnOrderEnabled, setTurnOrderEnabled] = useState(true);
+	const [firstPlayerMode, setFirstPlayerMode] = useState<"random" | "left-of-dealer" | "rotation">("rotation");
 	const [firstPlayerSpecificId, setFirstPlayerSpecificId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -59,11 +63,15 @@ export default function NewGameScreen() {
 		setRankByLowest(tmpl.rankByLowest);
 	}, [templateId]);
 
-	const toggleDropdown = (d: ActiveDropdown) =>
-		setActiveDropdown(prev => (prev === d ? null : d));
+	const toggleDropdown = (d: ActiveDropdown) => setActiveDropdown((prev) => (prev === d ? null : d));
 
 	const addExistingPlayer = useCallback((id: string, playerName: string) => {
-		setPlayers(prev => prev.some(p => p.id === id) ? prev : [...prev, { id, name: playerName }]);
+		setPlayers((prev) => {
+			if (prev.some((p) => p.id === id)) return prev;
+			const next = [...prev, { id, name: playerName }];
+			if (next.length > 0) setPlayersError(false);
+			return next;
+		});
 		setPlayerSearch("");
 		setPlayerSearchError("");
 	}, []);
@@ -71,87 +79,136 @@ export default function NewGameScreen() {
 	const submitPlayerSearch = useCallback(() => {
 		const trimmed = playerSearch.trim();
 		if (!trimmed) return;
-		// Check exact match in global players first
-		const match = globalPlayers.find(gp =>
-			gp.name.toLowerCase() === trimmed.toLowerCase() && !players.some(p => p.id === gp.id)
+		const match = globalPlayers.find(
+			(gp) => gp.name.toLowerCase() === trimmed.toLowerCase() && !players.some((p) => p.id === gp.id),
 		);
 		if (match) {
 			addExistingPlayer(match.id, match.name);
 			return;
 		}
-		if (players.some(p => p.name.toLowerCase() === trimmed.toLowerCase())) {
+		if (players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
 			setPlayerSearchError(`"${trimmed}" is already added`);
 			return;
 		}
 		setPlayerSearchError("");
 		const global = addGlobalPlayer(trimmed);
 		const player = global ?? { id: `p_${Date.now()}`, name: trimmed };
-		setPlayers(prev => prev.some(p => p.id === player.id) ? prev : [...prev, player]);
+		setPlayers((prev) => {
+			if (prev.some((p) => p.id === player.id)) return prev;
+			setPlayersError(false);
+			return [...prev, player];
+		});
 		setPlayerSearch("");
 		playerSearchRef.current?.focus();
 	}, [playerSearch, players, globalPlayers, addGlobalPlayer, addExistingPlayer]);
 
 	const removePlayer = useCallback((id: string) => {
-		setPlayers(prev => prev.filter(p => p.id !== id));
+		setPlayers((prev) => prev.filter((p) => p.id !== id));
 	}, []);
 
-	const addGroup = useCallback((groupId: string) => {
-		const group = groups.find(g => g.id === groupId);
-		if (!group) return;
-		setPlayers(prev => {
-			const toAdd = group.playerIds
-				.filter(pid => !prev.some(p => p.id === pid))
-				.map(pid => {
-					const gp = globalPlayers.find(p => p.id === pid);
-					return gp ? { id: gp.id, name: gp.name } : null;
-				})
-				.filter((p): p is Player => p !== null);
-			return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
-		});
-	}, [groups, globalPlayers]);
+	const addGroup = useCallback(
+		(groupId: string) => {
+			const group = groups.find((g) => g.id === groupId);
+			if (!group) return;
+			setPlayers((prev) => {
+				const toAdd = group.playerIds
+					.filter((pid) => !prev.some((p) => p.id === pid))
+					.map((pid) => {
+						const gp = globalPlayers.find((p) => p.id === pid);
+						return gp ? { id: gp.id, name: gp.name } : null;
+					})
+					.filter((p): p is Player => p !== null);
+				if (toAdd.length > 0) setPlayersError(false);
+				return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+			});
+		},
+		[groups, globalPlayers],
+	);
 
 	const handleCreate = useCallback(() => {
-		const trimmedName = name.trim();
-		if (!trimmedName || players.length === 0) return;
+		if (players.length === 0) {
+			setPlayersError(true);
+			return;
+		}
 		const totalRounds = !isIndefinite ? Math.max(1, parseInt(roundCountStr, 10) || 1) : undefined;
-		const turnOrder = players.map(p => p.id);
 
 		let resolvedFirstPlayerId: string | undefined;
-		if (dealerEnabled) {
-			if (firstPlayerRandom) {
+		let resolvedFirstPlayerMode: "left-of-dealer" | undefined;
+		if (turnOrderEnabled) {
+			if (firstPlayerMode === "left-of-dealer") {
+				resolvedFirstPlayerMode = "left-of-dealer";
+			} else if (firstPlayerMode === "random") {
 				resolvedFirstPlayerId = players[Math.floor(Math.random() * players.length)]?.id;
 			} else {
+				// rotation: starts at chosen player (or first) and rotates each round
 				resolvedFirstPlayerId = firstPlayerSpecificId ?? players[0]?.id;
 			}
 		}
 
 		const id = createGame({
-			name: trimmedName,
+			name: name.trim() || "Untitled Game",
 			description: description.trim() || undefined,
 			players,
 			totalRounds,
 			rankByLowest,
-			turnOrder,
+			turnOrder: turnOrderEnabled ? players.map((p) => p.id) : undefined,
+			firstPlayerId: resolvedFirstPlayerId,
+			firstPlayerMode: resolvedFirstPlayerMode,
 			dealerEnabled: dealerEnabled || undefined,
 			dealerMode: dealerEnabled ? dealerMode : undefined,
-			fixedDealerId: dealerEnabled && dealerMode === 'fixed' ? fixedDealerId ?? undefined : undefined,
-			firstPlayerId: resolvedFirstPlayerId,
+			fixedDealerId: dealerEnabled && dealerMode === "fixed" ? (fixedDealerId ?? undefined) : undefined,
 		});
 		router.replace(`/game/${id}`);
-	}, [name, description, players, isIndefinite, roundCountStr, rankByLowest, dealerEnabled, dealerMode, fixedDealerId, firstPlayerRandom, firstPlayerSpecificId, createGame, router]);
+	}, [
+		name,
+		description,
+		players,
+		isIndefinite,
+		roundCountStr,
+		rankByLowest,
+		turnOrderEnabled,
+		firstPlayerMode,
+		firstPlayerSpecificId,
+		dealerEnabled,
+		dealerMode,
+		fixedDealerId,
+		createGame,
+		router,
+	]);
 
-	const canCreate = name.trim().length > 0 && players.length > 0;
-
-	// Players available to add, filtered by search
-	const filteredGlobalPlayers = globalPlayers.filter(gp =>
-		!players.some(p => p.id === gp.id) &&
-		(playerSearch === "" || gp.name.toLowerCase().includes(playerSearch.toLowerCase()))
+	const filteredGlobalPlayers = globalPlayers.filter(
+		(gp) =>
+			!players.some((p) => p.id === gp.id) &&
+			(playerSearch === "" || gp.name.toLowerCase().includes(playerSearch.toLowerCase())),
 	);
+	const availableGroups = groups.filter((g) => !g.playerIds.every((pid) => players.some((p) => p.id === pid)));
 
-	// Groups where not all players are already added
-	const availableGroups = groups.filter(g =>
-		!g.playerIds.every(pid => players.some(p => p.id === pid))
-	);
+	// Derived hint text
+	const dealerHint = dealerEnabled
+		? dealerMode === "random"
+			? "The dealer will be randomly determined each round."
+			: dealerMode === "rotation"
+				? fixedDealerId
+					? `${players.find((p) => p.id === fixedDealerId)?.name ?? "The selected player"} deals first, then it rotates to the next player each round.`
+					: "Dealing rotates through all players each round."
+				: fixedDealerId
+					? `${players.find((p) => p.id === fixedDealerId)?.name ?? "The selected player"} will deal every round.`
+					: "The same player will deal every round."
+		: null;
+
+	const turnHint = turnOrderEnabled
+		? firstPlayerMode === "random"
+			? "The first player will be randomly determined each round."
+			: firstPlayerMode === "left-of-dealer"
+				? "The player to the left of the dealer goes first each round."
+				: firstPlayerSpecificId
+					? `${players.find((p) => p.id === firstPlayerSpecificId)?.name ?? "The selected player"} goes first in Round 1, then it rotates to the next player each round.`
+					: "The first player rotates through the group each round."
+		: null;
+
+	const card = [styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }];
+	const inner = { backgroundColor: theme.backgroundSelected } as const;
+	const innerInput = { backgroundColor: theme.background, color: theme.text } as const;
 
 	return (
 		<ThemedView style={shared.screen}>
@@ -163,11 +220,19 @@ export default function NewGameScreen() {
 					showsVerticalScrollIndicator={false}
 				>
 					{/* Game Name */}
-					<View style={styles.section}>
-						<ThemedText style={styles.label} themeColor="textSecondary">GAME NAME</ThemedText>
+					<View style={card}>
+						<View style={styles.labelRow}>
+							<ThemedText style={styles.label} themeColor="textSecondary">
+								GAME NAME
+							</ThemedText>
+							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+								{" "}
+								(OPTIONAL)
+							</ThemedText>
+						</View>
 						<TextInput
-							style={[shared.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
-							placeholder="Enter game name"
+							style={[shared.input, innerInput]}
+							placeholder="Untitled Game"
 							placeholderTextColor={theme.textSecondary}
 							value={name}
 							onChangeText={setName}
@@ -177,13 +242,18 @@ export default function NewGameScreen() {
 					</View>
 
 					{/* Description */}
-					<View style={styles.section}>
+					<View style={card}>
 						<View style={styles.labelRow}>
-							<ThemedText style={styles.label} themeColor="textSecondary">DESCRIPTION</ThemedText>
-							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							<ThemedText style={styles.label} themeColor="textSecondary">
+								DESCRIPTION
+							</ThemedText>
+							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+								{" "}
+								(OPTIONAL)
+							</ThemedText>
 						</View>
 						<TextInput
-							style={[shared.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
+							style={[shared.input, innerInput]}
 							placeholder="Add a description"
 							placeholderTextColor={theme.textSecondary}
 							value={description}
@@ -194,72 +264,109 @@ export default function NewGameScreen() {
 					</View>
 
 					{/* Players */}
-					<View style={styles.section}>
+					<View
+						style={[
+							styles.card,
+							{
+								backgroundColor: theme.backgroundElement,
+								borderColor:
+									playersError && players.length === 0 ? "#C05050" : theme.backgroundSelected,
+								borderWidth: playersError && players.length === 0 ? 1.5 : StyleSheet.hairlineWidth,
+							},
+						]}
+					>
 						<View style={styles.labelRow}>
-							<ThemedText style={styles.label} themeColor="textSecondary">PLAYERS</ThemedText>
+							<ThemedText
+								style={[styles.label, playersError && { color: "#C05050" }]}
+								themeColor={playersError ? undefined : "textSecondary"}
+							>
+								PLAYERS
+							</ThemedText>
 							{players.length > 0 && (
 								<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
-									{" "}{players.length}
+									{" "}
+									{players.length}
 								</ThemedText>
 							)}
 						</View>
 
-						{/* Selected player chips */}
+						{playersError && players.length === 0 && (
+							<ThemedText style={styles.fieldError}>
+								Add at least one player to create the game.
+							</ThemedText>
+						)}
+
 						{players.length > 0 && (
 							<View style={styles.chipRow}>
-								{players.map(p => (
+								{players.map((p) => (
 									<TouchableOpacity
 										key={p.id}
-										style={[styles.chip, { backgroundColor: theme.backgroundSelected }]}
+										style={[styles.chip, inner]}
 										onPress={() => removePlayer(p.id)}
 									>
 										<ThemedText type="small">{p.name}</ThemedText>
-										<ThemedText type="small" themeColor="textSecondary"> ×</ThemedText>
+										<ThemedText type="small" themeColor="textSecondary">
+											{" "}
+											×
+										</ThemedText>
 									</TouchableOpacity>
 								))}
 							</View>
 						)}
 
-						{/* Dropdown trigger buttons */}
 						<View style={styles.dropdownBtns}>
 							<TouchableOpacity
 								style={[
 									styles.dropdownTrigger,
-									{ backgroundColor: theme.backgroundElement },
-									activeDropdown === "player" && { backgroundColor: theme.backgroundSelected },
+									inner,
+									activeDropdown === "player" && styles.dropdownTriggerActive,
 								]}
 								onPress={() => toggleDropdown("player")}
 							>
-								<ThemedText type="small" style={{ color: '#0077B6' }}>Add Player</ThemedText>
-								<ThemedText style={styles.chevron}>{activeDropdown === "player" ? "▴" : "▾"}</ThemedText>
+								<ThemedText type="small" style={{ color: "#0077B6" }}>
+									Add Player
+								</ThemedText>
+								<ThemedText style={styles.chevron}>
+									{activeDropdown === "player" ? "▴" : "▾"}
+								</ThemedText>
 							</TouchableOpacity>
-
 							{groups.length > 0 && (
 								<TouchableOpacity
 									style={[
 										styles.dropdownTrigger,
-										{ backgroundColor: theme.backgroundElement },
-										activeDropdown === "group" && { backgroundColor: theme.backgroundSelected },
+										inner,
+										activeDropdown === "group" && styles.dropdownTriggerActive,
 									]}
 									onPress={() => toggleDropdown("group")}
 								>
-									<ThemedText type="small" style={{ color: '#0077B6' }}>Add Group</ThemedText>
-									<ThemedText style={styles.chevron}>{activeDropdown === "group" ? "▴" : "▾"}</ThemedText>
+									<ThemedText type="small" style={{ color: "#0077B6" }}>
+										Add Group
+									</ThemedText>
+									<ThemedText style={styles.chevron}>
+										{activeDropdown === "group" ? "▴" : "▾"}
+									</ThemedText>
 								</TouchableOpacity>
 							)}
 						</View>
 
-						{/* Player dropdown */}
 						{activeDropdown === "player" && (
-							<View style={[styles.dropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
+							<View
+								style={[
+									styles.dropdown,
+									{ backgroundColor: theme.backgroundSelected, borderColor: theme.background },
+								]}
+							>
 								<View style={{ gap: 4 }}>
 									<TextInput
 										ref={playerSearchRef}
-										style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
+										style={[shared.input, innerInput]}
 										placeholder="Search or enter new name"
 										placeholderTextColor={theme.textSecondary}
 										value={playerSearch}
-										onChangeText={v => { setPlayerSearch(v); setPlayerSearchError(""); }}
+										onChangeText={(v) => {
+											setPlayerSearch(v);
+											setPlayerSearchError("");
+										}}
 										onSubmitEditing={submitPlayerSearch}
 										maxLength={15}
 										returnKeyType="done"
@@ -270,33 +377,47 @@ export default function NewGameScreen() {
 									) : null}
 								</View>
 								{filteredGlobalPlayers.length > 0 && (
-									<View style={[styles.dropdownList, { borderTopColor: theme.backgroundSelected }]}>
+									<View style={[styles.dropdownList, { borderTopColor: theme.background }]}>
 										{filteredGlobalPlayers.map((gp, i) => (
 											<TouchableOpacity
 												key={gp.id}
 												style={[
 													styles.dropdownRow,
-													{ borderBottomColor: theme.backgroundSelected },
+													{ borderBottomColor: theme.background },
 													i === filteredGlobalPlayers.length - 1 && { borderBottomWidth: 0 },
 												]}
 												onPress={() => addExistingPlayer(gp.id, gp.name)}
 											>
 												<ThemedText type="default">{gp.name}</ThemedText>
-												<ThemedText type="small" style={{ color: '#0077B6' }}>+ Add</ThemedText>
+												<ThemedText type="small" style={{ color: "#0077B6" }}>
+													+ Add
+												</ThemedText>
 											</TouchableOpacity>
 										))}
 									</View>
 								)}
-								{filteredGlobalPlayers.length === 0 && playerSearch === "" && globalPlayers.length > 0 && (
-									<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>
-										All saved players are in this game
-									</ThemedText>
-								)}
-								{filteredGlobalPlayers.length === 0 && playerSearch === "" && globalPlayers.length === 0 && (
-									<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>
-										No saved players — type a name to create one
-									</ThemedText>
-								)}
+								{filteredGlobalPlayers.length === 0 &&
+									playerSearch === "" &&
+									globalPlayers.length > 0 && (
+										<ThemedText
+											type="small"
+											themeColor="textSecondary"
+											style={styles.dropdownEmpty}
+										>
+											All saved players are in this game
+										</ThemedText>
+									)}
+								{filteredGlobalPlayers.length === 0 &&
+									playerSearch === "" &&
+									globalPlayers.length === 0 && (
+										<ThemedText
+											type="small"
+											themeColor="textSecondary"
+											style={styles.dropdownEmpty}
+										>
+											No saved players — type a name to create one
+										</ThemedText>
+									)}
 								{filteredGlobalPlayers.length === 0 && playerSearch !== "" && (
 									<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>
 										Press return to add "{playerSearch}"
@@ -305,9 +426,13 @@ export default function NewGameScreen() {
 							</View>
 						)}
 
-						{/* Group dropdown */}
 						{activeDropdown === "group" && (
-							<View style={[styles.dropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
+							<View
+								style={[
+									styles.dropdown,
+									{ backgroundColor: theme.backgroundSelected, borderColor: theme.background },
+								]}
+							>
 								{availableGroups.length === 0 ? (
 									<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>
 										All groups are already in this game
@@ -315,15 +440,15 @@ export default function NewGameScreen() {
 								) : (
 									availableGroups.map((g, i) => {
 										const memberNames = g.playerIds
-											.map(pid => globalPlayers.find(p => p.id === pid)?.name)
+											.map((pid) => globalPlayers.find((p) => p.id === pid)?.name)
 											.filter(Boolean)
-											.join(', ');
+											.join(", ");
 										return (
 											<TouchableOpacity
 												key={g.id}
 												style={[
 													styles.dropdownRow,
-													{ borderBottomColor: theme.backgroundSelected },
+													{ borderBottomColor: theme.background },
 													i === availableGroups.length - 1 && { borderBottomWidth: 0 },
 												]}
 												onPress={() => addGroup(g.id)}
@@ -331,12 +456,18 @@ export default function NewGameScreen() {
 												<View style={{ flex: 1 }}>
 													<ThemedText type="default">{g.name}</ThemedText>
 													{memberNames ? (
-														<ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+														<ThemedText
+															type="small"
+															themeColor="textSecondary"
+															numberOfLines={1}
+														>
 															{memberNames}
 														</ThemedText>
 													) : null}
 												</View>
-												<ThemedText type="small" style={{ color: '#0077B6' }}>+ Add</ThemedText>
+												<ThemedText type="small" style={{ color: "#0077B6" }}>
+													+ Add
+												</ThemedText>
 											</TouchableOpacity>
 										);
 									})
@@ -345,189 +476,330 @@ export default function NewGameScreen() {
 						)}
 					</View>
 
-					{/* Dealer & Turns */}
-					<View style={styles.section}>
+					{/* Rounds */}
+					<View style={card}>
+						<ThemedText style={styles.label} themeColor="textSecondary">
+							ROUNDS
+						</ThemedText>
+						{!isIndefinite && (
+							<View style={styles.roundsRow}>
+								<TouchableOpacity
+									style={[styles.roundsInput, inner]}
+									onPress={() => setShowRoundNumpad(true)}
+								>
+									<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
+										{roundCountStr || "—"}
+									</ThemedText>
+								</TouchableOpacity>
+								<ThemedText type="default">rounds</ThemedText>
+							</View>
+						)}
+						<TouchableOpacity style={[styles.toggleRow, inner]} onPress={() => setIsIndefinite((v) => !v)}>
+							<ThemedText type="default">Endless Mode</ThemedText>
+							<View
+								style={[
+									styles.toggle,
+									{ backgroundColor: isIndefinite ? "#0077B6" : theme.backgroundElement },
+								]}
+							>
+								<View style={[styles.toggleThumb, isIndefinite && styles.toggleThumbOn]} />
+							</View>
+						</TouchableOpacity>
+					</View>
+
+					{/* Winner */}
+					<View style={card}>
+						<ThemedText style={styles.label} themeColor="textSecondary">
+							WINNER
+						</ThemedText>
+						<View style={styles.segmentRow}>
+							<TouchableOpacity
+								style={[
+									styles.segLeft,
+									{ backgroundColor: !rankByLowest ? "#0077B6" : theme.backgroundSelected },
+								]}
+								onPress={() => setRankByLowest(false)}
+							>
+								<ThemedText type="small" style={{ color: !rankByLowest ? "#fff" : theme.text }}>
+									Highest score
+								</ThemedText>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[
+									styles.segRight,
+									{ backgroundColor: rankByLowest ? "#0077B6" : theme.backgroundSelected },
+								]}
+								onPress={() => setRankByLowest(true)}
+							>
+								<ThemedText type="small" style={{ color: rankByLowest ? "#fff" : theme.text }}>
+									Lowest score
+								</ThemedText>
+							</TouchableOpacity>
+						</View>
+					</View>
+
+					{/* Dealer */}
+					<View style={card}>
 						<View style={styles.labelRow}>
-							<ThemedText style={styles.label} themeColor="textSecondary">DEALER &amp; TURNS</ThemedText>
+							<ThemedText style={styles.label} themeColor="textSecondary">
+								DEALER
+							</ThemedText>
+							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+								{" "}
+								(OPTIONAL)
+							</ThemedText>
 						</View>
 						<TouchableOpacity
-							style={[styles.toggleRow, { backgroundColor: theme.backgroundElement }]}
-							onPress={() => { setDealerEnabled(v => !v); setActiveDropdown(null); }}
+							style={[styles.toggleRow, inner]}
+							onPress={() => {
+								setDealerEnabled((v) => !v);
+								setActiveDropdown(null);
+							}}
 						>
-							<ThemedText type="default">Enable Dealer</ThemedText>
-							<View style={[styles.toggle, { backgroundColor: dealerEnabled ? '#0077B6' : theme.backgroundSelected }]}>
+							<ThemedText type="default">Track dealer</ThemedText>
+							<View
+								style={[
+									styles.toggle,
+									{ backgroundColor: dealerEnabled ? "#0077B6" : theme.backgroundElement },
+								]}
+							>
 								<View style={[styles.toggleThumb, dealerEnabled && styles.toggleThumbOn]} />
 							</View>
 						</TouchableOpacity>
 
 						{dealerEnabled && (
 							<>
-								{/* Dealer mode */}
-								<ThemedText style={[styles.label, { opacity: 0.7 }]} themeColor="textSecondary">DEALER IS</ThemedText>
+								<ThemedText style={[styles.subLabel]} themeColor="textSecondary">
+									DEALER IS
+								</ThemedText>
 								<View style={styles.segmentRow}>
 									<TouchableOpacity
-										style={[styles.segLeft, { backgroundColor: dealerMode === 'right-of-first' ? '#0077B6' : theme.backgroundElement }]}
-										onPress={() => setDealerMode('right-of-first')}
+										style={[styles.segLeft, { backgroundColor: dealerMode === "rotation" ? "#0077B6" : theme.backgroundSelected }]}
+										onPress={() => { setDealerMode("rotation"); if (!fixedDealerId) setFixedDealerId(players[0]?.id ?? null); }}
 									>
-										<ThemedText type="small" style={{ color: dealerMode === 'right-of-first' ? '#fff' : theme.text }}>Right of First</ThemedText>
+										<ThemedText type="small" style={{ color: dealerMode === "rotation" ? "#fff" : theme.text }}>Rotation</ThemedText>
 									</TouchableOpacity>
+									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
 									<TouchableOpacity
-										style={[styles.segMid, { backgroundColor: dealerMode === 'random' ? '#0077B6' : theme.backgroundElement }]}
-										onPress={() => setDealerMode('random')}
+										style={[styles.segMid, { backgroundColor: dealerMode === "random" ? "#0077B6" : theme.backgroundSelected }]}
+										onPress={() => setDealerMode("random")}
 									>
-										<ThemedText type="small" style={{ color: dealerMode === 'random' ? '#fff' : theme.text }}>Random</ThemedText>
+										<ThemedText type="small" style={{ color: dealerMode === "random" ? "#fff" : theme.text }}>Random</ThemedText>
 									</TouchableOpacity>
+									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
 									<TouchableOpacity
-										style={[styles.segRight, { backgroundColor: dealerMode === 'fixed' ? '#0077B6' : theme.backgroundElement }]}
-										onPress={() => setDealerMode('fixed')}
+										style={[styles.segRight, { backgroundColor: dealerMode === "fixed" ? "#0077B6" : theme.backgroundSelected }]}
+										onPress={() => { setDealerMode("fixed"); if (!fixedDealerId) setFixedDealerId(players[0]?.id ?? null); }}
 									>
-										<ThemedText type="small" style={{ color: dealerMode === 'fixed' ? '#fff' : theme.text }}>Fixed</ThemedText>
+										<ThemedText type="small" style={{ color: dealerMode === "fixed" ? "#fff" : theme.text }}>Fixed</ThemedText>
 									</TouchableOpacity>
 								</View>
-
-								{/* Fixed dealer picker */}
-								{dealerMode === 'fixed' && (
+								{(dealerMode === "fixed" || dealerMode === "rotation") && (
 									<>
 										<TouchableOpacity
 											style={[
 												styles.dropdownTrigger,
-												{ backgroundColor: theme.backgroundElement },
-												activeDropdown === 'fixedDealer' && { backgroundColor: theme.backgroundSelected },
+												inner,
+												activeDropdown === "fixedDealer" && styles.dropdownTriggerActive,
 											]}
-											onPress={() => toggleDropdown('fixedDealer')}
+											onPress={() => toggleDropdown("fixedDealer")}
 										>
-											<ThemedText type="small" style={{ color: '#0077B6' }}>
-												{fixedDealerId ? (players.find(p => p.id === fixedDealerId)?.name ?? 'Pick Dealer') : 'Pick Dealer'}
+											<ThemedText type="small" style={{ color: "#0077B6" }}>
+												{fixedDealerId
+													? (players.find((p) => p.id === fixedDealerId)?.name ??
+														"Pick Dealer")
+													: "Pick Dealer"}
 											</ThemedText>
-											<ThemedText style={styles.chevron}>{activeDropdown === 'fixedDealer' ? '▴' : '▾'}</ThemedText>
+											<ThemedText style={styles.chevron}>
+												{activeDropdown === "fixedDealer" ? "▴" : "▾"}
+											</ThemedText>
 										</TouchableOpacity>
-										{activeDropdown === 'fixedDealer' && (
-											<View style={[styles.dropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
+										{activeDropdown === "fixedDealer" && (
+											<View
+												style={[
+													styles.dropdown,
+													{
+														backgroundColor: theme.backgroundSelected,
+														borderColor: theme.background,
+													},
+												]}
+											>
 												{players.length === 0 ? (
-													<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>Add players first</ThemedText>
-												) : players.map((p, i) => (
-													<TouchableOpacity
-														key={p.id}
-														style={[styles.dropdownRow, { borderBottomColor: theme.backgroundSelected }, i === players.length - 1 && { borderBottomWidth: 0 }]}
-														onPress={() => { setFixedDealerId(p.id); setActiveDropdown(null); }}
+													<ThemedText
+														type="small"
+														themeColor="textSecondary"
+														style={styles.dropdownEmpty}
 													>
-														<ThemedText type="default">{p.name}</ThemedText>
-														{fixedDealerId === p.id && <ThemedText type="small" style={{ color: '#0077B6' }}>✓</ThemedText>}
-													</TouchableOpacity>
-												))}
+														Add players first
+													</ThemedText>
+												) : (
+													players.map((p, i) => (
+														<TouchableOpacity
+															key={p.id}
+															style={[
+																styles.dropdownRow,
+																{ borderBottomColor: theme.background },
+																i === players.length - 1 && { borderBottomWidth: 0 },
+															]}
+															onPress={() => {
+																setFixedDealerId(p.id);
+																setActiveDropdown(null);
+															}}
+														>
+															<ThemedText type="default">{p.name}</ThemedText>
+															{fixedDealerId === p.id && (
+																<ThemedText type="small" style={{ color: "#0077B6" }}>
+																	✓
+																</ThemedText>
+															)}
+														</TouchableOpacity>
+													))
+												)}
 											</View>
 										)}
 									</>
 								)}
-
-								{/* Who goes first */}
-								<ThemedText style={[styles.label, { opacity: 0.7 }]} themeColor="textSecondary">WHO GOES FIRST</ThemedText>
-								<View style={styles.segmentRow}>
-									<TouchableOpacity
-										style={[styles.segLeft, { backgroundColor: firstPlayerRandom ? '#0077B6' : theme.backgroundElement }]}
-										onPress={() => setFirstPlayerRandom(true)}
-									>
-										<ThemedText type="small" style={{ color: firstPlayerRandom ? '#fff' : theme.text }}>Random</ThemedText>
-									</TouchableOpacity>
-									<TouchableOpacity
-										style={[styles.segRight, { backgroundColor: !firstPlayerRandom ? '#0077B6' : theme.backgroundElement }]}
-										onPress={() => setFirstPlayerRandom(false)}
-									>
-										<ThemedText type="small" style={{ color: !firstPlayerRandom ? '#fff' : theme.text }}>Specific</ThemedText>
-									</TouchableOpacity>
-								</View>
-								{!firstPlayerRandom && (
-									<>
-										<TouchableOpacity
-											style={[
-												styles.dropdownTrigger,
-												{ backgroundColor: theme.backgroundElement },
-												activeDropdown === 'firstPlayer' && { backgroundColor: theme.backgroundSelected },
-											]}
-											onPress={() => toggleDropdown('firstPlayer')}
-										>
-											<ThemedText type="small" style={{ color: '#0077B6' }}>
-												{firstPlayerSpecificId ? (players.find(p => p.id === firstPlayerSpecificId)?.name ?? 'Pick Player') : 'Pick Player'}
-											</ThemedText>
-											<ThemedText style={styles.chevron}>{activeDropdown === 'firstPlayer' ? '▴' : '▾'}</ThemedText>
-										</TouchableOpacity>
-										{activeDropdown === 'firstPlayer' && (
-											<View style={[styles.dropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
-												{players.length === 0 ? (
-													<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>Add players first</ThemedText>
-												) : players.map((p, i) => (
-													<TouchableOpacity
-														key={p.id}
-														style={[styles.dropdownRow, { borderBottomColor: theme.backgroundSelected }, i === players.length - 1 && { borderBottomWidth: 0 }]}
-														onPress={() => { setFirstPlayerSpecificId(p.id); setActiveDropdown(null); }}
-													>
-														<ThemedText type="default">{p.name}</ThemedText>
-														{firstPlayerSpecificId === p.id && <ThemedText type="small" style={{ color: '#0077B6' }}>✓</ThemedText>}
-													</TouchableOpacity>
-												))}
-											</View>
-										)}
-									</>
-								)}
+								{dealerHint && <ThemedText style={styles.hint}>{dealerHint}</ThemedText>}
 							</>
 						)}
 					</View>
 
-					{/* Rounds */}
-					<View style={styles.section}>
-						<ThemedText style={styles.label} themeColor="textSecondary">ROUNDS</ThemedText>
-						<View style={styles.segmentRow}>
-							<TouchableOpacity
-								style={[styles.segLeft, { backgroundColor: isIndefinite ? "#0077B6" : theme.backgroundElement }]}
-								onPress={() => setIsIndefinite(true)}
-							>
-								<ThemedText type="small" style={{ color: isIndefinite ? "#fff" : theme.text }}>Indefinite</ThemedText>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.segRight, { backgroundColor: !isIndefinite ? "#0077B6" : theme.backgroundElement }]}
-								onPress={() => setIsIndefinite(false)}
-							>
-								<ThemedText type="small" style={{ color: !isIndefinite ? "#fff" : theme.text }}>Set number</ThemedText>
-							</TouchableOpacity>
+					{/* Turn Order */}
+					<View style={card}>
+						<View style={styles.labelRow}>
+							<ThemedText style={styles.label} themeColor="textSecondary">
+								TURN ORDER
+							</ThemedText>
+							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+								{" "}
+								(OPTIONAL)
+							</ThemedText>
 						</View>
-						{!isIndefinite && (
-							<TouchableOpacity
-								style={[shared.input, { backgroundColor: theme.backgroundElement, justifyContent: "center" }]}
-								onPress={() => setShowRoundNumpad(true)}
+						<TouchableOpacity
+							style={[styles.toggleRow, inner]}
+							onPress={() => {
+								setTurnOrderEnabled((v) => !v);
+								setActiveDropdown(null);
+							}}
+						>
+							<ThemedText type="default">Track who goes first</ThemedText>
+							<View
+								style={[
+									styles.toggle,
+									{ backgroundColor: turnOrderEnabled ? "#0077B6" : theme.backgroundElement },
+								]}
 							>
-								<ThemedText style={{ color: roundCountStr ? theme.text : theme.textSecondary, fontSize: 16 }}>
-									{roundCountStr || "Tap to set"}
-								</ThemedText>
-							</TouchableOpacity>
-						)}
-					</View>
+								<View style={[styles.toggleThumb, turnOrderEnabled && styles.toggleThumbOn]} />
+							</View>
+						</TouchableOpacity>
 
-					{/* Winner */}
-					<View style={styles.section}>
-						<ThemedText style={styles.label} themeColor="textSecondary">WINNER</ThemedText>
-						<View style={styles.segmentRow}>
-							<TouchableOpacity
-								style={[styles.segLeft, { backgroundColor: !rankByLowest ? "#0077B6" : theme.backgroundElement }]}
-								onPress={() => setRankByLowest(false)}
-							>
-								<ThemedText type="small" style={{ color: !rankByLowest ? "#fff" : theme.text }}>Highest score</ThemedText>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.segRight, { backgroundColor: rankByLowest ? "#0077B6" : theme.backgroundElement }]}
-								onPress={() => setRankByLowest(true)}
-							>
-								<ThemedText type="small" style={{ color: rankByLowest ? "#fff" : theme.text }}>Lowest score</ThemedText>
-							</TouchableOpacity>
-						</View>
+						{turnOrderEnabled && (
+							<>
+								<ThemedText style={styles.subLabel} themeColor="textSecondary">
+									WHO GOES FIRST
+								</ThemedText>
+								<View style={styles.segmentRow}>
+									<TouchableOpacity
+										style={[styles.segLeft, { backgroundColor: firstPlayerMode === "rotation" ? "#0077B6" : theme.backgroundSelected }]}
+										onPress={() => { setFirstPlayerMode("rotation"); if (!firstPlayerSpecificId) setFirstPlayerSpecificId(players[0]?.id ?? null); }}
+									>
+										<ThemedText type="small" style={{ color: firstPlayerMode === "rotation" ? "#fff" : theme.text }}>Rotation</ThemedText>
+									</TouchableOpacity>
+									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
+									<TouchableOpacity
+										style={[dealerEnabled ? styles.segMid : styles.segRight, { backgroundColor: firstPlayerMode === "random" ? "#0077B6" : theme.backgroundSelected }]}
+										onPress={() => setFirstPlayerMode("random")}
+									>
+										<ThemedText type="small" style={{ color: firstPlayerMode === "random" ? "#fff" : theme.text }}>Random</ThemedText>
+									</TouchableOpacity>
+									{dealerEnabled && (
+										<>
+											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
+											<TouchableOpacity
+												style={[styles.segRight, { backgroundColor: firstPlayerMode === "left-of-dealer" ? "#0077B6" : theme.backgroundSelected }]}
+												onPress={() => setFirstPlayerMode("left-of-dealer")}
+											>
+												<ThemedText type="small" style={{ color: firstPlayerMode === "left-of-dealer" ? "#fff" : theme.text }}>Left of Dealer</ThemedText>
+											</TouchableOpacity>
+										</>
+									)}
+								</View>
+								{firstPlayerMode === "rotation" && (
+									<>
+										<TouchableOpacity
+											style={[
+												styles.dropdownTrigger,
+												inner,
+												activeDropdown === "firstPlayer" && styles.dropdownTriggerActive,
+											]}
+											onPress={() => toggleDropdown("firstPlayer")}
+										>
+											<ThemedText type="small" style={{ color: "#0077B6" }}>
+												{firstPlayerSpecificId
+													? (players.find((p) => p.id === firstPlayerSpecificId)?.name ??
+														"Pick Player")
+													: "Pick Player"}
+											</ThemedText>
+											<ThemedText style={styles.chevron}>
+												{activeDropdown === "firstPlayer" ? "▴" : "▾"}
+											</ThemedText>
+										</TouchableOpacity>
+										{activeDropdown === "firstPlayer" && (
+											<View
+												style={[
+													styles.dropdown,
+													{
+														backgroundColor: theme.backgroundSelected,
+														borderColor: theme.background,
+													},
+												]}
+											>
+												{players.length === 0 ? (
+													<ThemedText
+														type="small"
+														themeColor="textSecondary"
+														style={styles.dropdownEmpty}
+													>
+														Add players first
+													</ThemedText>
+												) : (
+													players.map((p, i) => (
+														<TouchableOpacity
+															key={p.id}
+															style={[
+																styles.dropdownRow,
+																{ borderBottomColor: theme.background },
+																i === players.length - 1 && { borderBottomWidth: 0 },
+															]}
+															onPress={() => {
+																setFirstPlayerSpecificId(p.id);
+																setActiveDropdown(null);
+															}}
+														>
+															<ThemedText type="default">{p.name}</ThemedText>
+															{firstPlayerSpecificId === p.id && (
+																<ThemedText type="small" style={{ color: "#0077B6" }}>
+																	✓
+																</ThemedText>
+															)}
+														</TouchableOpacity>
+													))
+												)}
+											</View>
+										)}
+									</>
+								)}
+								{turnHint && <ThemedText style={styles.hint}>{turnHint}</ThemedText>}
+							</>
+						)}
 					</View>
 
 					{/* Create */}
 					<TouchableOpacity
-						style={[shared.button, styles.createBtn, { backgroundColor: canCreate ? "#0077B6" : theme.backgroundElement }]}
+						style={[shared.button, styles.createBtn, { backgroundColor: "#0077B6" }]}
 						onPress={handleCreate}
-						disabled={!canCreate}
 					>
-						<ThemedText type="smallBold" style={{ color: canCreate ? "#fff" : theme.textSecondary }}>
+						<ThemedText type="smallBold" style={{ color: "#fff" }}>
 							Create Game
 						</ThemedText>
 					</TouchableOpacity>
@@ -540,7 +812,8 @@ export default function NewGameScreen() {
 				title="Number of Rounds"
 				initialValue={parseInt(roundCountStr) || null}
 				allowNegative={false}
-				onSave={v => {
+				minValue={1}
+				onSave={(v) => {
 					setRoundCountStr(v && v > 0 ? v.toString() : "10");
 					setShowRoundNumpad(false);
 				}}
@@ -551,28 +824,19 @@ export default function NewGameScreen() {
 }
 
 const styles = StyleSheet.create({
-	scroll: {
+	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
+	card: {
+		gap: Spacing.two,
+		borderRadius: Spacing.two,
 		padding: Spacing.three,
-		gap: Spacing.four,
-		paddingBottom: Spacing.six,
+		borderWidth: StyleSheet.hairlineWidth,
 	},
-	section: {
-		gap: Spacing.two,
-	},
-	labelRow: {
-		flexDirection: "row",
-		alignItems: "baseline",
-	},
-	label: {
-		fontSize: 11,
-		fontWeight: "600",
-		letterSpacing: 0.8,
-	},
-	chipRow: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: Spacing.two,
-	},
+	labelRow: { flexDirection: "row", alignItems: "baseline" },
+	label: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8 },
+	subLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8, opacity: 0.7 },
+	hint: { fontSize: 13, lineHeight: 18, opacity: 0.7 },
+	fieldError: { fontSize: 12, color: "#C05050" },
+	chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -580,10 +844,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: Spacing.one,
 	},
-	dropdownBtns: {
-		flexDirection: "row",
-		gap: Spacing.two,
-	},
+	dropdownBtns: { flexDirection: "row", gap: Spacing.two },
 	dropdownTrigger: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -592,11 +853,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: Spacing.three,
 		gap: Spacing.one,
 	},
-	chevron: {
-		fontSize: 18,
-		color: '#0077B6',
-		lineHeight: 22,
-	},
+	dropdownTriggerActive: { opacity: 0.75 },
+	chevron: { fontSize: 18, color: "#0077B6", lineHeight: 22 },
 	dropdown: {
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
@@ -604,10 +862,7 @@ const styles = StyleSheet.create({
 		padding: Spacing.two,
 		gap: Spacing.two,
 	},
-	dropdownList: {
-		borderTopWidth: StyleSheet.hairlineWidth,
-		paddingTop: Spacing.one,
-	},
+	dropdownList: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.one },
 	dropdownRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -616,18 +871,10 @@ const styles = StyleSheet.create({
 		borderBottomWidth: StyleSheet.hairlineWidth,
 		gap: Spacing.two,
 	},
-	dropdownEmpty: {
-		textAlign: "center",
-		opacity: 0.6,
-		paddingVertical: Spacing.one,
-	},
-	inputError: {
-		fontSize: 12,
-		color: "#C05050",
-	},
-	segmentRow: {
-		flexDirection: "row",
-	},
+	dropdownEmpty: { textAlign: "center", opacity: 0.6, paddingVertical: Spacing.one },
+	inputError: { fontSize: 12, color: "#C05050" },
+	segmentRow: { flexDirection: "row" },
+	segDivider: { width: StyleSheet.hairlineWidth, alignSelf: "stretch" },
 	segLeft: {
 		flex: 1,
 		alignItems: "center",
@@ -635,11 +882,7 @@ const styles = StyleSheet.create({
 		borderTopLeftRadius: Spacing.two,
 		borderBottomLeftRadius: Spacing.two,
 	},
-	segMid: {
-		flex: 1,
-		alignItems: "center",
-		paddingVertical: Spacing.two,
-	},
+	segMid: { flex: 1, alignItems: "center", paddingVertical: Spacing.two },
 	segRight: {
 		flex: 1,
 		alignItems: "center",
@@ -648,33 +891,23 @@ const styles = StyleSheet.create({
 		borderBottomRightRadius: Spacing.two,
 	},
 	toggleRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		borderRadius: Spacing.two,
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.two,
 	},
-	toggle: {
-		width: 44,
-		height: 26,
-		borderRadius: 13,
-		justifyContent: 'center',
-		paddingHorizontal: 3,
-	},
-	toggleThumb: {
-		width: 20,
-		height: 20,
-		borderRadius: 10,
-		backgroundColor: '#fff',
-	},
-	toggleThumbOn: {
-		alignSelf: 'flex-end',
-	},
-	createBtn: {
-		alignSelf: "stretch",
+	toggle: { width: 44, height: 26, borderRadius: 13, justifyContent: "center", paddingHorizontal: 3 },
+	toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" },
+	toggleThumbOn: { alignSelf: "flex-end" },
+	createBtn: { alignSelf: "stretch", alignItems: "center", paddingVertical: Spacing.three, marginTop: Spacing.one },
+	roundsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
+	roundsInput: {
+		borderRadius: Spacing.one + 2,
+		paddingHorizontal: Spacing.two,
+		paddingVertical: Spacing.one,
+		minWidth: 52,
 		alignItems: "center",
-		paddingVertical: Spacing.three,
-		marginTop: Spacing.one,
 	},
 });

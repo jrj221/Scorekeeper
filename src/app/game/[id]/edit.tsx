@@ -125,13 +125,13 @@ export default function EditGameScreen() {
 			? game.firstPlayerId
 			: undefined;
 
-		updateGame({ ...game, name: name.trim(), description: description.trim() || undefined, players, totalRounds, rankByLowest, rounds, turnOrder: updatedTurnOrder, firstPlayerId: updatedFirstPlayerId });
+		updateGame({ ...game, name: name.trim() || 'Untitled Game', description: description.trim() || undefined, players, totalRounds, rankByLowest, rounds, turnOrder: updatedTurnOrder, firstPlayerId: updatedFirstPlayerId });
 		router.back();
 	}, [game, name, description, players, isIndefinite, roundCountStr, rankByLowest, updateGame, router]);
 
 	if (!game) return null;
 
-	const canSave = name.trim().length > 0 && players.length > 0;
+	const canSave = players.length > 0;
 
 	const filteredGlobalPlayers = globalPlayers.filter(gp =>
 		!players.some(p => p.id === gp.id) &&
@@ -153,10 +153,13 @@ export default function EditGameScreen() {
 				>
 					{/* Name */}
 					<View style={styles.section}>
-						<ThemedText style={styles.label} themeColor="textSecondary">GAME NAME</ThemedText>
+						<View style={styles.labelRow}>
+							<ThemedText style={styles.label} themeColor="textSecondary">GAME NAME</ThemedText>
+							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+						</View>
 						<TextInput
 							style={[shared.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
-							placeholder="Enter game name"
+							placeholder="Untitled Game"
 							placeholderTextColor={theme.textSecondary}
 							value={name}
 							onChangeText={setName}

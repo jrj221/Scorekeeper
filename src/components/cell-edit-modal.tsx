@@ -29,6 +29,7 @@ type Props = {
   title: string;
   initialValue: number | null;
   allowNegative?: boolean;
+  minValue?: number;
   onSave: (value: number | null) => void;
   onCancel: () => void;
 };
@@ -38,6 +39,7 @@ export function CellEditModal({
   title,
   initialValue,
   allowNegative = true,
+  minValue,
   onSave,
   onCancel,
 }: Props) {
@@ -53,11 +55,12 @@ export function CellEditModal({
 
   const [numStr, setNumStr] = useState('');
   const [negative, setNegative] = useState(false);
-  // When reopened with an existing value, the first digit keypress overwrites
   const [overwriteNext, setOverwriteNext] = useState(false);
+  const [hint, setHint] = useState('');
 
   useEffect(() => {
     if (visible) {
+      setHint('');
       if (initialValue !== null) {
         setNumStr(Math.abs(initialValue).toString());
         setNegative(allowNegative && initialValue < 0);
@@ -90,16 +93,26 @@ export function CellEditModal({
   };
 
   const handleDone = () => {
+    const rawN = numStr ? parseInt(numStr, 10) : null;
+    const value = rawN === null ? null : allowNegative && negative ? -rawN : rawN;
+
+    if (minValue !== undefined) {
+      const effective = value ?? (overwriteNext && initialValue !== null ? initialValue : null);
+      if (effective === null || effective < minValue) {
+        setHint(`Must be at least ${minValue}`);
+        return;
+      }
+    }
+
+    setHint('');
     if (!numStr) {
-      // If there was a pre-existing value and the user didn't type anything, keep it
       if (overwriteNext && initialValue !== null) {
         onSave(initialValue);
       } else {
         onSave(null);
       }
     } else {
-      const n = parseInt(numStr, 10);
-      onSave(isNaN(n) ? null : allowNegative && negative ? -n : n);
+      onSave(value);
     }
   };
 
@@ -118,6 +131,10 @@ export function CellEditModal({
           <View style={styles.displayArea}>
             <ThemedText style={[styles.display, { color: displayColor }]}>{displayText}</ThemedText>
           </View>
+
+          {hint ? (
+            <ThemedText style={styles.hint}>{hint}</ThemedText>
+          ) : null}
 
           <View style={styles.numpad}>
             {ROWS.map((row, ri) => (
@@ -195,6 +212,12 @@ const styles = StyleSheet.create({
     lineHeight: 64,
     textAlign: 'center',
     letterSpacing: -1,
+  },
+  hint: {
+    fontSize: 13,
+    color: '#C05050',
+    textAlign: 'center',
+    marginTop: -Spacing.one,
   },
   numpad: {
     gap: KEY_GAP,

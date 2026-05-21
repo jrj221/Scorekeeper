@@ -38,6 +38,11 @@ export function getPlayerWinRate(playerId: string, games: Game[]): string {
   return `${Math.round((wins / finished.length) * 100)}%`;
 }
 
+function deterministicIdx(gameId: string, roundIndex: number, n: number): number {
+  const seed = parseInt(gameId.replace(/\D/g, '').slice(-8) || '0') + roundIndex * 7919;
+  return Math.abs(seed) % n;
+}
+
 /** Returns the effective turn order, first player, and dealer for a given round. */
 export function getTurnState(game: Game, roundIndex: number): {
   orderedIds: string[];
@@ -48,6 +53,23 @@ export function getTurnState(game: Game, roundIndex: number): {
   const n = order.length;
   if (n === 0) return { orderedIds: [], firstPlayerId: null, dealerId: null };
 
+  // Left-of-dealer: dealer is primary, first player derives from dealer
+  if (game.firstPlayerMode === 'left-of-dealer' && game.dealerEnabled) {
+    let dealerIdx = 0;
+    if (game.dealerMode === 'fixed') {
+      const idx = game.fixedDealerId ? order.indexOf(game.fixedDealerId) : -1;
+      dealerIdx = idx !== -1 ? idx : 0;
+    } else {
+      dealerIdx = deterministicIdx(game.id, roundIndex, n);
+    }
+    const dealerId = order[dealerIdx];
+    const firstIdx = (dealerIdx + 1) % n;
+    const firstPlayerId = order[firstIdx];
+    const orderedIds = [...order.slice(firstIdx), ...order.slice(0, firstIdx)];
+    return { orderedIds, firstPlayerId, dealerId };
+  }
+
+  // Standard: first player is primary, dealer optionally derives from first player
   let baseIndex = 0;
   if (game.firstPlayerId) {
     const idx = order.indexOf(game.firstPlayerId);
@@ -64,18 +86,15 @@ export function getTurnState(game: Game, roundIndex: number): {
       case 'fixed':
         dealerId = game.fixedDealerId ?? null;
         break;
-      case 'random': {
-        // Deterministic seed so dealer is stable across re-renders
-        const seed = (parseInt(game.id.replace(/\D/g, '').slice(-8) || '0') + roundIndex * 7919);
-        dealerId = order[Math.abs(seed) % n];
+      case 'rotation': {
+        const startIdx = game.fixedDealerId ? order.indexOf(game.fixedDealerId) : 0;
+        dealerId = order[((startIdx >= 0 ? startIdx : 0) + roundIndex) % n];
         break;
       }
-      case 'right-of-first':
-      default: {
-        const dealerIdx = (firstIdx - 1 + n) % n;
-        dealerId = order[dealerIdx];
+      case 'random':
+      default:
+        dealerId = order[deterministicIdx(game.id, roundIndex, n)];
         break;
-      }
     }
   }
 

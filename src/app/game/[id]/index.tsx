@@ -30,8 +30,8 @@ export default function GameScreen() {
 		useGame(id);
 
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
-	const [viewMode, setViewMode] = useState<"scores" | "turns">(game?.turnOrder ? "turns" : "scores");
 	const finished = !!game?.finishedAt;
+	const [viewMode, setViewMode] = useState<"scores" | "turns">(game?.finishedAt ? "scores" : "turns");
 	const leftScrollRef = useRef<ScrollView>(null);
 	const mainScrollRef = useRef<ScrollView>(null);
 	const handleMainScroll = useCallback((e: any) => {
@@ -76,61 +76,62 @@ export default function GameScreen() {
 	const availableW = SCREEN_W - H_PAD - ROUND_LABEL_W;
 	const visibleCols = Math.min(sortedPlayers.length, 4);
 	const colW = visibleCols > 0 ? Math.floor(availableW / visibleCols) : availableW;
-	const needsHScroll = sortedPlayers.length > 4;
 
 	const rowBg = (i: number) => (i % 2 === 0 ? theme.background : theme.backgroundElement + "55");
 
 	return (
 		<ThemedView style={shared.screen}>
-			<Stack.Screen options={{ title: game.name }} />
+			<Stack.Screen
+				options={{
+					title: game.name,
+					headerBackTitle: "Home",
+					headerTitle: () => (
+						<TouchableOpacity
+							style={styles.headerTitleBtn}
+							onPress={() => router.push(`/game/${id}/info`)}
+							hitSlop={8}
+							activeOpacity={0.6}
+						>
+							<ThemedText style={styles.headerTitleText} numberOfLines={1}>
+								{game.name}
+							</ThemedText>
+							<SymbolView
+								name="info.circle"
+								size={16}
+								tintColor={CURRENT_TINT}
+								style={{ backgroundColor: "transparent" }}
+							/>
+						</TouchableOpacity>
+					),
+				}}
+			/>
 			<SafeAreaView style={styles.safe} edges={["bottom"]}>
 				{/* Round label row */}
 				<View style={styles.roundLabelRow}>
 					<ThemedText style={styles.roundLabel}>{finished ? "Finished" : roundLabel}</ThemedText>
-					<View style={styles.headerBtns}>
-						<TouchableOpacity onPress={() => router.push(`/game/${id}/info`)} hitSlop={8}>
-							<SymbolView name="info.circle" size={20} tintColor={CURRENT_TINT} />
-						</TouchableOpacity>
-						{!finished && (
-							<TouchableOpacity
-								style={[styles.editGameBtn, { backgroundColor: theme.backgroundElement }]}
-								onPress={() => router.push(`/game/${id}/edit`)}
-							>
-								<ThemedText type="small" themeColor="textSecondary">
-									Edit Game
-								</ThemedText>
-							</TouchableOpacity>
-						)}
-					</View>
 				</View>
 
 				{/* Scores / Current Turn tab toggle */}
-				{!finished && game.turnOrder && (
-					<View style={styles.viewToggle}>
+				{!finished && (
+					<View style={[styles.viewToggle, { backgroundColor: theme.backgroundElement }]}>
 						<TouchableOpacity
-							style={[
-								styles.viewTab,
-								viewMode === "scores" && { backgroundColor: theme.backgroundSelected },
-							]}
+							style={[styles.viewTab, viewMode === "scores" && styles.viewTabActive]}
 							onPress={() => setViewMode("scores")}
 						>
 							<ThemedText
 								type="small"
-								style={{ color: viewMode === "scores" ? theme.text : theme.textSecondary }}
+								style={{ color: viewMode === "scores" ? "#fff" : theme.textSecondary }}
 							>
 								Scorecard
 							</ThemedText>
 						</TouchableOpacity>
 						<TouchableOpacity
-							style={[
-								styles.viewTab,
-								viewMode === "turns" && { backgroundColor: theme.backgroundSelected },
-							]}
+							style={[styles.viewTab, viewMode === "turns" && styles.viewTabActive]}
 							onPress={() => setViewMode("turns")}
 						>
 							<ThemedText
 								type="small"
-								style={{ color: viewMode === "turns" ? theme.text : theme.textSecondary }}
+								style={{ color: viewMode === "turns" ? "#fff" : theme.textSecondary }}
 							>
 								Current Turn
 							</ThemedText>
@@ -139,11 +140,11 @@ export default function GameScreen() {
 				)}
 
 				{/* Current Turn view */}
-				{viewMode === "turns" && !finished && game.turnOrder
+				{viewMode === "turns" && !finished
 					? (() => {
 							const { firstPlayerId, dealerId } = getTurnState(game, currentRoundIndex);
 							const playerMap = Object.fromEntries(game.players.map((p) => [p.id, p]));
-							const displayOrder = game.turnOrder;
+							const displayOrder = game.turnOrder ?? game.players.map((p) => p.id);
 							const allScored =
 								game.players.length > 0 &&
 								game.players.every((p) => getScore(currentRoundIndex, p.id) !== null);
@@ -241,20 +242,22 @@ export default function GameScreen() {
 											</ThemedText>
 										</TouchableOpacity>
 									)}
-									<TouchableOpacity
-										style={[
-											styles.editOrderBtn,
-											{
-												borderColor: theme.backgroundSelected,
-												backgroundColor: theme.backgroundElement,
-											},
-										]}
-										onPress={() => router.push(`/game/${id}/turn-order`)}
-									>
-										<ThemedText type="small" themeColor="textSecondary">
-											Edit Turn Order
-										</ThemedText>
-									</TouchableOpacity>
+									{game.turnOrder && (
+										<TouchableOpacity
+											style={[
+												styles.editOrderBtn,
+												{
+													borderColor: theme.backgroundSelected,
+													backgroundColor: theme.backgroundElement,
+												},
+											]}
+											onPress={() => router.push(`/game/${id}/turn-order`)}
+										>
+											<ThemedText type="small" themeColor="textSecondary">
+												Edit Turn Order
+											</ThemedText>
+										</TouchableOpacity>
+									)}
 								</View>
 							);
 						})()
@@ -517,36 +520,39 @@ const styles = StyleSheet.create({
 		gap: Spacing.two,
 	},
 	roundLabelRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		padding: 5,
+		paddingHorizontal: 5,
+		paddingVertical: 4,
 	},
 	roundLabel: {
 		fontSize: 25,
 		fontWeight: "700",
 		letterSpacing: -0.3,
 	},
-	headerBtns: {
+	headerTitleBtn: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: Spacing.two,
+		gap: 5,
 	},
-	editGameBtn: {
-		borderRadius: Spacing.two,
-		paddingHorizontal: Spacing.two,
-		paddingVertical: Spacing.one,
+	headerTitleText: {
+		fontSize: 17,
+		fontWeight: "600",
 	},
 	viewToggle: {
 		flexDirection: "row",
 		borderRadius: Spacing.two,
 		overflow: "hidden",
+		padding: 3,
 	},
 	viewTab: {
 		flex: 1,
 		alignItems: "center",
-		paddingVertical: Spacing.one,
-		borderRadius: Spacing.two,
+		justifyContent: "center",
+		paddingVertical: Spacing.one + 2,
+		margin: 2,
+		borderRadius: Spacing.two - 3,
+	},
+	viewTabActive: {
+		backgroundColor: "#0077B6",
 	},
 	// Scorecard
 	labelCell: {
