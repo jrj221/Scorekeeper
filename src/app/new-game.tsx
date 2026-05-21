@@ -1,4 +1,5 @@
 "use client";
+import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
@@ -19,6 +21,7 @@ import { Spacing } from "@/constants/theme";
 import { DealerMode, Player, useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
+import { consumePendingIcon } from "@/utils/icon-picker-state";
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 
@@ -30,6 +33,12 @@ export default function NewGameScreen() {
 
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
+	const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+
+	useFocusEffect(useCallback(() => {
+		const icon = consumePendingIcon();
+		if (icon !== undefined) setSelectedIcon(icon);
+	}, []));
 	const [players, setPlayers] = useState<Player[]>([]);
 	const [isIndefinite, setIsIndefinite] = useState(false);
 	const [roundCountStr, setRoundCountStr] = useState("10");
@@ -147,6 +156,7 @@ export default function NewGameScreen() {
 
 		const id = createGame({
 			name: name.trim() || "Untitled Game",
+			icon: selectedIcon ?? undefined,
 			description: description.trim() || undefined,
 			players,
 			totalRounds,
@@ -230,15 +240,28 @@ export default function NewGameScreen() {
 								(OPTIONAL)
 							</ThemedText>
 						</View>
-						<TextInput
-							style={[shared.input, innerInput]}
-							placeholder="Untitled Game"
-							placeholderTextColor={theme.textSecondary}
-							value={name}
-							onChangeText={setName}
-							maxLength={30}
-							returnKeyType="next"
-						/>
+						<View style={styles.nameRow}>
+							<TouchableOpacity
+								style={[styles.iconBtn, { backgroundColor: theme.background }]}
+								onPress={() => router.push("/icon-picker")}
+								activeOpacity={0.7}
+							>
+								<FontAwesome5
+									name={(selectedIcon ?? "users") as any}
+									size={20}
+									color={theme.textSecondary}
+								/>
+							</TouchableOpacity>
+							<TextInput
+								style={[shared.input, innerInput, { flex: 1 }]}
+								placeholder="Untitled Game"
+								placeholderTextColor={theme.textSecondary}
+								value={name}
+								onChangeText={setName}
+								maxLength={30}
+								returnKeyType="next"
+							/>
+						</View>
 					</View>
 
 					{/* Description */}
@@ -989,5 +1012,18 @@ const styles = StyleSheet.create({
 		paddingVertical: Spacing.one,
 		minWidth: 52,
 		alignItems: "center",
+	},
+	nameRow: {
+		flexDirection: "row",
+		alignItems: "stretch",
+		gap: Spacing.two,
+	},
+	iconBtn: {
+		borderRadius: Spacing.two,
+		aspectRatio: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		// height matches shared.input padding: Spacing.two*2 + fontSize 16 lineheight ≈ 40
+		width: 40,
 	},
 });

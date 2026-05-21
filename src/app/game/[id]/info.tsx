@@ -1,6 +1,9 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { consumePendingIcon } from "@/utils/icon-picker-state";
 import {
 	Alert,
 	KeyboardAvoidingView,
@@ -29,11 +32,21 @@ export default function GameInfoScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { getGame, updateGame, globalPlayers, addGlobalPlayer } = useGamesContext();
 	const theme = useTheme();
+	const router = useRouter();
 	const game = getGame(id);
 
 	// Local draft — changes only persist when user presses Save Changes
 	const [draft, setDraft] = useState(game);
 	const [isDirty, setIsDirty] = useState(false);
+
+	// Pick up icon selected in icon-picker screen
+	useFocusEffect(useCallback(() => {
+		const icon = consumePendingIcon();
+		if (icon !== undefined) {
+			setDraft((prev) => (prev ? { ...prev, icon: icon ?? undefined } : prev));
+			setIsDirty(true);
+		}
+	}, []));
 
 	const [editing, setEditing] = useState<Section>(null);
 	const [showRoundNumpad, setShowRoundNumpad] = useState(false);
@@ -195,6 +208,40 @@ export default function GameInfoScreen() {
 					keyboardShouldPersistTaps="handled"
 					showsVerticalScrollIndicator={false}
 				>
+					{/* Game Name & Icon */}
+					<View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
+						<View style={styles.labelRow}>
+							<ThemedText style={styles.label} themeColor="textSecondary">GAME NAME</ThemedText>
+							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+						</View>
+						{finished ? (
+							<ThemedText type="default">{draft?.name || "Untitled Game"}</ThemedText>
+						) : (
+							<View style={styles.nameRow}>
+								<TouchableOpacity
+									style={[styles.iconBtn, { backgroundColor: theme.backgroundSelected }]}
+									onPress={() => router.push("/icon-picker")}
+									activeOpacity={0.7}
+								>
+									<FontAwesome5
+										name={((draft?.icon) ?? "users") as any}
+										size={20}
+										color={theme.textSecondary}
+									/>
+								</TouchableOpacity>
+								<TextInput
+									style={[shared.input, { backgroundColor: theme.backgroundSelected, color: theme.text, flex: 1 }]}
+									placeholder="Untitled Game"
+									placeholderTextColor={theme.textSecondary}
+									value={draft?.name ?? ""}
+									onChangeText={(v) => patch({ name: v })}
+									maxLength={30}
+									returnKeyType="done"
+								/>
+							</View>
+						)}
+					</View>
+
 					{/* Win Condition */}
 					<View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
 						<View style={styles.cardHeader}>
@@ -939,4 +986,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	hint: { fontSize: 13, lineHeight: 18, opacity: 0.7 },
+	iconPreviewRow: { flexDirection: "row", alignItems: "center", gap: Spacing.three },
+	iconPreview: { width: 52, height: 52, borderRadius: Spacing.two, alignItems: "center", justifyContent: "center" },
+	labelRow: { flexDirection: "row", alignItems: "baseline" },
+	nameRow: { flexDirection: "row", alignItems: "stretch", gap: Spacing.two },
+	iconBtn: { borderRadius: Spacing.two, width: 40, alignItems: "center", justifyContent: "center" },
 });

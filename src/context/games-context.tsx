@@ -10,6 +10,7 @@ export type Round = Record<string, number>;
 export type Game = {
   id: string;
   name: string;
+  icon?: string;
   description?: string;
   players: Player[];
   rounds: Round[];
@@ -47,6 +48,7 @@ export type DealerMode = 'fixed' | 'random' | 'rotation';
 
 export type CreateGameOpts = {
   name: string;
+  icon?: string;
   description?: string;
   players: Player[];
   totalRounds?: number;
@@ -121,7 +123,7 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
   const createGame = useCallback((opts: CreateGameOpts): string => {
     const id = Date.now().toString();
     setGames(prev => [{
-      id, name: opts.name, description: opts.description,
+      id, name: opts.name, icon: opts.icon, description: opts.description,
       players: opts.players, rounds: [], totalRounds: opts.totalRounds,
       rankByLowest: opts.rankByLowest, createdAt: Date.now(),
       dealerEnabled: opts.dealerEnabled,
