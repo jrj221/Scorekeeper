@@ -126,6 +126,8 @@ export function getTurnHintText(
 ): string | null {
   if (!turnsEnabled) return null;
   if (firstPlayerMode === 'left-of-dealer') return 'The player to the left of the dealer goes first each round.';
-  if (firstPlayerMode === 'random' || !firstPlayerName) return 'The first player will be randomly determined each round.';
-  return `${firstPlayerName} goes first in Round 1, then it rotates to the next player each round.`;
+  if (firstPlayerMode === 'random') return 'The first player will be randomly determined each round.';
+  // rotation mode
+  if (firstPlayerName) return `${firstPlayerName} goes first in Round 1, then it rotates to the next player each round.`;
+  return 'The first player rotates through the group each round.';
 }
