@@ -479,24 +479,67 @@ export default function GameInfoScreen() {
 										</ThemedText>
 										<View style={styles.segmentRow}>
 											<TouchableOpacity
-												style={[styles.segLeft, { backgroundColor: dealerMode === "rotation" ? TINT : theme.backgroundSelected }]}
-												onPress={() => patch({ dealerMode: "rotation", fixedDealerId: fixedDealerId ?? players[0]?.id })}
+												style={[
+													styles.segLeft,
+													{
+														backgroundColor:
+															dealerMode === "rotation" ? TINT : theme.backgroundSelected,
+													},
+												]}
+												onPress={() =>
+													patch({
+														dealerMode: "rotation",
+														fixedDealerId: fixedDealerId ?? players[0]?.id,
+													})
+												}
 											>
-												<ThemedText type="small" style={{ color: dealerMode === "rotation" ? "#fff" : theme.text }}>Rotation</ThemedText>
+												<ThemedText
+													type="small"
+													style={{ color: dealerMode === "rotation" ? "#fff" : theme.text }}
+												>
+													Rotation
+												</ThemedText>
 											</TouchableOpacity>
 											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
 											<TouchableOpacity
-												style={[styles.segMid, { backgroundColor: dealerMode === "random" ? TINT : theme.backgroundSelected }]}
+												style={[
+													styles.segMid,
+													{
+														backgroundColor:
+															dealerMode === "random" ? TINT : theme.backgroundSelected,
+													},
+												]}
 												onPress={() => patch({ dealerMode: "random" })}
 											>
-												<ThemedText type="small" style={{ color: dealerMode === "random" ? "#fff" : theme.text }}>Random</ThemedText>
+												<ThemedText
+													type="small"
+													style={{ color: dealerMode === "random" ? "#fff" : theme.text }}
+												>
+													Random
+												</ThemedText>
 											</TouchableOpacity>
 											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
 											<TouchableOpacity
-												style={[styles.segRight, { backgroundColor: dealerMode === "fixed" ? TINT : theme.backgroundSelected }]}
-												onPress={() => patch({ dealerMode: "fixed", fixedDealerId: fixedDealerId ?? players[0]?.id })}
+												style={[
+													styles.segRight,
+													{
+														backgroundColor:
+															dealerMode === "fixed" ? TINT : theme.backgroundSelected,
+													},
+												]}
+												onPress={() =>
+													patch({
+														dealerMode: "fixed",
+														fixedDealerId: fixedDealerId ?? players[0]?.id,
+													})
+												}
 											>
-												<ThemedText type="small" style={{ color: dealerMode === "fixed" ? "#fff" : theme.text }}>Fixed</ThemedText>
+												<ThemedText
+													type="small"
+													style={{ color: dealerMode === "fixed" ? "#fff" : theme.text }}
+												>
+													Fixed
+												</ThemedText>
 											</TouchableOpacity>
 										</View>
 										{(dealerMode === "fixed" || dealerMode === "rotation") && (
@@ -578,7 +621,7 @@ export default function GameInfoScreen() {
 					<View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
 						<View style={styles.cardHeader}>
 							<ThemedText style={styles.label} themeColor="textSecondary">
-								TURN ORDER
+								WHO GOES FIRST
 							</ThemedText>
 							<EditIcon section="turns" />
 						</View>
@@ -604,36 +647,97 @@ export default function GameInfoScreen() {
 								{turnsEnabled && (
 									<>
 										<ThemedText style={styles.subLabel} themeColor="textSecondary">
-											WHO GOES FIRST
+											FIRST PLAYER EACH ROUND IS
 										</ThemedText>
 										<View style={styles.segmentRow}>
+											{dealerEnabled && (
+												<>
+													<TouchableOpacity
+														style={[
+															styles.segLeft,
+															{
+																backgroundColor: leftOfDealer
+																	? TINT
+																	: theme.backgroundSelected,
+															},
+														]}
+														onPress={() =>
+															patch({
+																firstPlayerMode: "left-of-dealer",
+																firstPlayerId: undefined,
+															})
+														}
+													>
+														<ThemedText
+															type="small"
+															style={{ color: leftOfDealer ? "#fff" : theme.text }}
+														>
+															Left of Dealer
+														</ThemedText>
+													</TouchableOpacity>
+													<View
+														style={[
+															styles.segDivider,
+															{ backgroundColor: theme.background },
+														]}
+													/>
+												</>
+											)}
 											<TouchableOpacity
-												style={[styles.segLeft, { backgroundColor: !leftOfDealer && firstPlayerId ? TINT : theme.backgroundSelected }]}
+												style={[
+													dealerEnabled ? styles.segMid : styles.segLeft,
+													{
+														backgroundColor:
+															!leftOfDealer && firstPlayerId
+																? TINT
+																: theme.backgroundSelected,
+													},
+												]}
 												onPress={() => {
-													if (!firstPlayerId) patch({ firstPlayerMode: undefined, firstPlayerId: players[0]?.id });
-													else setActiveDropdown((prev) => prev === "firstPlayer" ? null : "firstPlayer");
+													if (!firstPlayerId)
+														patch({
+															firstPlayerMode: undefined,
+															firstPlayerId: players[0]?.id,
+														});
+													else
+														setActiveDropdown((prev) =>
+															prev === "firstPlayer" ? null : "firstPlayer",
+														);
 												}}
 											>
-												<ThemedText type="small" style={{ color: !leftOfDealer && firstPlayerId ? "#fff" : theme.text }}>Rotation</ThemedText>
+												<ThemedText
+													type="small"
+													style={{
+														color: !leftOfDealer && firstPlayerId ? "#fff" : theme.text,
+													}}
+												>
+													Rotation
+												</ThemedText>
 											</TouchableOpacity>
 											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
 											<TouchableOpacity
-												style={[dealerEnabled ? styles.segMid : styles.segRight, { backgroundColor: !leftOfDealer && !firstPlayerId ? TINT : theme.backgroundSelected }]}
-												onPress={() => patch({ firstPlayerMode: undefined, firstPlayerId: undefined })}
+												style={[
+													styles.segRight,
+													{
+														backgroundColor:
+															!leftOfDealer && !firstPlayerId
+																? TINT
+																: theme.backgroundSelected,
+													},
+												]}
+												onPress={() =>
+													patch({ firstPlayerMode: undefined, firstPlayerId: undefined })
+												}
 											>
-												<ThemedText type="small" style={{ color: !leftOfDealer && !firstPlayerId ? "#fff" : theme.text }}>Random</ThemedText>
+												<ThemedText
+													type="small"
+													style={{
+														color: !leftOfDealer && !firstPlayerId ? "#fff" : theme.text,
+													}}
+												>
+													Random
+												</ThemedText>
 											</TouchableOpacity>
-											{dealerEnabled && (
-												<>
-													<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
-													<TouchableOpacity
-														style={[styles.segRight, { backgroundColor: leftOfDealer ? TINT : theme.backgroundSelected }]}
-														onPress={() => patch({ firstPlayerMode: "left-of-dealer", firstPlayerId: undefined })}
-													>
-														<ThemedText type="small" style={{ color: leftOfDealer ? "#fff" : theme.text }}>Left of Dealer</ThemedText>
-													</TouchableOpacity>
-												</>
-											)}
 										</View>
 										{!leftOfDealer && firstPlayerId && (
 											<>
@@ -705,7 +809,7 @@ export default function GameInfoScreen() {
 								{!turnsEnabled
 									? "Disabled"
 									: leftOfDealer
-										? "Left of dealer each round"
+										? "Left of dealer"
 										: firstPlayerId
 											? `${players.find((p) => p.id === firstPlayerId)?.name ?? "–"} goes first`
 											: "Random order"}
@@ -727,7 +831,11 @@ export default function GameInfoScreen() {
 					{!finished && isDirty && (
 						<TouchableOpacity
 							style={[styles.templateBtn, { backgroundColor: TINT }]}
-							onPress={() => { updateGame(draft); setIsDirty(false); setEditing(null); }}
+							onPress={() => {
+								updateGame(draft);
+								setIsDirty(false);
+								setEditing(null);
+							}}
 						>
 							<ThemedText type="smallBold" style={{ color: "#fff" }}>
 								Save Changes

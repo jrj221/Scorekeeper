@@ -224,9 +224,34 @@ export default function GameScreen() {
 														)}
 													</View>
 													<View style={styles.turnScoreArea}>
-														<ThemedText style={styles.turnScore}>
-															{totals[pid] ?? 0}
-														</ThemedText>
+														{(() => {
+															const roundScore = getScore(currentRoundIndex, pid);
+															const prevTotal = (totals[pid] ?? 0) - (roundScore ?? 0);
+															return (
+																<View style={styles.turnScoreRow}>
+																	<ThemedText style={styles.turnScore}>
+																		{prevTotal}
+																	</ThemedText>
+																	{roundScore !== null && (
+																		<ThemedText
+																			style={[
+																				styles.turnScoreDelta,
+																				{
+																					color:
+																						roundScore < 0
+																							? "#C05050"
+																							: theme.text,
+																				},
+																			]}
+																		>
+																			{roundScore >= 0
+																				? ` +${roundScore}`
+																				: ` ${roundScore}`}
+																		</ThemedText>
+																	)}
+																</View>
+															);
+														})()}
 													</View>
 												</TouchableOpacity>
 											);
@@ -647,11 +672,21 @@ const styles = StyleSheet.create({
 		alignItems: "flex-end",
 		gap: 4,
 	},
+	turnScoreRow: {
+		flexDirection: "row",
+		alignItems: "baseline",
+		gap: 4,
+	},
 	turnScore: {
 		fontSize: 22,
 		fontWeight: "600",
 		minWidth: 50,
 		textAlign: "right",
+	},
+	turnScoreDelta: {
+		fontSize: 16,
+		fontWeight: "500",
+		opacity: 0.45,
 	},
 	addScoreBtn: {
 		borderRadius: 6,
