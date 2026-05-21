@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -46,7 +47,7 @@ export default function TemplatesScreen() {
           }
           renderItem={({ item }) => (
             <HapticButton
-              style={[forms.card, { backgroundColor: theme.backgroundElement }]}
+              style={[forms.card, { backgroundColor: theme.backgroundElement, flexDirection: 'row', alignItems: 'center' }]}
               onPress={() => router.push(`/template/${item.id}`)}
             >
               <View style={{ flex: 1, gap: 3 }}>
@@ -61,11 +62,8 @@ export default function TemplatesScreen() {
                   </ThemedText>
                 </View>
               </View>
-              <HapticButton
-                hitSlop={8}
-                onPress={() => confirmDelete(item.id, item.name)}
-              >
-                <ThemedText type="small" themeColor="textSecondary">✕</ThemedText>
+              <HapticButton hitSlop={8} onPress={() => confirmDelete(item.id, item.name)}>
+                <SymbolView name="trash" size={16} tintColor={theme.textSecondary} />
               </HapticButton>
             </HapticButton>
           )}

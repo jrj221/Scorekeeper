@@ -4,7 +4,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -17,6 +17,7 @@ import { Player, useGamesContext } from "@/context/games-context";
 import { useDraft } from "@/hooks/use-draft";
 import { usePlayerSearch } from "@/hooks/use-player-search";
 import { useTheme } from "@/hooks/use-theme";
+import { useUnsavedChangesScroll } from "@/hooks/use-unsaved-changes-scroll";
 import { forms } from "@/styles/forms";
 import { shared } from "@/styles/shared";
 
@@ -31,7 +32,9 @@ export default function GameInfoScreen() {
 	const router = useRouter();
 	const game = getGame(id);
 
-	const { draft, patch, isDirty, save: saveDraft } = useDraft(game, updateGame);
+	const { draft, patch, isDirty, save: saveDraft, reset: resetDraft } = useDraft(game, updateGame);
+	const scrollRef = useRef<ScrollView>(null);
+	const { highlightStyle } = useUnsavedChangesScroll(isDirty, scrollRef);
 
 	// Pick up icon selected in icon-picker screen
 	useFocusEffect(
@@ -152,6 +155,7 @@ export default function GameInfoScreen() {
 			<Stack.Screen options={{ title: "Game Info", headerBackTitle: game.name }} />
 			<KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
 				<ScrollView
+					ref={scrollRef}
 					contentContainerStyle={styles.scroll}
 					keyboardShouldPersistTaps="handled"
 					showsVerticalScrollIndicator={false}
@@ -829,19 +833,22 @@ export default function GameInfoScreen() {
 						</View>
 					) : null}
 
-					{/* Save Changes */}
+					{/* Cancel / Save Changes */}
 					{!finished && isDirty && (
-						<HapticButton
-							style={[styles.templateBtn, { backgroundColor: TINT }]}
-							onPress={() => {
-								saveDraft();
-								setEditing(null);
-							}}
-						>
-							<ThemedText type="smallBold" style={{ color: "#fff" }}>
-								Save Changes
-							</ThemedText>
-						</HapticButton>
+						<View style={[styles.actionsContainer, highlightStyle]}>
+							<HapticButton
+								style={[styles.cancelBtn, { backgroundColor: theme.backgroundElement }]}
+								onPress={() => { resetDraft(); setEditing(null); }}
+							>
+								<ThemedText type="small" themeColor="textSecondary">Cancel Changes</ThemedText>
+							</HapticButton>
+							<HapticButton
+								style={[styles.templateBtn, { backgroundColor: TINT }]}
+								onPress={() => { saveDraft(); setEditing(null); }}
+							>
+								<ThemedText type="smallBold" style={{ color: "#fff" }}>Save Changes</ThemedText>
+							</HapticButton>
+						</View>
 					)}
 				</ScrollView>
 				<SafeAreaView edges={["bottom"]} />
@@ -866,9 +873,17 @@ export default function GameInfoScreen() {
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
 	hintError: { fontSize: 12, color: "#C05050" },
+	actionsContainer: {
+		gap: Spacing.two,
+		padding: Spacing.one,
+	},
+	cancelBtn: {
+		borderRadius: Spacing.two,
+		paddingVertical: Spacing.two,
+		alignItems: "center",
+	},
 	templateBtn: {
 		borderRadius: Spacing.two,
-		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: Spacing.three,
 		alignItems: "center",
 	},

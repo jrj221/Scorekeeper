@@ -1,9 +1,10 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
+
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
@@ -21,6 +22,7 @@ import { Spacing } from "@/constants/theme";
 import { DealerMode, GameTemplate, useGamesContext } from "@/context/games-context";
 import { useDraft } from "@/hooks/use-draft";
 import { useTheme } from "@/hooks/use-theme";
+import { useUnsavedChangesScroll } from "@/hooks/use-unsaved-changes-scroll";
 import { shared } from "@/styles/shared";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { forms } from '@/styles/forms';
@@ -35,7 +37,9 @@ export default function TemplateScreen() {
 	const router = useRouter();
 	const template = getTemplate(id);
 
-	const { draft, patch, isDirty, save: saveDraft } = useDraft(template, updateTemplate);
+	const { draft, patch, isDirty, save: saveDraft, reset: resetDraft } = useDraft(template, updateTemplate);
+	const scrollRef = useRef<ScrollView>(null);
+	const { highlightStyle } = useUnsavedChangesScroll(isDirty, scrollRef);
 	const [editing, setEditing] = useState<Section>(null);
 	const [showRoundNumpad, setShowRoundNumpad] = useState(false);
 
@@ -75,6 +79,7 @@ export default function TemplateScreen() {
 			<Stack.Screen options={{ title: draft.name || "Template" }} />
 			<KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
 				<ScrollView
+					ref={scrollRef}
 					contentContainerStyle={styles.scroll}
 					keyboardShouldPersistTaps="handled"
 					showsVerticalScrollIndicator={false}
@@ -274,14 +279,22 @@ export default function TemplateScreen() {
 						</View>
 					) : null}
 
-					{/* Save Changes */}
+					{/* Cancel / Save Changes */}
 					{isDirty && (
-						<HapticButton
-							style={[styles.saveBtn, { backgroundColor: TINT }]}
-							onPress={() => { saveDraft(); setEditing(null); }}
-						>
-							<ThemedText type="smallBold" style={{ color: "#fff" }}>Save Changes</ThemedText>
-						</HapticButton>
+						<View style={[styles.actionsContainer, highlightStyle]}>
+							<HapticButton
+								style={[styles.cancelBtn, { backgroundColor: theme.backgroundElement }]}
+								onPress={() => { resetDraft(); setEditing(null); }}
+							>
+								<ThemedText type="small" themeColor="textSecondary">Cancel Changes</ThemedText>
+							</HapticButton>
+							<HapticButton
+								style={[styles.saveBtn, { backgroundColor: TINT }]}
+								onPress={() => { saveDraft(); setEditing(null); }}
+							>
+								<ThemedText type="smallBold" style={{ color: "#fff" }}>Save Changes</ThemedText>
+							</HapticButton>
+						</View>
 					)}
 				</ScrollView>
 				<SafeAreaView edges={["bottom"]} />
@@ -303,5 +316,7 @@ export default function TemplateScreen() {
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
 	iconPreview: { width: 40, height: 40, borderRadius: Spacing.two, alignItems: "center", justifyContent: "center" },
+	actionsContainer: { gap: Spacing.two, padding: Spacing.one },
+	cancelBtn: { borderRadius: Spacing.two, paddingVertical: Spacing.two, alignItems: "center" },
 	saveBtn: { borderRadius: Spacing.two, paddingVertical: Spacing.three, alignItems: "center" },
 });
