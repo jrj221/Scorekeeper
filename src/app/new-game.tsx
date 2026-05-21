@@ -71,6 +71,11 @@ export default function NewGameScreen() {
 		setIsIndefinite(tmpl.totalRounds === undefined);
 		setRoundCountStr(tmpl.totalRounds !== undefined ? tmpl.totalRounds.toString() : "10");
 		setRankByLowest(tmpl.rankByLowest);
+		if (tmpl.icon !== undefined) setSelectedIcon(tmpl.icon ?? null);
+		if (tmpl.dealerEnabled !== undefined) setDealerEnabled(!!tmpl.dealerEnabled);
+		if (tmpl.dealerMode !== undefined) setDealerMode(tmpl.dealerMode);
+		if (tmpl.turnOrderEnabled !== undefined) setTurnOrderEnabled(!!tmpl.turnOrderEnabled);
+		if (tmpl.firstPlayerSetting !== undefined) setFirstPlayerMode(tmpl.firstPlayerSetting);
 	}, [templateId]);
 
 	const toggleDropdown = (d: ActiveDropdown) => setActiveDropdown((prev) => (prev === d ? null : d));

@@ -32,10 +32,15 @@ export type GlobalPlayer = { id: string; name: string };
 export type GameTemplate = {
   id: string;
   name: string;
+  icon?: string;
   description?: string;
   totalRounds?: number;
   rankByLowest: boolean;
   createdAt: number;
+  dealerEnabled?: boolean;
+  dealerMode?: DealerMode;
+  turnOrderEnabled?: boolean;
+  firstPlayerSetting?: 'random' | 'left-of-dealer' | 'rotation';
 };
 
 export type PlayerGroup = {
@@ -206,13 +211,21 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
     const game = games.find(g => g.id === gameId);
     if (!game) return null;
     const id = `tmpl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    let firstPlayerSetting: GameTemplate['firstPlayerSetting'] = 'random';
+    if (game.firstPlayerMode === 'left-of-dealer') firstPlayerSetting = 'left-of-dealer';
+    else if (game.firstPlayerId) firstPlayerSetting = 'rotation';
     setTemplates(prev => [{
       id,
       name: game.name,
+      icon: game.icon,
       description: game.description,
       totalRounds: game.totalRounds,
       rankByLowest: game.rankByLowest,
       createdAt: Date.now(),
+      dealerEnabled: game.dealerEnabled,
+      dealerMode: game.dealerMode,
+      turnOrderEnabled: game.turnOrder !== undefined,
+      firstPlayerSetting,
     }, ...prev]);
     return id;
   }, [games]);
