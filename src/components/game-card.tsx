@@ -1,12 +1,13 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { Game } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { homeStyles } from "@/styles/home";
 import { getGameTotals } from "@/utils/game";
 import { ThemedText } from "./themed-text";
+import { HapticButton } from "@/components/haptic-button";
 
 type Props = {
 	game: Game;
@@ -48,7 +49,7 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 	const displayName = finished ? `${game.name}${winnerSuffix(game)}` : game.name;
 
 	return (
-		<TouchableOpacity
+		<HapticButton
 			style={[homeStyles.card, { backgroundColor: theme.backgroundElement }, finished && styles.finished]}
 			onPress={onPress}
 		>
@@ -67,22 +68,19 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 					{subtitle}
 				</ThemedText>
 			</View>
-			<TouchableOpacity onPress={onDelete} hitSlop={8}>
+			<HapticButton onPress={onDelete} hitSlop={8}>
 				<SymbolView name="trash" size={16} tintColor={theme.textSecondary} />
-			</TouchableOpacity>
-		</TouchableOpacity>
+			</HapticButton>
+		</HapticButton>
 	);
 }
 
 const styles = StyleSheet.create({
 	finished: {
-		opacity: 0.85,
-	},
+		opacity: 0.85 },
 	iconContainer: {
 		width: 44,
 		alignSelf: "stretch",
 		borderRadius: 8,
 		alignItems: "center",
-		justifyContent: "center",
-	},
-});
+		justifyContent: "center" } });

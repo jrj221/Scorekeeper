@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router";
-import { Alert, SectionList, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, SectionList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GameCard } from "@/components/game-card";
@@ -12,6 +12,7 @@ import { useGames } from "@/hooks/use-games";
 import { useTheme } from "@/hooks/use-theme";
 import { homeStyles } from "@/styles/home";
 import { shared } from "@/styles/shared";
+import { HapticButton } from "@/components/haptic-button";
 
 export default function HomeScreen() {
 	const { games, handleOpen, deleteGame } = useGames();
@@ -84,13 +85,13 @@ export default function HomeScreen() {
 
 				{DEV_TOOLS_ENABLED && (
 					<View style={styles.devBar}>
-						<TouchableOpacity
+						<HapticButton
 							style={[styles.devBtn, { backgroundColor: theme.backgroundElement }]}
 							onPress={seedData}
 						>
 							<ThemedText type="small" style={{ color: '#0077B6' }}>Seed Data</ThemedText>
-						</TouchableOpacity>
-						<TouchableOpacity
+						</HapticButton>
+						<HapticButton
 							style={[styles.devBtn, { backgroundColor: theme.backgroundElement }]}
 							onPress={() =>
 								Alert.alert('Reset All Data', 'Delete all games, players, and templates?', [
@@ -100,13 +101,13 @@ export default function HomeScreen() {
 							}
 						>
 							<ThemedText type="small" style={{ color: '#C05050' }}>Reset</ThemedText>
-						</TouchableOpacity>
+						</HapticButton>
 					</View>
 				)}
 
-				<TouchableOpacity style={[homeStyles.fab, { backgroundColor: "#0077B6" }]} onPress={handleFabPress}>
+				<HapticButton style={[homeStyles.fab, { backgroundColor: "#0077B6" }]} onPress={handleFabPress}>
 					<ThemedText type="subtitle" style={{ color: "#fff", lineHeight: 32 }}>+</ThemedText>
-				</TouchableOpacity>
+				</HapticButton>
 			</SafeAreaView>
 		</ThemedView>
 	);
@@ -114,24 +115,18 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
 	sectionHeader: {
-		paddingBottom: Spacing.one,
-	},
+		paddingBottom: Spacing.one },
 	sectionHeaderGap: {
-		marginTop: Spacing.three,
-	},
+		marginTop: Spacing.three },
 	sectionTitle: {
 		fontSize: 11,
 		fontWeight: "600",
-		letterSpacing: 0.8,
-	},
+		letterSpacing: 0.8 },
 	devBar: {
 		flexDirection: 'row',
 		gap: Spacing.two,
-		paddingBottom: Spacing.two,
-	},
+		paddingBottom: Spacing.two },
 	devBtn: {
 		borderRadius: Spacing.two,
 		paddingVertical: Spacing.one,
-		paddingHorizontal: Spacing.two,
-	},
-});
+		paddingHorizontal: Spacing.two } });

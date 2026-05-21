@@ -6,9 +6,7 @@ import {
 	ScrollView,
 	StyleSheet,
 	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+	View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CellEditModal } from '@/components/cell-edit-modal';
@@ -18,6 +16,7 @@ import { Spacing } from '@/constants/theme';
 import { Player, useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 type ActiveDropdown = 'player' | 'group' | null;
 
@@ -199,20 +198,20 @@ export default function EditGameScreen() {
 						{players.length > 0 && (
 							<View style={styles.chipRow}>
 								{players.map(p => (
-									<TouchableOpacity
+									<HapticButton
 										key={p.id}
 										style={[styles.chip, { backgroundColor: theme.backgroundSelected }]}
 										onPress={() => removePlayer(p.id)}
 									>
 										<ThemedText type="small">{p.name}</ThemedText>
 										<ThemedText type="small" themeColor="textSecondary"> ×</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 								))}
 							</View>
 						)}
 
 						<View style={styles.dropdownBtns}>
-							<TouchableOpacity
+							<HapticButton
 								style={[
 									styles.dropdownTrigger,
 									{ backgroundColor: theme.backgroundElement },
@@ -222,10 +221,10 @@ export default function EditGameScreen() {
 							>
 								<ThemedText type="small" style={{ color: '#0077B6' }}>Add Player</ThemedText>
 								<ThemedText style={styles.chevron}>{activeDropdown === 'player' ? '▴' : '▾'}</ThemedText>
-							</TouchableOpacity>
+							</HapticButton>
 
 							{groups.length > 0 && (
-								<TouchableOpacity
+								<HapticButton
 									style={[
 										styles.dropdownTrigger,
 										{ backgroundColor: theme.backgroundElement },
@@ -235,7 +234,7 @@ export default function EditGameScreen() {
 								>
 									<ThemedText type="small" style={{ color: '#0077B6' }}>Add Group</ThemedText>
 									<ThemedText style={styles.chevron}>{activeDropdown === 'group' ? '▴' : '▾'}</ThemedText>
-								</TouchableOpacity>
+								</HapticButton>
 							)}
 						</View>
 
@@ -261,7 +260,7 @@ export default function EditGameScreen() {
 								{filteredGlobalPlayers.length > 0 && (
 									<View style={[styles.dropdownList, { borderTopColor: theme.backgroundSelected }]}>
 										{filteredGlobalPlayers.map((gp, i) => (
-											<TouchableOpacity
+											<HapticButton
 												key={gp.id}
 												style={[
 													styles.dropdownRow,
@@ -272,7 +271,7 @@ export default function EditGameScreen() {
 											>
 												<ThemedText type="default">{gp.name}</ThemedText>
 												<ThemedText type="small" style={{ color: '#0077B6' }}>+ Add</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 										))}
 									</View>
 								)}
@@ -307,7 +306,7 @@ export default function EditGameScreen() {
 											.filter(Boolean)
 											.join(', ');
 										return (
-											<TouchableOpacity
+											<HapticButton
 												key={g.id}
 												style={[
 													styles.dropdownRow,
@@ -325,7 +324,7 @@ export default function EditGameScreen() {
 													) : null}
 												</View>
 												<ThemedText type="small" style={{ color: '#0077B6' }}>+ Add</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 										);
 									})
 								)}
@@ -337,28 +336,28 @@ export default function EditGameScreen() {
 					<View style={styles.section}>
 						<ThemedText style={styles.label} themeColor="textSecondary">ROUNDS</ThemedText>
 						<View style={styles.segmentRow}>
-							<TouchableOpacity
+							<HapticButton
 								style={[styles.segLeft, { backgroundColor: isIndefinite ? '#0077B6' : theme.backgroundElement }]}
 								onPress={() => setIsIndefinite(true)}
 							>
 								<ThemedText type="small" style={{ color: isIndefinite ? '#fff' : theme.text }}>Indefinite</ThemedText>
-							</TouchableOpacity>
-							<TouchableOpacity
+							</HapticButton>
+							<HapticButton
 								style={[styles.segRight, { backgroundColor: !isIndefinite ? '#0077B6' : theme.backgroundElement }]}
 								onPress={() => setIsIndefinite(false)}
 							>
 								<ThemedText type="small" style={{ color: !isIndefinite ? '#fff' : theme.text }}>Set number</ThemedText>
-							</TouchableOpacity>
+							</HapticButton>
 						</View>
 						{!isIndefinite && (
-							<TouchableOpacity
+							<HapticButton
 								style={[shared.input, { backgroundColor: theme.backgroundElement, justifyContent: 'center' }]}
 								onPress={() => setShowRoundNumpad(true)}
 							>
 								<ThemedText style={{ color: roundCountStr ? theme.text : theme.textSecondary, fontSize: 16 }}>
 									{roundCountStr || 'Tap to set'}
 								</ThemedText>
-							</TouchableOpacity>
+							</HapticButton>
 						)}
 					</View>
 
@@ -366,23 +365,23 @@ export default function EditGameScreen() {
 					<View style={styles.section}>
 						<ThemedText style={styles.label} themeColor="textSecondary">WINNER</ThemedText>
 						<View style={styles.segmentRow}>
-							<TouchableOpacity
+							<HapticButton
 								style={[styles.segLeft, { backgroundColor: !rankByLowest ? '#0077B6' : theme.backgroundElement }]}
 								onPress={() => setRankByLowest(false)}
 							>
 								<ThemedText type="small" style={{ color: !rankByLowest ? '#fff' : theme.text }}>Highest score</ThemedText>
-							</TouchableOpacity>
-							<TouchableOpacity
+							</HapticButton>
+							<HapticButton
 								style={[styles.segRight, { backgroundColor: rankByLowest ? '#0077B6' : theme.backgroundElement }]}
 								onPress={() => setRankByLowest(true)}
 							>
 								<ThemedText type="small" style={{ color: rankByLowest ? '#fff' : theme.text }}>Lowest score</ThemedText>
-							</TouchableOpacity>
+							</HapticButton>
 						</View>
 					</View>
 
 					{/* Save */}
-					<TouchableOpacity
+					<HapticButton
 						style={[shared.button, styles.saveBtn, { backgroundColor: canSave ? '#0077B6' : theme.backgroundElement }]}
 						onPress={handleSave}
 						disabled={!canSave}
@@ -390,7 +389,7 @@ export default function EditGameScreen() {
 						<ThemedText type="smallBold" style={{ color: canSave ? '#fff' : theme.textSecondary }}>
 							Save Changes
 						</ThemedText>
-					</TouchableOpacity>
+					</HapticButton>
 				</ScrollView>
 				<SafeAreaView edges={['bottom']} />
 			</KeyboardAvoidingView>
@@ -414,8 +413,7 @@ const styles = StyleSheet.create({
 	scroll: {
 		padding: Spacing.three,
 		gap: Spacing.four,
-		paddingBottom: Spacing.six,
-	},
+		paddingBottom: Spacing.six },
 	section: { gap: Spacing.two },
 	labelRow: { flexDirection: 'row', alignItems: 'baseline' },
 	label: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
@@ -425,8 +423,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: 10,
 		paddingHorizontal: 10,
-		paddingVertical: Spacing.one,
-	},
+		paddingVertical: Spacing.one },
 	dropdownBtns: { flexDirection: 'row', gap: Spacing.two },
 	dropdownTrigger: {
 		flexDirection: 'row',
@@ -434,43 +431,35 @@ const styles = StyleSheet.create({
 		borderRadius: Spacing.two,
 		paddingVertical: Spacing.two,
 		paddingHorizontal: Spacing.three,
-		gap: Spacing.one,
-	},
+		gap: Spacing.one },
 	chevron: { fontSize: 18, color: '#0077B6', lineHeight: 22 },
 	dropdown: {
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
 		overflow: 'hidden',
 		padding: Spacing.two,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	dropdownList: {
 		borderTopWidth: StyleSheet.hairlineWidth,
-		paddingTop: Spacing.one,
-	},
+		paddingTop: Spacing.one },
 	dropdownRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
 		paddingVertical: Spacing.two,
 		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	dropdownEmpty: { textAlign: 'center', opacity: 0.6, paddingVertical: Spacing.one },
 	inputError: { fontSize: 12, color: '#C05050' },
 	segmentRow: { flexDirection: 'row' },
 	segLeft: {
 		flex: 1, alignItems: 'center', paddingVertical: Spacing.two,
-		borderTopLeftRadius: Spacing.two, borderBottomLeftRadius: Spacing.two,
-	},
+		borderTopLeftRadius: Spacing.two, borderBottomLeftRadius: Spacing.two },
 	segRight: {
 		flex: 1, alignItems: 'center', paddingVertical: Spacing.two,
-		borderTopRightRadius: Spacing.two, borderBottomRightRadius: Spacing.two,
-	},
+		borderTopRightRadius: Spacing.two, borderBottomRightRadius: Spacing.two },
 	saveBtn: {
 		alignSelf: 'stretch',
 		alignItems: 'center',
 		paddingVertical: Spacing.three,
-		marginTop: Spacing.one,
-	},
-});
+		marginTop: Spacing.one } });

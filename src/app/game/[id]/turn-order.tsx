@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,6 +12,7 @@ import { Spacing } from "@/constants/theme";
 import { useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
+import { HapticButton } from "@/components/haptic-button";
 
 type Item = { id: string; name: string };
 
@@ -40,7 +41,7 @@ export default function TurnOrderScreen() {
 
 	const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
 		<ScaleDecorator activeScale={1.03}>
-			<TouchableOpacity
+			<HapticButton
 				onLongPress={drag}
 				delayLongPress={150}
 				activeOpacity={1}
@@ -48,13 +49,12 @@ export default function TurnOrderScreen() {
 					styles.row,
 					{
 						backgroundColor: isActive ? theme.backgroundSelected : theme.backgroundElement,
-						borderBottomColor: theme.backgroundSelected,
-					},
+						borderBottomColor: theme.backgroundSelected },
 				]}
 			>
 				<ThemedText style={styles.name}>{item.name}</ThemedText>
 				<SymbolView name="line.3.horizontal" size={18} tintColor={theme.textSecondary} />
-			</TouchableOpacity>
+			</HapticButton>
 		</ScaleDecorator>
 	);
 
@@ -77,14 +77,14 @@ export default function TurnOrderScreen() {
 					/>
 
 					<View style={styles.footer}>
-						<TouchableOpacity
+						<HapticButton
 							style={[shared.button, styles.saveBtn, { backgroundColor: "#0077B6" }]}
 							onPress={handleSave}
 						>
 							<ThemedText type="smallBold" style={{ color: "#fff" }}>
 								Save Order
 							</ThemedText>
-						</TouchableOpacity>
+						</HapticButton>
 					</View>
 					<SafeAreaView edges={["bottom"]} />
 				</SafeAreaView>
@@ -99,32 +99,25 @@ const styles = StyleSheet.create({
 		lineHeight: 18,
 		paddingHorizontal: Spacing.three,
 		paddingTop: Spacing.two,
-		paddingBottom: Spacing.two,
-	},
+		paddingBottom: Spacing.two },
 	listContent: {
 		paddingHorizontal: Spacing.three,
 		gap: Spacing.two,
-		paddingBottom: Spacing.three,
-	},
+		paddingBottom: Spacing.three },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
 		borderRadius: Spacing.two,
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.three,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	name: {
 		flex: 1,
-		fontSize: 16,
-	},
+		fontSize: 16 },
 	footer: {
 		paddingHorizontal: Spacing.three,
-		paddingBottom: Spacing.two,
-	},
+		paddingBottom: Spacing.two },
 	saveBtn: {
 		alignSelf: "stretch",
 		alignItems: "center",
-		paddingVertical: Spacing.three,
-	},
-});
+		paddingVertical: Spacing.three } });

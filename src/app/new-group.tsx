@@ -6,9 +6,7 @@ import {
   Platform,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+  View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -17,6 +15,7 @@ import { Spacing } from '@/constants/theme';
 import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function NewGroupScreen() {
   const theme = useTheme();
@@ -85,7 +84,7 @@ export default function NewGroupScreen() {
           renderItem={({ item }) => {
             const selected = memberIds.includes(item.id);
             return (
-              <TouchableOpacity
+              <HapticButton
                 style={[styles.memberRow, { borderBottomColor: theme.backgroundSelected }]}
                 onPress={() => toggleMember(item.id)}
               >
@@ -97,11 +96,11 @@ export default function NewGroupScreen() {
                 ]}>
                   {selected && <ThemedText style={styles.checkmark}>✓</ThemedText>}
                 </View>
-              </TouchableOpacity>
+              </HapticButton>
             );
           }}
           ListFooterComponent={
-            <TouchableOpacity
+            <HapticButton
               style={[shared.button, styles.createBtn, { backgroundColor: canCreate ? '#0077B6' : theme.backgroundElement }]}
               onPress={handleCreate}
               disabled={!canCreate}
@@ -109,7 +108,7 @@ export default function NewGroupScreen() {
               <ThemedText type="smallBold" style={{ color: canCreate ? '#fff' : theme.textSecondary }}>
                 Create Group
               </ThemedText>
-            </TouchableOpacity>
+            </HapticButton>
           }
         />
         <SafeAreaView edges={['bottom']} />
@@ -122,52 +121,42 @@ const styles = StyleSheet.create({
   scroll: {
     padding: Spacing.three,
     gap: Spacing.four,
-    paddingBottom: Spacing.six,
-  },
+    paddingBottom: Spacing.six },
   section: {
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   label: {
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.8,
-  },
+    letterSpacing: 0.8 },
   membersHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: Spacing.one,
-    marginTop: Spacing.two,
-  },
+    marginTop: Spacing.two },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: Spacing.two,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
+    borderBottomWidth: StyleSheet.hairlineWidth },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 4,
     borderWidth: 1.5,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center' },
   checkmark: {
     fontSize: 13,
     color: '#fff',
     fontWeight: '700',
     lineHeight: 22,
-    includeFontPadding: false,
-  },
+    includeFontPadding: false },
   createBtn: {
     alignSelf: 'stretch',
     alignItems: 'center',
     paddingVertical: Spacing.three,
-    marginTop: Spacing.two,
-  },
+    marginTop: Spacing.two },
   error: {
     fontSize: 12,
-    color: '#C05050',
-  },
-});
+    color: '#C05050' } });

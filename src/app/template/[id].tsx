@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -9,6 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function TemplateScreen() {
   const theme = useTheme();
@@ -55,12 +56,12 @@ export default function TemplateScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
+        <HapticButton
           style={[styles.editBtn, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}
           onPress={() => router.push(`/edit-template/${id}`)}
         >
           <ThemedText type="small" style={{ color: '#0077B6' }}>Edit Template</ThemedText>
-        </TouchableOpacity>
+        </HapticButton>
       </SafeAreaView>
     </ThemedView>
   );
@@ -69,22 +70,17 @@ export default function TemplateScreen() {
 const styles = StyleSheet.create({
   sections: {
     gap: Spacing.two,
-    flex: 1,
-  },
+    flex: 1 },
   card: {
     borderRadius: Spacing.two,
     padding: Spacing.three,
-    gap: Spacing.one,
-  },
+    gap: Spacing.one },
   label: {
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.8,
-  },
+    letterSpacing: 0.8 },
   editBtn: {
     borderRadius: Spacing.two,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.three,
-    alignItems: 'center',
-  },
-});
+    alignItems: 'center' } });

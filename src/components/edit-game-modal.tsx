@@ -6,9 +6,9 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+  TextInputView,
+	View,
+	TextInput
 } from 'react-native';
 
 import { CellEditModal } from './cell-edit-modal';
@@ -17,6 +17,7 @@ import { Player } from '@/context/games-context';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 type Props = {
   visible: boolean;
@@ -39,8 +40,7 @@ export function EditGameModal({
   onDelete,
   onRename,
   onSaveSettings,
-  onClose,
-}: Props) {
+  onClose }: Props) {
   const theme = useTheme();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -126,15 +126,15 @@ export function EditGameModal({
         <KeyboardAvoidingView
           style={styles.overlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableOpacity style={styles.dismissArea} activeOpacity={1} onPress={handleDone} />
+          <HapticButton style={styles.dismissArea} activeOpacity={1} onPress={handleDone} />
           <View style={[styles.sheet, { backgroundColor: theme.backgroundElement }]}>
 
             {/* Header */}
             <View style={styles.header}>
               <ThemedText type="subtitle">Edit Game</ThemedText>
-              <TouchableOpacity style={[shared.button, { backgroundColor: '#0077B6' }]} onPress={handleDone}>
+              <HapticButton style={[shared.button, { backgroundColor: '#0077B6' }]} onPress={handleDone}>
                 <ThemedText type="smallBold" style={{ color: '#fff' }}>Done</ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -161,22 +161,22 @@ export function EditGameModal({
                         />
                         {renameError ? <ThemedText style={styles.errorText}>{renameError}</ThemedText> : null}
                       </View>
-                      <TouchableOpacity style={styles.iconBtn} onPress={commitRename}>
+                      <HapticButton style={styles.iconBtn} onPress={commitRename}>
                         <ThemedText style={[styles.iconText, { color: '#0077B6' }]}>✓</ThemedText>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.iconBtn} onPress={cancelRename}>
+                      </HapticButton>
+                      <HapticButton style={styles.iconBtn} onPress={cancelRename}>
                         <ThemedText style={styles.iconText} themeColor="textSecondary">✕</ThemedText>
-                      </TouchableOpacity>
+                      </HapticButton>
                     </>
                   ) : (
                     <>
-                      <TouchableOpacity style={styles.nameBtn} onPress={() => startRename(p)}>
+                      <HapticButton style={styles.nameBtn} onPress={() => startRename(p)}>
                         <ThemedText type="default" numberOfLines={1}>{p.name}</ThemedText>
                         <ThemedText style={styles.editHint} themeColor="textSecondary">  rename</ThemedText>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.iconBtn} onPress={() => confirmDelete(p)}>
+                      </HapticButton>
+                      <HapticButton style={styles.iconBtn} onPress={() => confirmDelete(p)}>
                         <ThemedText style={styles.iconText} themeColor="textSecondary">✕</ThemedText>
-                      </TouchableOpacity>
+                      </HapticButton>
                     </>
                   )}
                 </View>
@@ -199,53 +199,53 @@ export function EditGameModal({
                   />
                   {addError ? <ThemedText style={styles.errorText}>{addError}</ThemedText> : null}
                 </View>
-                <TouchableOpacity
+                <HapticButton
                   style={[shared.button, { backgroundColor: addName.trim() ? '#0077B6' : theme.backgroundSelected }]}
                   onPress={handleAdd}
                   disabled={!addName.trim()}>
                   <ThemedText type="smallBold" style={{ color: addName.trim() ? '#fff' : theme.textSecondary }}>Add</ThemedText>
-                </TouchableOpacity>
+                </HapticButton>
               </View>
 
               {/* ── Rounds ── */}
               <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
               <ThemedText style={styles.sectionLabel} themeColor="textSecondary">ROUNDS</ThemedText>
               <View style={styles.segmentRow}>
-                <TouchableOpacity
+                <HapticButton
                   style={[styles.segLeft, { backgroundColor: isIndefinite ? '#0077B6' : theme.backgroundSelected }]}
                   onPress={() => setIsIndefinite(true)}>
                   <ThemedText type="small" style={{ color: isIndefinite ? '#fff' : theme.text }}>Indefinite</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </HapticButton>
+                <HapticButton
                   style={[styles.segRight, { backgroundColor: !isIndefinite ? '#0077B6' : theme.backgroundSelected }]}
                   onPress={() => setIsIndefinite(false)}>
                   <ThemedText type="small" style={{ color: !isIndefinite ? '#fff' : theme.text }}>Set number</ThemedText>
-                </TouchableOpacity>
+                </HapticButton>
               </View>
               {!isIndefinite && (
-                <TouchableOpacity
+                <HapticButton
                   style={[shared.input, styles.roundDisplay, { backgroundColor: theme.background }]}
                   onPress={() => setShowRoundNumpad(true)}>
                   <ThemedText style={{ color: roundCount ? theme.text : theme.textSecondary, fontSize: 16 }}>
                     {roundCount ?? 'Tap to set'}
                   </ThemedText>
-                </TouchableOpacity>
+                </HapticButton>
               )}
 
               {/* ── Winner ── */}
               <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
               <ThemedText style={styles.sectionLabel} themeColor="textSecondary">WINNER</ThemedText>
               <View style={[styles.segmentRow, { marginBottom: Spacing.four }]}>
-                <TouchableOpacity
+                <HapticButton
                   style={[styles.segLeft, { backgroundColor: !rankByLowest ? '#0077B6' : theme.backgroundSelected }]}
                   onPress={() => setRankByLowest(false)}>
                   <ThemedText type="small" style={{ color: !rankByLowest ? '#fff' : theme.text }}>Highest score</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </HapticButton>
+                <HapticButton
                   style={[styles.segRight, { backgroundColor: rankByLowest ? '#0077B6' : theme.backgroundSelected }]}
                   onPress={() => setRankByLowest(true)}>
                   <ThemedText type="small" style={{ color: rankByLowest ? '#fff' : theme.text }}>Lowest score</ThemedText>
-                </TouchableOpacity>
+                </HapticButton>
               </View>
 
             </ScrollView>
@@ -268,111 +268,91 @@ export function EditGameModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-  },
+    justifyContent: 'flex-end' },
   dismissArea: {
-    flex: 1,
-  },
+    flex: 1 },
   sheet: {
     borderTopLeftRadius: Spacing.three,
     borderTopRightRadius: Spacing.three,
     paddingTop: Spacing.three,
-    maxHeight: '85%',
-  },
+    maxHeight: '85%' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.two,
-  },
+    paddingBottom: Spacing.two },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.8,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
-    paddingBottom: Spacing.one,
-  },
+    paddingBottom: Spacing.one },
   playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   nameBtn: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   editHint: {
     fontSize: 11,
-    opacity: 0.6,
-  },
+    opacity: 0.6 },
   renameInput: {
     flex: 1,
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.two,
     paddingVertical: 6,
-    fontSize: 16,
-  },
+    fontSize: 16 },
   iconBtn: {
     width: 32,
     height: 32,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center' },
   iconText: {
-    fontSize: 16,
-  },
+    fontSize: 16 },
   addRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
-    paddingBottom: Spacing.three,
-  },
+    paddingBottom: Spacing.three },
   errorText: {
     fontSize: 12,
-    color: '#C05050',
-  },
+    color: '#C05050' },
   addInput: {
     flex: 1,
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.two,
     paddingVertical: 8,
-    fontSize: 16,
-  },
+    fontSize: 16 },
   divider: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: Spacing.three,
-    marginTop: Spacing.one,
-  },
+    marginTop: Spacing.one },
   segmentRow: {
     flexDirection: 'row',
     marginHorizontal: Spacing.three,
-    marginTop: Spacing.one,
-  },
+    marginTop: Spacing.one },
   segLeft: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.two,
     borderTopLeftRadius: Spacing.two,
-    borderBottomLeftRadius: Spacing.two,
-  },
+    borderBottomLeftRadius: Spacing.two },
   segRight: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.two,
     borderTopRightRadius: Spacing.two,
-    borderBottomRightRadius: Spacing.two,
-  },
+    borderBottomRightRadius: Spacing.two },
   roundDisplay: {
     marginHorizontal: Spacing.three,
     marginTop: Spacing.two,
-    justifyContent: 'center',
-  },
-});
+    justifyContent: 'center' } });

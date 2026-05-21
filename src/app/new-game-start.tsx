@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -8,6 +8,7 @@ import { Spacing } from '@/constants/theme';
 import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function NewGameStartScreen() {
   const theme = useTheme();
@@ -20,20 +21,20 @@ export default function NewGameStartScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-          <TouchableOpacity
+          <HapticButton
             style={[styles.freshBtn, { backgroundColor: '#0077B6' }]}
             onPress={() => router.replace('/new-game')}
           >
             <ThemedText type="default" style={{ color: '#fff', fontWeight: '600' }}>Start Fresh</ThemedText>
             <ThemedText type="small" style={{ color: 'rgba(255,255,255,0.7)' }}>Create a new game from scratch</ThemedText>
-          </TouchableOpacity>
+          </HapticButton>
 
           {templates.length > 0 && (
             <View style={styles.section}>
               <ThemedText style={styles.label} themeColor="textSecondary">FROM A TEMPLATE</ThemedText>
               <View style={styles.list}>
                 {templates.map(t => (
-                  <TouchableOpacity
+                  <HapticButton
                     key={t.id}
                     style={[styles.templateCard, { backgroundColor: theme.backgroundElement }]}
                     onPress={() => router.replace(`/new-game?templateId=${t.id}`)}
@@ -56,7 +57,7 @@ export default function NewGameStartScreen() {
                       ) : null}
                     </View>
                     <ThemedText type="small" style={{ color: '#0077B6' }}>→</ThemedText>
-                  </TouchableOpacity>
+                  </HapticButton>
                 ))}
               </View>
             </View>
@@ -71,33 +72,25 @@ const styles = StyleSheet.create({
   scroll: {
     padding: Spacing.three,
     gap: Spacing.four,
-    paddingBottom: Spacing.six,
-  },
+    paddingBottom: Spacing.six },
   freshBtn: {
     borderRadius: Spacing.two,
     padding: Spacing.three,
-    gap: Spacing.one,
-  },
+    gap: Spacing.one },
   section: {
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   label: {
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.8,
-  },
+    letterSpacing: 0.8 },
   list: {
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   templateCard: {
     borderRadius: Spacing.two,
     padding: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   meta: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
+    alignItems: 'center' } });

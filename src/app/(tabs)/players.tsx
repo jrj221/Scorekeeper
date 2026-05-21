@@ -9,9 +9,9 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+  TextInputView,
+	View,
+	TextInput
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -23,6 +23,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { homeStyles } from '@/styles/home';
 import { shared } from '@/styles/shared';
 import { getPlayerWinRate } from '@/utils/game';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function PlayersScreen() {
   const theme = useTheme();
@@ -71,9 +72,9 @@ export default function PlayersScreen() {
     <View style={styles.groupsSection}>
       <View style={styles.groupsHeader}>
         <ThemedText style={styles.sectionLabel} themeColor="textSecondary">GROUPS</ThemedText>
-        <TouchableOpacity onPress={() => router.push('/new-group')}>
+        <HapticButton onPress={() => router.push('/new-group')}>
           <ThemedText type="small" style={{ color: '#0077B6' }}>+ New Group</ThemedText>
-        </TouchableOpacity>
+        </HapticButton>
       </View>
 
       {groups.length === 0 ? (
@@ -87,7 +88,7 @@ export default function PlayersScreen() {
             .filter(Boolean)
             .join(', ');
           return (
-            <TouchableOpacity
+            <HapticButton
               key={g.id}
               style={[styles.groupCard, { backgroundColor: theme.backgroundElement }]}
               onPress={() => router.push(`/group/${g.id}`)}
@@ -98,10 +99,10 @@ export default function PlayersScreen() {
                   {memberNames || 'No members'}
                 </ThemedText>
               </View>
-              <TouchableOpacity hitSlop={8} onPress={() => confirmDeleteGroup(g.id, g.name)}>
+              <HapticButton hitSlop={8} onPress={() => confirmDeleteGroup(g.id, g.name)}>
                 <SymbolView name="trash" size={16} tintColor={theme.textSecondary} />
-              </TouchableOpacity>
-            </TouchableOpacity>
+              </HapticButton>
+            </HapticButton>
           );
         })
       )}
@@ -133,7 +134,7 @@ export default function PlayersScreen() {
           }
           ListFooterComponent={GroupsFooter}
           renderItem={({ item }) => (
-            <TouchableOpacity
+            <HapticButton
               style={[styles.card, { backgroundColor: theme.backgroundElement }]}
               onPress={() => router.push(`/player/${item.id}`)}
             >
@@ -143,16 +144,16 @@ export default function PlayersScreen() {
                   {getPlayerWinRate(item.id, games)}
                 </ThemedText>
               </View>
-            </TouchableOpacity>
+            </HapticButton>
           )}
         />
 
-        <TouchableOpacity
+        <HapticButton
           style={[homeStyles.fab, { backgroundColor: '#0077B6' }]}
           onPress={() => setShowAddDialog(true)}
         >
           <ThemedText type="subtitle" style={{ color: '#fff', lineHeight: 32 }}>+</ThemedText>
-        </TouchableOpacity>
+        </HapticButton>
       </KeyboardAvoidingView>
 
       <SafeAreaView edges={['bottom']} />
@@ -165,7 +166,7 @@ export default function PlayersScreen() {
         onRequestClose={closeAddDialog}
       >
         <KeyboardAvoidingView style={styles.dialogOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeAddDialog} />
+          <HapticButton style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeAddDialog} />
           <View style={[styles.dialogCard, { backgroundColor: theme.backgroundElement }]}>
             <ThemedText style={styles.dialogTitle} themeColor="textSecondary">ADD PLAYER</ThemedText>
             <View style={{ gap: 4 }}>
@@ -184,13 +185,13 @@ export default function PlayersScreen() {
               {addError ? <ThemedText style={styles.error}>{addError}</ThemedText> : null}
             </View>
             <View style={styles.dialogBtns}>
-              <TouchableOpacity
+              <HapticButton
                 style={[shared.button, styles.dialogCancel, { backgroundColor: theme.backgroundSelected }]}
                 onPress={closeAddDialog}
               >
                 <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticButton>
+              <HapticButton
                 style={[shared.button, styles.dialogAdd, { backgroundColor: nameInput.trim() ? '#0077B6' : theme.backgroundSelected }]}
                 onPress={handleAdd}
                 disabled={!nameInput.trim()}
@@ -198,7 +199,7 @@ export default function PlayersScreen() {
                 <ThemedText type="smallBold" style={{ color: nameInput.trim() ? '#fff' : theme.textSecondary }}>
                   Add
                 </ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -211,50 +212,42 @@ const styles = StyleSheet.create({
   listContent: {
     padding: Spacing.three,
     gap: Spacing.two,
-    paddingBottom: Spacing.six + Spacing.four,
-  },
+    paddingBottom: Spacing.six + Spacing.four },
   emptyContainer: { flex: 1 },
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: Spacing.six,
-  },
+    paddingTop: Spacing.six },
   card: {
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
+    paddingVertical: Spacing.three },
   groupCard: {
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   error: { fontSize: 12, color: '#C05050' },
   sectionLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
   groupsSection: { marginTop: Spacing.four, gap: Spacing.two },
   groupsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+    justifyContent: 'space-between' },
   emptyGroups: { opacity: 0.6, paddingTop: Spacing.one },
   dialogOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
-    padding: Spacing.four,
-  },
+    padding: Spacing.four },
   dialogCard: {
     borderRadius: Spacing.three,
     padding: Spacing.three,
-    gap: Spacing.three,
-  },
+    gap: Spacing.three },
   dialogTitle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textAlign: 'center' },
   dialogBtns: { flexDirection: 'row', gap: Spacing.two },
   dialogCancel: { flex: 1, alignItems: 'center', paddingVertical: Spacing.two },
-  dialogAdd: { flex: 2, alignItems: 'center', paddingVertical: Spacing.two },
-});
+  dialogAdd: { flex: 2, alignItems: 'center', paddingVertical: Spacing.two } });

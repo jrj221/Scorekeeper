@@ -5,9 +5,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+  TextInputView,
+	View,
+	TextInput,
+	Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +19,7 @@ import { Spacing } from '@/constants/theme';
 import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function NewTemplateScreen() {
   const theme = useTheme();
@@ -39,8 +41,7 @@ export default function NewTemplateScreen() {
       name: trimmedName,
       description: description.trim() || undefined,
       totalRounds,
-      rankByLowest,
-    });
+      rankByLowest });
     router.replace(`/template/${id}`);
   }, [name, description, isIndefinite, roundCountStr, rankByLowest, createTemplate, router]);
 
@@ -90,28 +91,28 @@ export default function NewTemplateScreen() {
           <View style={styles.section}>
             <ThemedText style={styles.label} themeColor="textSecondary">ROUNDS</ThemedText>
             <View style={styles.segmentRow}>
-              <TouchableOpacity
+              <HapticButton
                 style={[styles.segLeft, { backgroundColor: isIndefinite ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setIsIndefinite(true)}
               >
                 <ThemedText type="small" style={{ color: isIndefinite ? '#fff' : theme.text }}>Indefinite</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticButton>
+              <HapticButton
                 style={[styles.segRight, { backgroundColor: !isIndefinite ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setIsIndefinite(false)}
               >
                 <ThemedText type="small" style={{ color: !isIndefinite ? '#fff' : theme.text }}>Set number</ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
             {!isIndefinite && (
-              <TouchableOpacity
+              <HapticButton
                 style={[shared.input, { backgroundColor: theme.backgroundElement, justifyContent: 'center' }]}
                 onPress={() => setShowRoundNumpad(true)}
               >
                 <ThemedText style={{ color: roundCountStr ? theme.text : theme.textSecondary, fontSize: 16 }}>
                   {roundCountStr || 'Tap to set'}
                 </ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             )}
           </View>
 
@@ -119,23 +120,23 @@ export default function NewTemplateScreen() {
           <View style={styles.section}>
             <ThemedText style={styles.label} themeColor="textSecondary">WINNER</ThemedText>
             <View style={styles.segmentRow}>
-              <TouchableOpacity
+              <HapticButton
                 style={[styles.segLeft, { backgroundColor: !rankByLowest ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setRankByLowest(false)}
               >
                 <ThemedText type="small" style={{ color: !rankByLowest ? '#fff' : theme.text }}>Highest score</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticButton>
+              <HapticButton
                 style={[styles.segRight, { backgroundColor: rankByLowest ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setRankByLowest(true)}
               >
                 <ThemedText type="small" style={{ color: rankByLowest ? '#fff' : theme.text }}>Lowest score</ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
           </View>
 
           {/* Create */}
-          <TouchableOpacity
+          <HapticButton
             style={[shared.button, styles.createBtn, { backgroundColor: canCreate ? '#0077B6' : theme.backgroundElement }]}
             onPress={handleCreate}
             disabled={!canCreate}
@@ -143,7 +144,7 @@ export default function NewTemplateScreen() {
             <ThemedText type="smallBold" style={{ color: canCreate ? '#fff' : theme.textSecondary }}>
               Create Template
             </ThemedText>
-          </TouchableOpacity>
+          </HapticButton>
         </ScrollView>
         <SafeAreaView edges={['bottom']} />
       </KeyboardAvoidingView>
@@ -167,41 +168,32 @@ const styles = StyleSheet.create({
   scroll: {
     padding: Spacing.three,
     gap: Spacing.four,
-    paddingBottom: Spacing.six,
-  },
+    paddingBottom: Spacing.six },
   section: {
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   labelRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-  },
+    alignItems: 'baseline' },
   label: {
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.8,
-  },
+    letterSpacing: 0.8 },
   segmentRow: {
-    flexDirection: 'row',
-  },
+    flexDirection: 'row' },
   segLeft: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.two,
     borderTopLeftRadius: Spacing.two,
-    borderBottomLeftRadius: Spacing.two,
-  },
+    borderBottomLeftRadius: Spacing.two },
   segRight: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.two,
     borderTopRightRadius: Spacing.two,
-    borderBottomRightRadius: Spacing.two,
-  },
+    borderBottomRightRadius: Spacing.two },
   createBtn: {
     alignSelf: 'stretch',
     alignItems: 'center',
     paddingVertical: Spacing.three,
-    marginTop: Spacing.one,
-  },
-});
+    marginTop: Spacing.one } });

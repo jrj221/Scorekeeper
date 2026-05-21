@@ -1,8 +1,9 @@
-import { KeyboardAvoidingView, Modal, Platform, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, TextInput, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
 import { ThemedText } from './themed-text';
+import { HapticButton } from "@/components/haptic-button";
 
 type Props = {
   visible: boolean;
@@ -19,8 +20,8 @@ export function AddPlayerModal({ visible, playerName, onChangeName, onAdd, onCan
       <KeyboardAvoidingView
         style={shared.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <TouchableOpacity style={shared.modalOverlay} activeOpacity={1} onPress={onCancel}>
-          <TouchableOpacity activeOpacity={1}>
+        <HapticButton style={shared.modalOverlay} activeOpacity={1} onPress={onCancel}>
+          <HapticButton activeOpacity={1}>
             <View style={[shared.modalSheet, { backgroundColor: theme.backgroundElement }]}>
               <ThemedText type="subtitle">Add Player</ThemedText>
               <TextInput
@@ -35,23 +36,23 @@ export function AddPlayerModal({ visible, playerName, onChangeName, onAdd, onCan
                 returnKeyType="done"
               />
               <View style={[shared.row, { justifyContent: 'flex-end' }]}>
-                <TouchableOpacity
+                <HapticButton
                   style={[shared.button, { backgroundColor: theme.backgroundSelected }]}
                   onPress={onCancel}>
                   <ThemedText type="small">Cancel</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </HapticButton>
+                <HapticButton
                   style={[shared.button, { backgroundColor: '#0077B6' }]}
                   onPress={onAdd}
                   disabled={!playerName.trim()}>
                   <ThemedText type="smallBold" style={{ color: '#fff' }}>
                     Add
                   </ThemedText>
-                </TouchableOpacity>
+                </HapticButton>
               </View>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </HapticButton>
+        </HapticButton>
       </KeyboardAvoidingView>
     </Modal>
   );

@@ -11,9 +11,7 @@ import {
 	ScrollView,
 	StyleSheet,
 	TextInput,
-	TouchableOpacity,
-	View,
-} from "react-native";
+	View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
@@ -23,6 +21,7 @@ import { Spacing } from "@/constants/theme";
 import { Player, useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
+import { HapticButton } from "@/components/haptic-button";
 
 const TINT = "#0077B6";
 type Section = "winCondition" | "gameLength" | "players" | "dealer" | "turns" | null;
@@ -119,8 +118,7 @@ export default function GameInfoScreen() {
 			{
 				text: "Remove",
 				style: "destructive",
-				onPress: () => patchPlayers(players.filter((pl) => pl.id !== p.id)),
-			},
+				onPress: () => patchPlayers(players.filter((pl) => pl.id !== p.id)) },
 		]);
 	};
 
@@ -188,14 +186,14 @@ export default function GameInfoScreen() {
 	function EditIcon({ section }: { section: Section }) {
 		if (finished) return null;
 		return (
-			<TouchableOpacity onPress={() => toggleEdit(section)} hitSlop={8}>
+			<HapticButton onPress={() => toggleEdit(section)} hitSlop={8}>
 				<SymbolView
 					name={editing === section ? "xmark.circle" : "pencil"}
 					size={15}
 					tintColor={editing === section ? theme.textSecondary : TINT}
 					style={{ backgroundColor: "transparent" }}
 				/>
-			</TouchableOpacity>
+			</HapticButton>
 		);
 	}
 
@@ -218,7 +216,7 @@ export default function GameInfoScreen() {
 							<ThemedText type="default">{draft?.name || "Untitled Game"}</ThemedText>
 						) : (
 							<View style={styles.nameRow}>
-								<TouchableOpacity
+								<HapticButton
 									style={[styles.iconBtn, { backgroundColor: theme.backgroundSelected }]}
 									onPress={() => router.push("/icon-picker")}
 									activeOpacity={0.7}
@@ -228,7 +226,7 @@ export default function GameInfoScreen() {
 										size={20}
 										color={theme.textSecondary}
 									/>
-								</TouchableOpacity>
+								</HapticButton>
 								<TextInput
 									style={[shared.input, { backgroundColor: theme.backgroundSelected, color: theme.text, flex: 1 }]}
 									placeholder="Untitled Game"
@@ -252,7 +250,7 @@ export default function GameInfoScreen() {
 						</View>
 						{editing === "winCondition" ? (
 							<View style={styles.segmentRow}>
-								<TouchableOpacity
+								<HapticButton
 									style={[
 										styles.segLeft,
 										{ backgroundColor: !game.rankByLowest ? TINT : theme.backgroundSelected },
@@ -265,8 +263,8 @@ export default function GameInfoScreen() {
 									>
 										Highest score
 									</ThemedText>
-								</TouchableOpacity>
-								<TouchableOpacity
+								</HapticButton>
+								<HapticButton
 									style={[
 										styles.segRight,
 										{ backgroundColor: game.rankByLowest ? TINT : theme.backgroundSelected },
@@ -276,7 +274,7 @@ export default function GameInfoScreen() {
 									<ThemedText type="small" style={{ color: game.rankByLowest ? "#fff" : theme.text }}>
 										Lowest score
 									</ThemedText>
-								</TouchableOpacity>
+								</HapticButton>
 							</View>
 						) : (
 							<ThemedText type="default">
@@ -296,13 +294,12 @@ export default function GameInfoScreen() {
 						{editing === "gameLength" ? (
 							<View style={{ gap: Spacing.two }}>
 								<View style={styles.segmentRow}>
-									<TouchableOpacity
+									<HapticButton
 										style={[
 											styles.segLeft,
 											{
 												backgroundColor:
-													game.totalRounds === undefined ? TINT : theme.backgroundSelected,
-											},
+													game.totalRounds === undefined ? TINT : theme.backgroundSelected },
 										]}
 										onPress={() => patch({ totalRounds: undefined })}
 									>
@@ -312,14 +309,13 @@ export default function GameInfoScreen() {
 										>
 											Indefinite
 										</ThemedText>
-									</TouchableOpacity>
-									<TouchableOpacity
+									</HapticButton>
+									<HapticButton
 										style={[
 											styles.segRight,
 											{
 												backgroundColor:
-													game.totalRounds !== undefined ? TINT : theme.backgroundSelected,
-											},
+													game.totalRounds !== undefined ? TINT : theme.backgroundSelected },
 										]}
 										onPress={() => {
 											if (game.totalRounds === undefined) patch({ totalRounds: 10 });
@@ -332,10 +328,10 @@ export default function GameInfoScreen() {
 										>
 											Set number
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 								</View>
 								{game.totalRounds !== undefined && (
-									<TouchableOpacity
+									<HapticButton
 										style={[
 											shared.input,
 											{ backgroundColor: theme.backgroundSelected, justifyContent: "center" },
@@ -345,7 +341,7 @@ export default function GameInfoScreen() {
 										<ThemedText style={{ color: theme.text, fontSize: 16 }}>
 											{game.totalRounds}
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 								)}
 							</View>
 						) : (
@@ -377,7 +373,7 @@ export default function GameInfoScreen() {
 								)}
 								<View style={styles.chipRow}>
 									{players.map((p) => (
-										<TouchableOpacity
+										<HapticButton
 											key={p.id}
 											style={[styles.chip, { backgroundColor: theme.backgroundSelected }]}
 											onPress={() => {
@@ -390,10 +386,10 @@ export default function GameInfoScreen() {
 												{" "}
 												×
 											</ThemedText>
-										</TouchableOpacity>
+										</HapticButton>
 									))}
 								</View>
-								<TouchableOpacity
+								<HapticButton
 									style={[
 										styles.dropdownTrigger,
 										{ backgroundColor: theme.backgroundSelected },
@@ -407,15 +403,14 @@ export default function GameInfoScreen() {
 									<ThemedText style={styles.chevron}>
 										{activeDropdown === "player" ? "▴" : "▾"}
 									</ThemedText>
-								</TouchableOpacity>
+								</HapticButton>
 								{activeDropdown === "player" && (
 									<View
 										style={[
 											styles.dropdown,
 											{
 												backgroundColor: theme.backgroundSelected,
-												borderColor: theme.background,
-											},
+												borderColor: theme.background },
 										]}
 									>
 										<View style={{ gap: 4 }}>
@@ -445,14 +440,13 @@ export default function GameInfoScreen() {
 										{filteredGlobalPlayers.length > 0 && (
 											<View style={[styles.dropdownList, { borderTopColor: theme.background }]}>
 												{filteredGlobalPlayers.map((gp, i) => (
-													<TouchableOpacity
+													<HapticButton
 														key={gp.id}
 														style={[
 															styles.dropdownRow,
 															{ borderBottomColor: theme.background },
 															i === filteredGlobalPlayers.length - 1 && {
-																borderBottomWidth: 0,
-															},
+																borderBottomWidth: 0 },
 														]}
 														onPress={() => addExistingPlayer(gp.id, gp.name)}
 													>
@@ -460,7 +454,7 @@ export default function GameInfoScreen() {
 														<ThemedText type="small" style={{ color: TINT }}>
 															+ Add
 														</ThemedText>
-													</TouchableOpacity>
+													</HapticButton>
 												))}
 											</View>
 										)}
@@ -502,7 +496,7 @@ export default function GameInfoScreen() {
 						</View>
 						{editing === "dealer" ? (
 							<View style={{ gap: Spacing.two }}>
-								<TouchableOpacity
+								<HapticButton
 									style={[styles.toggleRow, { backgroundColor: theme.backgroundSelected }]}
 									onPress={() => {
 										patch({ dealerEnabled: dealerEnabled ? undefined : true });
@@ -518,26 +512,24 @@ export default function GameInfoScreen() {
 									>
 										<View style={[styles.toggleThumb, dealerEnabled && styles.toggleThumbOn]} />
 									</View>
-								</TouchableOpacity>
+								</HapticButton>
 								{dealerEnabled && (
 									<>
 										<ThemedText style={[styles.subLabel]} themeColor="textSecondary">
 											DEALER IS
 										</ThemedText>
 										<View style={styles.segmentRow}>
-											<TouchableOpacity
+											<HapticButton
 												style={[
 													styles.segLeft,
 													{
 														backgroundColor:
-															dealerMode === "rotation" ? TINT : theme.backgroundSelected,
-													},
+															dealerMode === "rotation" ? TINT : theme.backgroundSelected },
 												]}
 												onPress={() =>
 													patch({
 														dealerMode: "rotation",
-														fixedDealerId: fixedDealerId ?? players[0]?.id,
-													})
+														fixedDealerId: fixedDealerId ?? players[0]?.id })
 												}
 											>
 												<ThemedText
@@ -546,15 +538,14 @@ export default function GameInfoScreen() {
 												>
 													Rotation
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
-											<TouchableOpacity
+											<HapticButton
 												style={[
 													styles.segMid,
 													{
 														backgroundColor:
-															dealerMode === "random" ? TINT : theme.backgroundSelected,
-													},
+															dealerMode === "random" ? TINT : theme.backgroundSelected },
 												]}
 												onPress={() => patch({ dealerMode: "random" })}
 											>
@@ -564,21 +555,19 @@ export default function GameInfoScreen() {
 												>
 													Random
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
-											<TouchableOpacity
+											<HapticButton
 												style={[
 													styles.segRight,
 													{
 														backgroundColor:
-															dealerMode === "fixed" ? TINT : theme.backgroundSelected,
-													},
+															dealerMode === "fixed" ? TINT : theme.backgroundSelected },
 												]}
 												onPress={() =>
 													patch({
 														dealerMode: "fixed",
-														fixedDealerId: fixedDealerId ?? players[0]?.id,
-													})
+														fixedDealerId: fixedDealerId ?? players[0]?.id })
 												}
 											>
 												<ThemedText
@@ -587,11 +576,11 @@ export default function GameInfoScreen() {
 												>
 													Fixed
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 										</View>
 										{(dealerMode === "fixed" || dealerMode === "rotation") && (
 											<>
-												<TouchableOpacity
+												<HapticButton
 													style={[
 														styles.dropdownTrigger,
 														{ backgroundColor: theme.backgroundSelected },
@@ -611,26 +600,24 @@ export default function GameInfoScreen() {
 													<ThemedText style={styles.chevron}>
 														{activeDropdown === "fixedDealer" ? "▴" : "▾"}
 													</ThemedText>
-												</TouchableOpacity>
+												</HapticButton>
 												{activeDropdown === "fixedDealer" && (
 													<View
 														style={[
 															styles.dropdown,
 															{
 																backgroundColor: theme.backgroundSelected,
-																borderColor: theme.background,
-															},
+																borderColor: theme.background },
 														]}
 													>
 														{players.map((p, i) => (
-															<TouchableOpacity
+															<HapticButton
 																key={p.id}
 																style={[
 																	styles.dropdownRow,
 																	{ borderBottomColor: theme.background },
 																	i === players.length - 1 && {
-																		borderBottomWidth: 0,
-																	},
+																		borderBottomWidth: 0 },
 																]}
 																onPress={() => {
 																	patch({ fixedDealerId: p.id });
@@ -643,7 +630,7 @@ export default function GameInfoScreen() {
 																		✓
 																	</ThemedText>
 																)}
-															</TouchableOpacity>
+															</HapticButton>
 														))}
 													</View>
 												)}
@@ -674,7 +661,7 @@ export default function GameInfoScreen() {
 						</View>
 						{editing === "turns" ? (
 							<View style={{ gap: Spacing.two }}>
-								<TouchableOpacity
+								<HapticButton
 									style={[styles.toggleRow, { backgroundColor: theme.backgroundSelected }]}
 									onPress={() => {
 										patch({ turnOrder: turnsEnabled ? undefined : players.map((p) => p.id) });
@@ -690,7 +677,7 @@ export default function GameInfoScreen() {
 									>
 										<View style={[styles.toggleThumb, turnsEnabled && styles.toggleThumbOn]} />
 									</View>
-								</TouchableOpacity>
+								</HapticButton>
 								{turnsEnabled && (
 									<>
 										<ThemedText style={styles.subLabel} themeColor="textSecondary">
@@ -699,20 +686,18 @@ export default function GameInfoScreen() {
 										<View style={styles.segmentRow}>
 											{dealerEnabled && (
 												<>
-													<TouchableOpacity
+													<HapticButton
 														style={[
 															styles.segLeft,
 															{
 																backgroundColor: leftOfDealer
 																	? TINT
-																	: theme.backgroundSelected,
-															},
+																	: theme.backgroundSelected },
 														]}
 														onPress={() =>
 															patch({
 																firstPlayerMode: "left-of-dealer",
-																firstPlayerId: undefined,
-															})
+																firstPlayerId: undefined })
 														}
 													>
 														<ThemedText
@@ -721,7 +706,7 @@ export default function GameInfoScreen() {
 														>
 															Left of Dealer
 														</ThemedText>
-													</TouchableOpacity>
+													</HapticButton>
 													<View
 														style={[
 															styles.segDivider,
@@ -730,22 +715,20 @@ export default function GameInfoScreen() {
 													/>
 												</>
 											)}
-											<TouchableOpacity
+											<HapticButton
 												style={[
 													dealerEnabled ? styles.segMid : styles.segLeft,
 													{
 														backgroundColor:
 															!leftOfDealer && firstPlayerId
 																? TINT
-																: theme.backgroundSelected,
-													},
+																: theme.backgroundSelected },
 												]}
 												onPress={() => {
 													if (!firstPlayerId)
 														patch({
 															firstPlayerMode: undefined,
-															firstPlayerId: players[0]?.id,
-														});
+															firstPlayerId: players[0]?.id });
 													else
 														setActiveDropdown((prev) =>
 															prev === "firstPlayer" ? null : "firstPlayer",
@@ -755,22 +738,20 @@ export default function GameInfoScreen() {
 												<ThemedText
 													type="small"
 													style={{
-														color: !leftOfDealer && firstPlayerId ? "#fff" : theme.text,
-													}}
+														color: !leftOfDealer && firstPlayerId ? "#fff" : theme.text }}
 												>
 													Rotation
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
-											<TouchableOpacity
+											<HapticButton
 												style={[
 													styles.segRight,
 													{
 														backgroundColor:
 															!leftOfDealer && !firstPlayerId
 																? TINT
-																: theme.backgroundSelected,
-													},
+																: theme.backgroundSelected },
 												]}
 												onPress={() =>
 													patch({ firstPlayerMode: undefined, firstPlayerId: undefined })
@@ -779,16 +760,15 @@ export default function GameInfoScreen() {
 												<ThemedText
 													type="small"
 													style={{
-														color: !leftOfDealer && !firstPlayerId ? "#fff" : theme.text,
-													}}
+														color: !leftOfDealer && !firstPlayerId ? "#fff" : theme.text }}
 												>
 													Random
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 										</View>
 										{!leftOfDealer && firstPlayerId && (
 											<>
-												<TouchableOpacity
+												<HapticButton
 													style={[
 														styles.dropdownTrigger,
 														{ backgroundColor: theme.backgroundSelected },
@@ -806,32 +786,29 @@ export default function GameInfoScreen() {
 													<ThemedText style={styles.chevron}>
 														{activeDropdown === "firstPlayer" ? "▴" : "▾"}
 													</ThemedText>
-												</TouchableOpacity>
+												</HapticButton>
 												{activeDropdown === "firstPlayer" && (
 													<View
 														style={[
 															styles.dropdown,
 															{
 																backgroundColor: theme.backgroundSelected,
-																borderColor: theme.background,
-															},
+																borderColor: theme.background },
 														]}
 													>
 														{players.map((p, i) => (
-															<TouchableOpacity
+															<HapticButton
 																key={p.id}
 																style={[
 																	styles.dropdownRow,
 																	{ borderBottomColor: theme.background },
 																	i === players.length - 1 && {
-																		borderBottomWidth: 0,
-																	},
+																		borderBottomWidth: 0 },
 																]}
 																onPress={() => {
 																	patch({
 																		firstPlayerMode: undefined,
-																		firstPlayerId: p.id,
-																	});
+																		firstPlayerId: p.id });
 																	setActiveDropdown(null);
 																}}
 															>
@@ -841,7 +818,7 @@ export default function GameInfoScreen() {
 																		✓
 																	</ThemedText>
 																)}
-															</TouchableOpacity>
+															</HapticButton>
 														))}
 													</View>
 												)}
@@ -876,7 +853,7 @@ export default function GameInfoScreen() {
 
 					{/* Save Changes */}
 					{!finished && isDirty && (
-						<TouchableOpacity
+						<HapticButton
 							style={[styles.templateBtn, { backgroundColor: TINT }]}
 							onPress={() => {
 								updateGame(draft);
@@ -887,7 +864,7 @@ export default function GameInfoScreen() {
 							<ThemedText type="smallBold" style={{ color: "#fff" }}>
 								Save Changes
 							</ThemedText>
-						</TouchableOpacity>
+						</HapticButton>
 					)}
 				</ScrollView>
 				<SafeAreaView edges={["bottom"]} />
@@ -923,40 +900,35 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		paddingVertical: Spacing.two,
 		borderTopLeftRadius: Spacing.two,
-		borderBottomLeftRadius: Spacing.two,
-	},
+		borderBottomLeftRadius: Spacing.two },
 	segMid: { flex: 1, alignItems: "center", paddingVertical: Spacing.two },
 	segRight: {
 		flex: 1,
 		alignItems: "center",
 		paddingVertical: Spacing.two,
 		borderTopRightRadius: Spacing.two,
-		borderBottomRightRadius: Spacing.two,
-	},
+		borderBottomRightRadius: Spacing.two },
 	chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
 	chip: {
 		flexDirection: "row",
 		alignItems: "center",
 		borderRadius: 10,
 		paddingHorizontal: 10,
-		paddingVertical: Spacing.one,
-	},
+		paddingVertical: Spacing.one },
 	dropdownTrigger: {
 		flexDirection: "row",
 		alignItems: "center",
 		borderRadius: Spacing.two,
 		paddingVertical: Spacing.two,
 		paddingHorizontal: Spacing.three,
-		gap: Spacing.one,
-	},
+		gap: Spacing.one },
 	chevron: { fontSize: 18, color: TINT, lineHeight: 22 },
 	dropdown: {
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
 		overflow: "hidden",
 		padding: Spacing.two,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	dropdownList: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.one },
 	dropdownRow: {
 		flexDirection: "row",
@@ -964,8 +936,7 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		paddingVertical: Spacing.two,
 		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	dropdownEmpty: { textAlign: "center", opacity: 0.6, paddingVertical: Spacing.one },
 	inputError: { fontSize: 12, color: "#C05050" },
 	toggleRow: {
@@ -974,8 +945,7 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		borderRadius: Spacing.two,
 		paddingHorizontal: Spacing.three,
-		paddingVertical: Spacing.two,
-	},
+		paddingVertical: Spacing.two },
 	toggle: { width: 44, height: 26, borderRadius: 13, justifyContent: "center", paddingHorizontal: 3 },
 	toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" },
 	toggleThumbOn: { alignSelf: "flex-end" },
@@ -983,12 +953,10 @@ const styles = StyleSheet.create({
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: Spacing.three,
-		alignItems: "center",
-	},
+		alignItems: "center" },
 	hint: { fontSize: 13, lineHeight: 18, opacity: 0.7 },
 	iconPreviewRow: { flexDirection: "row", alignItems: "center", gap: Spacing.three },
 	iconPreview: { width: 52, height: 52, borderRadius: Spacing.two, alignItems: "center", justifyContent: "center" },
 	labelRow: { flexDirection: "row", alignItems: "baseline" },
 	nameRow: { flexDirection: "row", alignItems: "stretch", gap: Spacing.two },
-	iconBtn: { borderRadius: Spacing.two, width: 40, alignItems: "center", justifyContent: "center" },
-});
+	iconBtn: { borderRadius: Spacing.two, width: 40, alignItems: "center", justifyContent: "center" } });

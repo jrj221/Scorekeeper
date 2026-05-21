@@ -2,9 +2,9 @@ import { useRouter } from 'expo-router';
 import {
   Alert,
   FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+  StyleSheetView,
+	View,
+	StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +15,7 @@ import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { homeStyles } from '@/styles/home';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function TemplatesScreen() {
   const theme = useTheme();
@@ -49,7 +50,7 @@ export default function TemplatesScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity
+            <HapticButton
               style={[styles.card, { backgroundColor: theme.backgroundElement }]}
               onPress={() => router.push(`/template/${item.id}`)}
             >
@@ -65,23 +66,23 @@ export default function TemplatesScreen() {
                   </ThemedText>
                 </View>
               </View>
-              <TouchableOpacity
+              <HapticButton
                 hitSlop={8}
                 onPress={() => confirmDelete(item.id, item.name)}
               >
                 <ThemedText type="small" themeColor="textSecondary">✕</ThemedText>
-              </TouchableOpacity>
-            </TouchableOpacity>
+              </HapticButton>
+            </HapticButton>
           )}
           ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
         />
 
-        <TouchableOpacity
+        <HapticButton
           style={[homeStyles.fab, { backgroundColor: '#0077B6' }]}
           onPress={() => router.push('/new-template')}
         >
           <ThemedText type="subtitle" style={{ color: '#fff', lineHeight: 32 }}>+</ThemedText>
-        </TouchableOpacity>
+        </HapticButton>
       </SafeAreaView>
     </ThemedView>
   );
@@ -90,28 +91,22 @@ export default function TemplatesScreen() {
 const styles = StyleSheet.create({
   listContent: {
     padding: Spacing.three,
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   emptyContainer: {
-    flex: 1,
-  },
+    flex: 1 },
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.one,
-    paddingTop: Spacing.six,
-  },
+    paddingTop: Spacing.six },
   card: {
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   meta: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
+    alignItems: 'center' } });

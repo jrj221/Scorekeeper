@@ -1,6 +1,6 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -9,6 +9,7 @@ import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { setPendingIcon } from "@/utils/icon-picker-state";
+import { HapticButton } from "@/components/haptic-button";
 
 type IconEntry = { name: string };
 
@@ -22,8 +23,7 @@ const SECTIONS: { title: string; icons: IconEntry[] }[] = [
 			{ name: "chess-board" },
 			{ name: "puzzle-piece" },
 			{ name: "gamepad" },
-		],
-	},
+		] },
 	{
 		title: "Chess",
 		icons: [
@@ -33,8 +33,7 @@ const SECTIONS: { title: string; icons: IconEntry[] }[] = [
 			{ name: "chess-bishop" },
 			{ name: "chess-knight" },
 			{ name: "chess-pawn" },
-		],
-	},
+		] },
 	{
 		title: "Sports",
 		icons: [
@@ -45,8 +44,7 @@ const SECTIONS: { title: string; icons: IconEntry[] }[] = [
 			{ name: "golf-ball" },
 			{ name: "bowling-ball" },
 			{ name: "table-tennis" },
-		],
-	},
+		] },
 	{
 		title: "General",
 		icons: [
@@ -61,8 +59,7 @@ const SECTIONS: { title: string; icons: IconEntry[] }[] = [
 			{ name: "bolt" },
 			{ name: "heart" },
 			{ name: "users" },
-		],
-	},
+		] },
 ];
 
 const COLS = 5;
@@ -88,14 +85,14 @@ export default function IconPickerScreen() {
 							</ThemedText>
 							<View style={styles.grid}>
 								{section.icons.map((icon) => (
-									<TouchableOpacity
+									<HapticButton
 										key={icon.name}
 										style={[styles.cell, { backgroundColor: theme.backgroundElement }]}
 										onPress={() => handleSelect(icon.name)}
 										activeOpacity={0.6}
 									>
 										<FontAwesome5 name={icon.name as any} size={28} color={theme.text} />
-									</TouchableOpacity>
+									</HapticButton>
 								))}
 							</View>
 						</View>
@@ -112,27 +109,22 @@ const styles = StyleSheet.create({
 	scroll: {
 		padding: Spacing.three,
 		gap: Spacing.four,
-		paddingBottom: Spacing.six,
-	},
+		paddingBottom: Spacing.six },
 	removeBtn: {
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: Spacing.two,
-		alignItems: "center",
-	},
+		alignItems: "center" },
 	section: {
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	sectionLabel: {
 		fontSize: 11,
 		fontWeight: "600",
-		letterSpacing: 0.8,
-	},
+		letterSpacing: 0.8 },
 	grid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	cell: {
 		width: CELL_SIZE,
 		height: CELL_SIZE,
@@ -140,10 +132,7 @@ const styles = StyleSheet.create({
 		borderRadius: Spacing.two,
 		alignItems: "center",
 		justifyContent: "center",
-		gap: Spacing.one,
-	},
+		gap: Spacing.one },
 	cellLabel: {
 		fontSize: 10,
-		textAlign: "center",
-	},
-});
+		textAlign: "center" } });

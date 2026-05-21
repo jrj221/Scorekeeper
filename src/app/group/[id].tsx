@@ -6,9 +6,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+  TextInputView,
+	View,
+	TextInput
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +18,7 @@ import { Spacing } from '@/constants/theme';
 import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function EditGroupScreen() {
   const theme = useTheme();
@@ -100,7 +101,7 @@ export default function EditGroupScreen() {
           renderItem={({ item }) => {
             const selected = memberIds.includes(item.id);
             return (
-              <TouchableOpacity
+              <HapticButton
                 style={[styles.memberRow, { borderBottomColor: theme.backgroundSelected }]}
                 onPress={() => toggleMember(item.id)}
               >
@@ -112,18 +113,18 @@ export default function EditGroupScreen() {
                 ]}>
                   {selected && <ThemedText style={styles.checkmark}>✓</ThemedText>}
                 </View>
-              </TouchableOpacity>
+              </HapticButton>
             );
           }}
           ListFooterComponent={
             <View style={styles.footerBtns}>
-              <TouchableOpacity
+              <HapticButton
                 style={[shared.button, styles.cancelBtn, { backgroundColor: theme.backgroundElement }]}
                 onPress={() => router.back()}
               >
                 <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticButton>
+              <HapticButton
                 style={[shared.button, styles.saveBtn, { backgroundColor: canSave ? '#0077B6' : theme.backgroundSelected }]}
                 onPress={handleSave}
                 disabled={!canSave}
@@ -131,7 +132,7 @@ export default function EditGroupScreen() {
                 <ThemedText type="smallBold" style={{ color: canSave ? '#fff' : theme.textSecondary }}>
                   Save
                 </ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
           }
         />
@@ -145,61 +146,49 @@ const styles = StyleSheet.create({
   scroll: {
     padding: Spacing.three,
     gap: Spacing.four,
-    paddingBottom: Spacing.six,
-  },
+    paddingBottom: Spacing.six },
   section: {
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   label: {
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.8,
-  },
+    letterSpacing: 0.8 },
   membersHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: Spacing.one,
-    marginTop: Spacing.two,
-  },
+    marginTop: Spacing.two },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: Spacing.two,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
+    borderBottomWidth: StyleSheet.hairlineWidth },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 4,
     borderWidth: 1.5,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center' },
   checkmark: {
     fontSize: 13,
     color: '#fff',
     fontWeight: '700',
     lineHeight: 22,
-    includeFontPadding: false,
-  },
+    includeFontPadding: false },
   footerBtns: {
     flexDirection: 'row',
     gap: Spacing.two,
-    marginTop: Spacing.two,
-  },
+    marginTop: Spacing.two },
   cancelBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.three,
-  },
+    paddingVertical: Spacing.three },
   saveBtn: {
     flex: 2,
     alignItems: 'center',
-    paddingVertical: Spacing.three,
-  },
+    paddingVertical: Spacing.three },
   error: {
     fontSize: 12,
-    color: '#C05050',
-  },
-});
+    color: '#C05050' } });

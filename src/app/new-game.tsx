@@ -7,9 +7,9 @@ import {
 	Platform,
 	ScrollView,
 	StyleSheet,
-	TextInput,
-	TouchableOpacity,
+	TextInputView,
 	View,
+	TextInput
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +22,7 @@ import { DealerMode, Player, useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
+import { HapticButton } from "@/components/haptic-button";
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 
@@ -166,8 +167,7 @@ export default function NewGameScreen() {
 			firstPlayerMode: resolvedFirstPlayerMode,
 			dealerEnabled: dealerEnabled || undefined,
 			dealerMode: dealerEnabled ? dealerMode : undefined,
-			fixedDealerId: dealerEnabled && dealerMode === "fixed" ? (fixedDealerId ?? undefined) : undefined,
-		});
+			fixedDealerId: dealerEnabled && dealerMode === "fixed" ? (fixedDealerId ?? undefined) : undefined });
 		router.replace(`/game/${id}`);
 	}, [
 		name,
@@ -241,7 +241,7 @@ export default function NewGameScreen() {
 							</ThemedText>
 						</View>
 						<View style={styles.nameRow}>
-							<TouchableOpacity
+							<HapticButton
 								style={[styles.iconBtn, { backgroundColor: theme.background }]}
 								onPress={() => router.push("/icon-picker")}
 								activeOpacity={0.7}
@@ -251,7 +251,7 @@ export default function NewGameScreen() {
 									size={20}
 									color={theme.textSecondary}
 								/>
-							</TouchableOpacity>
+							</HapticButton>
 							<TextInput
 								style={[shared.input, innerInput, { flex: 1 }]}
 								placeholder="Untitled Game"
@@ -294,8 +294,7 @@ export default function NewGameScreen() {
 								backgroundColor: theme.backgroundElement,
 								borderColor:
 									playersError && players.length === 0 ? "#C05050" : theme.backgroundSelected,
-								borderWidth: playersError && players.length === 0 ? 1.5 : StyleSheet.hairlineWidth,
-							},
+								borderWidth: playersError && players.length === 0 ? 1.5 : StyleSheet.hairlineWidth },
 						]}
 					>
 						<View style={styles.labelRow}>
@@ -322,7 +321,7 @@ export default function NewGameScreen() {
 						{players.length > 0 && (
 							<View style={styles.chipRow}>
 								{players.map((p) => (
-									<TouchableOpacity
+									<HapticButton
 										key={p.id}
 										style={[styles.chip, inner]}
 										onPress={() => removePlayer(p.id)}
@@ -332,13 +331,13 @@ export default function NewGameScreen() {
 											{" "}
 											×
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 								))}
 							</View>
 						)}
 
 						<View style={styles.dropdownBtns}>
-							<TouchableOpacity
+							<HapticButton
 								style={[
 									styles.dropdownTrigger,
 									inner,
@@ -352,9 +351,9 @@ export default function NewGameScreen() {
 								<ThemedText style={styles.chevron}>
 									{activeDropdown === "player" ? "▴" : "▾"}
 								</ThemedText>
-							</TouchableOpacity>
+							</HapticButton>
 							{groups.length > 0 && (
-								<TouchableOpacity
+								<HapticButton
 									style={[
 										styles.dropdownTrigger,
 										inner,
@@ -368,7 +367,7 @@ export default function NewGameScreen() {
 									<ThemedText style={styles.chevron}>
 										{activeDropdown === "group" ? "▴" : "▾"}
 									</ThemedText>
-								</TouchableOpacity>
+								</HapticButton>
 							)}
 						</View>
 
@@ -402,7 +401,7 @@ export default function NewGameScreen() {
 								{filteredGlobalPlayers.length > 0 && (
 									<View style={[styles.dropdownList, { borderTopColor: theme.background }]}>
 										{filteredGlobalPlayers.map((gp, i) => (
-											<TouchableOpacity
+											<HapticButton
 												key={gp.id}
 												style={[
 													styles.dropdownRow,
@@ -415,7 +414,7 @@ export default function NewGameScreen() {
 												<ThemedText type="small" style={{ color: "#0077B6" }}>
 													+ Add
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 										))}
 									</View>
 								)}
@@ -467,7 +466,7 @@ export default function NewGameScreen() {
 											.filter(Boolean)
 											.join(", ");
 										return (
-											<TouchableOpacity
+											<HapticButton
 												key={g.id}
 												style={[
 													styles.dropdownRow,
@@ -491,7 +490,7 @@ export default function NewGameScreen() {
 												<ThemedText type="small" style={{ color: "#0077B6" }}>
 													+ Add
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 										);
 									})
 								)}
@@ -506,18 +505,18 @@ export default function NewGameScreen() {
 						</ThemedText>
 						{!isIndefinite && (
 							<View style={styles.roundsRow}>
-								<TouchableOpacity
+								<HapticButton
 									style={[styles.roundsInput, inner]}
 									onPress={() => setShowRoundNumpad(true)}
 								>
 									<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
 										{roundCountStr || "—"}
 									</ThemedText>
-								</TouchableOpacity>
+								</HapticButton>
 								<ThemedText type="default">rounds</ThemedText>
 							</View>
 						)}
-						<TouchableOpacity style={[styles.toggleRow, inner]} onPress={() => setIsIndefinite((v) => !v)}>
+						<HapticButton style={[styles.toggleRow, inner]} onPress={() => setIsIndefinite((v) => !v)}>
 							<ThemedText type="default">Endless Mode</ThemedText>
 							<View
 								style={[
@@ -527,7 +526,7 @@ export default function NewGameScreen() {
 							>
 								<View style={[styles.toggleThumb, isIndefinite && styles.toggleThumbOn]} />
 							</View>
-						</TouchableOpacity>
+						</HapticButton>
 					</View>
 
 					{/* Winner */}
@@ -536,7 +535,7 @@ export default function NewGameScreen() {
 							WINNER
 						</ThemedText>
 						<View style={styles.segmentRow}>
-							<TouchableOpacity
+							<HapticButton
 								style={[
 									styles.segLeft,
 									{ backgroundColor: !rankByLowest ? "#0077B6" : theme.backgroundSelected },
@@ -546,8 +545,8 @@ export default function NewGameScreen() {
 								<ThemedText type="small" style={{ color: !rankByLowest ? "#fff" : theme.text }}>
 									Highest score
 								</ThemedText>
-							</TouchableOpacity>
-							<TouchableOpacity
+							</HapticButton>
+							<HapticButton
 								style={[
 									styles.segRight,
 									{ backgroundColor: rankByLowest ? "#0077B6" : theme.backgroundSelected },
@@ -557,7 +556,7 @@ export default function NewGameScreen() {
 								<ThemedText type="small" style={{ color: rankByLowest ? "#fff" : theme.text }}>
 									Lowest score
 								</ThemedText>
-							</TouchableOpacity>
+							</HapticButton>
 						</View>
 					</View>
 
@@ -572,7 +571,7 @@ export default function NewGameScreen() {
 								(OPTIONAL)
 							</ThemedText>
 						</View>
-						<TouchableOpacity
+						<HapticButton
 							style={[styles.toggleRow, inner]}
 							onPress={() => {
 								setDealerEnabled((v) => !v);
@@ -588,7 +587,7 @@ export default function NewGameScreen() {
 							>
 								<View style={[styles.toggleThumb, dealerEnabled && styles.toggleThumbOn]} />
 							</View>
-						</TouchableOpacity>
+						</HapticButton>
 
 						{dealerEnabled && (
 							<>
@@ -596,13 +595,12 @@ export default function NewGameScreen() {
 									DEALER IS
 								</ThemedText>
 								<View style={styles.segmentRow}>
-									<TouchableOpacity
+									<HapticButton
 										style={[
 											styles.segLeft,
 											{
 												backgroundColor:
-													dealerMode === "rotation" ? "#0077B6" : theme.backgroundSelected,
-											},
+													dealerMode === "rotation" ? "#0077B6" : theme.backgroundSelected },
 										]}
 										onPress={() => {
 											setDealerMode("rotation");
@@ -615,15 +613,14 @@ export default function NewGameScreen() {
 										>
 											Rotation
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
-									<TouchableOpacity
+									<HapticButton
 										style={[
 											styles.segMid,
 											{
 												backgroundColor:
-													dealerMode === "random" ? "#0077B6" : theme.backgroundSelected,
-											},
+													dealerMode === "random" ? "#0077B6" : theme.backgroundSelected },
 										]}
 										onPress={() => setDealerMode("random")}
 									>
@@ -633,15 +630,14 @@ export default function NewGameScreen() {
 										>
 											Random
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
-									<TouchableOpacity
+									<HapticButton
 										style={[
 											styles.segRight,
 											{
 												backgroundColor:
-													dealerMode === "fixed" ? "#0077B6" : theme.backgroundSelected,
-											},
+													dealerMode === "fixed" ? "#0077B6" : theme.backgroundSelected },
 										]}
 										onPress={() => {
 											setDealerMode("fixed");
@@ -654,11 +650,11 @@ export default function NewGameScreen() {
 										>
 											Fixed
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 								</View>
 								{(dealerMode === "fixed" || dealerMode === "rotation") && (
 									<>
-										<TouchableOpacity
+										<HapticButton
 											style={[
 												styles.dropdownTrigger,
 												inner,
@@ -675,15 +671,14 @@ export default function NewGameScreen() {
 											<ThemedText style={styles.chevron}>
 												{activeDropdown === "fixedDealer" ? "▴" : "▾"}
 											</ThemedText>
-										</TouchableOpacity>
+										</HapticButton>
 										{activeDropdown === "fixedDealer" && (
 											<View
 												style={[
 													styles.dropdown,
 													{
 														backgroundColor: theme.backgroundSelected,
-														borderColor: theme.background,
-													},
+														borderColor: theme.background },
 												]}
 											>
 												{players.length === 0 ? (
@@ -696,7 +691,7 @@ export default function NewGameScreen() {
 													</ThemedText>
 												) : (
 													players.map((p, i) => (
-														<TouchableOpacity
+														<HapticButton
 															key={p.id}
 															style={[
 																styles.dropdownRow,
@@ -714,7 +709,7 @@ export default function NewGameScreen() {
 																	✓
 																</ThemedText>
 															)}
-														</TouchableOpacity>
+														</HapticButton>
 													))
 												)}
 											</View>
@@ -737,7 +732,7 @@ export default function NewGameScreen() {
 								(OPTIONAL)
 							</ThemedText>
 						</View>
-						<TouchableOpacity
+						<HapticButton
 							style={[styles.toggleRow, inner]}
 							onPress={() => {
 								setTurnOrderEnabled((v) => !v);
@@ -753,22 +748,21 @@ export default function NewGameScreen() {
 							>
 								<View style={[styles.toggleThumb, turnOrderEnabled && styles.toggleThumbOn]} />
 							</View>
-						</TouchableOpacity>
+						</HapticButton>
 
 						{turnOrderEnabled && (
 							<>
 								<View style={styles.segmentRow}>
 									{dealerEnabled && (
 										<>
-											<TouchableOpacity
+											<HapticButton
 												style={[
 													styles.segLeft,
 													{
 														backgroundColor:
 															firstPlayerMode === "left-of-dealer"
 																? "#0077B6"
-																: theme.backgroundSelected,
-													},
+																: theme.backgroundSelected },
 												]}
 												onPress={() => setFirstPlayerMode("left-of-dealer")}
 											>
@@ -776,24 +770,22 @@ export default function NewGameScreen() {
 													type="small"
 													style={{
 														color:
-															firstPlayerMode === "left-of-dealer" ? "#fff" : theme.text,
-													}}
+															firstPlayerMode === "left-of-dealer" ? "#fff" : theme.text }}
 												>
 													Left of Dealer
 												</ThemedText>
-											</TouchableOpacity>
+											</HapticButton>
 											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
 										</>
 									)}
-									<TouchableOpacity
+									<HapticButton
 										style={[
 											dealerEnabled ? styles.segMid : styles.segLeft,
 											{
 												backgroundColor:
 													firstPlayerMode === "rotation"
 														? "#0077B6"
-														: theme.backgroundSelected,
-											},
+														: theme.backgroundSelected },
 										]}
 										onPress={() => {
 											setFirstPlayerMode("rotation");
@@ -807,15 +799,14 @@ export default function NewGameScreen() {
 										>
 											Rotation
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
-									<TouchableOpacity
+									<HapticButton
 										style={[
 											styles.segRight,
 											{
 												backgroundColor:
-													firstPlayerMode === "random" ? "#0077B6" : theme.backgroundSelected,
-											},
+													firstPlayerMode === "random" ? "#0077B6" : theme.backgroundSelected },
 										]}
 										onPress={() => setFirstPlayerMode("random")}
 									>
@@ -825,11 +816,11 @@ export default function NewGameScreen() {
 										>
 											Random
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 								</View>
 								{firstPlayerMode === "rotation" && (
 									<>
-										<TouchableOpacity
+										<HapticButton
 											style={[
 												styles.dropdownTrigger,
 												inner,
@@ -846,15 +837,14 @@ export default function NewGameScreen() {
 											<ThemedText style={styles.chevron}>
 												{activeDropdown === "firstPlayer" ? "▴" : "▾"}
 											</ThemedText>
-										</TouchableOpacity>
+										</HapticButton>
 										{activeDropdown === "firstPlayer" && (
 											<View
 												style={[
 													styles.dropdown,
 													{
 														backgroundColor: theme.backgroundSelected,
-														borderColor: theme.background,
-													},
+														borderColor: theme.background },
 												]}
 											>
 												{players.length === 0 ? (
@@ -867,7 +857,7 @@ export default function NewGameScreen() {
 													</ThemedText>
 												) : (
 													players.map((p, i) => (
-														<TouchableOpacity
+														<HapticButton
 															key={p.id}
 															style={[
 																styles.dropdownRow,
@@ -885,7 +875,7 @@ export default function NewGameScreen() {
 																	✓
 																</ThemedText>
 															)}
-														</TouchableOpacity>
+														</HapticButton>
 													))
 												)}
 											</View>
@@ -898,14 +888,14 @@ export default function NewGameScreen() {
 					</View>
 
 					{/* Create */}
-					<TouchableOpacity
+					<HapticButton
 						style={[shared.button, styles.createBtn, { backgroundColor: "#0077B6" }]}
 						onPress={handleCreate}
 					>
 						<ThemedText type="smallBold" style={{ color: "#fff" }}>
 							Create Game
 						</ThemedText>
-					</TouchableOpacity>
+					</HapticButton>
 				</ScrollView>
 				<SafeAreaView edges={["bottom"]} />
 			</KeyboardAvoidingView>
@@ -932,8 +922,7 @@ const styles = StyleSheet.create({
 		gap: Spacing.two,
 		borderRadius: Spacing.two,
 		padding: Spacing.three,
-		borderWidth: StyleSheet.hairlineWidth,
-	},
+		borderWidth: StyleSheet.hairlineWidth },
 	labelRow: { flexDirection: "row", alignItems: "baseline" },
 	label: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8 },
 	subLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8, opacity: 0.7 },
@@ -945,8 +934,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		borderRadius: 10,
 		paddingHorizontal: 10,
-		paddingVertical: Spacing.one,
-	},
+		paddingVertical: Spacing.one },
 	dropdownBtns: { flexDirection: "row", gap: Spacing.two },
 	dropdownTrigger: {
 		flexDirection: "row",
@@ -954,8 +942,7 @@ const styles = StyleSheet.create({
 		borderRadius: Spacing.two,
 		paddingVertical: Spacing.two,
 		paddingHorizontal: Spacing.three,
-		gap: Spacing.one,
-	},
+		gap: Spacing.one },
 	dropdownTriggerActive: { opacity: 0.75 },
 	chevron: { fontSize: 18, color: "#0077B6", lineHeight: 22 },
 	dropdown: {
@@ -963,8 +950,7 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		overflow: "hidden",
 		padding: Spacing.two,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	dropdownList: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.one },
 	dropdownRow: {
 		flexDirection: "row",
@@ -972,8 +958,7 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		paddingVertical: Spacing.two,
 		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	dropdownEmpty: { textAlign: "center", opacity: 0.6, paddingVertical: Spacing.one },
 	inputError: { fontSize: 12, color: "#C05050" },
 	segmentRow: { flexDirection: "row" },
@@ -983,24 +968,21 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		paddingVertical: Spacing.two,
 		borderTopLeftRadius: Spacing.two,
-		borderBottomLeftRadius: Spacing.two,
-	},
+		borderBottomLeftRadius: Spacing.two },
 	segMid: { flex: 1, alignItems: "center", paddingVertical: Spacing.two },
 	segRight: {
 		flex: 1,
 		alignItems: "center",
 		paddingVertical: Spacing.two,
 		borderTopRightRadius: Spacing.two,
-		borderBottomRightRadius: Spacing.two,
-	},
+		borderBottomRightRadius: Spacing.two },
 	toggleRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 		borderRadius: Spacing.two,
 		paddingHorizontal: Spacing.three,
-		paddingVertical: Spacing.two,
-	},
+		paddingVertical: Spacing.two },
 	toggle: { width: 44, height: 26, borderRadius: 13, justifyContent: "center", paddingHorizontal: 3 },
 	toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" },
 	toggleThumbOn: { alignSelf: "flex-end" },
@@ -1011,19 +993,15 @@ const styles = StyleSheet.create({
 		paddingHorizontal: Spacing.two,
 		paddingVertical: Spacing.one,
 		minWidth: 52,
-		alignItems: "center",
-	},
+		alignItems: "center" },
 	nameRow: {
 		flexDirection: "row",
 		alignItems: "stretch",
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	iconBtn: {
 		borderRadius: Spacing.two,
 		aspectRatio: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		// height matches shared.input padding: Spacing.two*2 + fontSize 16 lineheight ≈ 40
-		width: 40,
-	},
-});
+		width: 40 } });

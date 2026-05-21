@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Dimensions, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from './themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { HapticButton } from "@/components/haptic-button";
 
 const SCREEN_W = Dimensions.get('window').width;
 const SCREEN_H = Dimensions.get('window').height;
@@ -41,8 +42,7 @@ export function CellEditModal({
   allowNegative = true,
   minValue,
   onSave,
-  onCancel,
-}: Props) {
+  onCancel }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -123,7 +123,7 @@ export function CellEditModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.dismissArea} activeOpacity={1} onPress={onCancel} />
+        <HapticButton style={styles.dismissArea} activeOpacity={1} onPress={onCancel} />
         <View style={[styles.sheet, { backgroundColor: theme.backgroundElement, paddingBottom: insets.bottom + Spacing.two }]}>
 
           <ThemedText style={styles.header} themeColor="textSecondary">{title}</ThemedText>
@@ -152,7 +152,7 @@ export function CellEditModal({
                     ? theme.backgroundSelected
                     : theme.background;
                   return (
-                    <TouchableOpacity
+                    <HapticButton
                       key={key}
                       style={[styles.key, { width: MAX_KEY_W, height: keySize, backgroundColor: bg }]}
                       onPress={() => !disabled && pressKey(key)}
@@ -163,16 +163,16 @@ export function CellEditModal({
                       ]}>
                         {key}
                       </ThemedText>
-                    </TouchableOpacity>
+                    </HapticButton>
                   );
                 })}
               </View>
             ))}
           </View>
 
-          <TouchableOpacity style={[styles.doneBtn, { backgroundColor: '#0077B6' }]} onPress={handleDone}>
+          <HapticButton style={[styles.doneBtn, { backgroundColor: '#0077B6' }]} onPress={handleDone}>
             <ThemedText type="smallBold" style={{ color: '#fff', fontSize: 16 }}>Done</ThemedText>
-          </TouchableOpacity>
+          </HapticButton>
 
         </View>
       </View>
@@ -184,61 +184,48 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
+    justifyContent: 'flex-end' },
   dismissArea: {
-    flex: 1,
-  },
+    flex: 1 },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: SHEET_PAD,
     paddingTop: SHEET_PAD,
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   header: {
     fontSize: 13,
     textAlign: 'center',
-    letterSpacing: 0.3,
-  },
+    letterSpacing: 0.3 },
   displayArea: {
     height: 64,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   display: {
     fontSize: 54,
     fontWeight: '300',
     lineHeight: 64,
     textAlign: 'center',
-    letterSpacing: -1,
-  },
+    letterSpacing: -1 },
   hint: {
     fontSize: 13,
     color: '#C05050',
     textAlign: 'center',
-    marginTop: -Spacing.one,
-  },
+    marginTop: -Spacing.one },
   numpad: {
-    gap: KEY_GAP,
-  },
+    gap: KEY_GAP },
   keyRow: {
     flexDirection: 'row',
-    gap: KEY_GAP,
-  },
+    gap: KEY_GAP },
   key: {
     borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center' },
   keyText: {
     fontSize: 22,
-    fontWeight: '400',
-  },
+    fontWeight: '400' },
   doneBtn: {
     height: 88,
     borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+    justifyContent: 'center' } });

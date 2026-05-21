@@ -6,9 +6,9 @@ import {
   FlatList,
   Modal,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+  TextInputView,
+	View,
+	TextInput
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +20,7 @@ import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
 import { getPlayerWinRate } from '@/utils/game';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -96,12 +97,11 @@ if (!player) {
         options={{
           title: player.name,
           headerTitle: () => (
-            <TouchableOpacity style={styles.headerTitle} onPress={openRenameDialog} hitSlop={8}>
+            <HapticButton style={styles.headerTitle} onPress={openRenameDialog} hitSlop={8}>
               <ThemedText style={styles.headerName}>{player.name}</ThemedText>
               <SymbolView name="pencil" size={14} tintColor={theme.textSecondary} />
-            </TouchableOpacity>
-          ),
-        }}
+            </HapticButton>
+          ) }}
       />
       <SafeAreaView style={[shared.safeArea, { paddingTop: Spacing.two }]} edges={['bottom']}>
 
@@ -143,12 +143,12 @@ if (!player) {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity
+          <HapticButton
             style={[styles.actionBtn, { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
             onPress={confirmDeletePlayer}
           >
             <ThemedText type="small" style={{ color: '#C05050' }}>Delete Player</ThemedText>
-          </TouchableOpacity>
+          </HapticButton>
         </View>
       </SafeAreaView>
 
@@ -160,7 +160,7 @@ if (!player) {
         onRequestClose={() => setShowRenameDialog(false)}
       >
         <View style={styles.dialogOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowRenameDialog(false)} />
+          <HapticButton style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowRenameDialog(false)} />
           <View style={[styles.dialogCard, { backgroundColor: theme.backgroundElement }]}>
             <ThemedText style={styles.dialogTitle} themeColor="textSecondary">RENAME PLAYER</ThemedText>
             <View style={{ gap: 4 }}>
@@ -179,13 +179,13 @@ if (!player) {
               {renameError ? <ThemedText style={styles.renameError}>{renameError}</ThemedText> : null}
             </View>
             <View style={styles.dialogBtns}>
-              <TouchableOpacity
+              <HapticButton
                 style={[shared.button, styles.dialogCancel, { backgroundColor: theme.backgroundSelected }]}
                 onPress={() => setShowRenameDialog(false)}
               >
                 <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticButton>
+              <HapticButton
                 style={[shared.button, styles.dialogSave, { backgroundColor: renameInput.trim() ? '#0077B6' : theme.backgroundSelected }]}
                 onPress={commitRename}
                 disabled={!renameInput.trim()}
@@ -193,7 +193,7 @@ if (!player) {
                 <ThemedText type="smallBold" style={{ color: renameInput.trim() ? '#fff' : theme.textSecondary }}>
                   Save
                 </ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
           </View>
         </View>
@@ -206,94 +206,74 @@ const styles = StyleSheet.create({
   headerTitle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
-  },
+    gap: Spacing.one },
   headerName: {
     fontSize: 17,
-    fontWeight: '600',
-  },
+    fontWeight: '600' },
   statsCard: {
     flexDirection: 'row',
     borderRadius: Spacing.two,
     marginBottom: Spacing.three,
-    overflow: 'hidden',
-  },
+    overflow: 'hidden' },
   statItem: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.five,
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   statDivider: {
-    width: StyleSheet.hairlineWidth,
-  },
+    width: StyleSheet.hairlineWidth },
   statLabel: {
     fontSize: 10,
     fontWeight: '600',
-    letterSpacing: 0.8,
-  },
+    letterSpacing: 0.8 },
   statValue: {
     fontSize: 28,
     fontWeight: '600',
-    lineHeight: 36,
-  },
+    lineHeight: 36 },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.8,
-    marginBottom: Spacing.one,
-  },
+    marginBottom: Spacing.one },
   list: {
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   empty: {
     paddingTop: Spacing.four,
-    textAlign: 'center',
-  },
+    textAlign: 'center' },
   actions: {
     gap: Spacing.two,
-    marginTop: Spacing.three,
-  },
+    marginTop: Spacing.three },
   actionBtn: {
     borderRadius: Spacing.two,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.three,
-    alignItems: 'center',
-  },
+    alignItems: 'center' },
   dialogOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
-    paddingBottom: 220,
-  },
+    paddingBottom: 220 },
   dialogCard: {
     borderRadius: Spacing.three,
     padding: Spacing.three,
-    gap: Spacing.three,
-  },
+    gap: Spacing.three },
   dialogTitle: {
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.8,
-    textAlign: 'center',
-  },
+    textAlign: 'center' },
   dialogBtns: {
     flexDirection: 'row',
-    gap: Spacing.two,
-  },
+    gap: Spacing.two },
   dialogCancel: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.two,
-  },
+    paddingVertical: Spacing.two },
   dialogSave: {
     flex: 2,
     alignItems: 'center',
-    paddingVertical: Spacing.two,
-  },
+    paddingVertical: Spacing.two },
   renameError: {
     fontSize: 12,
-    color: '#C05050',
-  },
-});
+    color: '#C05050' } });

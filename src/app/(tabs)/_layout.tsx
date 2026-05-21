@@ -1,7 +1,25 @@
+import * as Haptics from "expo-haptics";
 import { Stack, Tabs } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import { type BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
+import { Pressable } from "react-native";
 
 import { useTheme } from "@/hooks/use-theme";
+
+function HapticTabButton({ onPress, children, style, accessibilityState }: BottomTabBarButtonProps) {
+	return (
+		<Pressable
+			onPress={(e) => {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+				onPress?.(e);
+			}}
+			style={style as any}
+			accessibilityState={accessibilityState}
+		>
+			{children}
+		</Pressable>
+	);
+}
 
 export default function TabLayout() {
 	const theme = useTheme();
@@ -15,13 +33,13 @@ export default function TabLayout() {
 					headerTitleStyle: { fontSize: 16, fontWeight: "600" },
 					headerTintColor: theme.text,
 					headerShadowVisible: false,
-					// contentStyle: { backgroundColor: theme.background },
 					tabBarStyle: {
 						backgroundColor: theme.backgroundElement,
 						borderTopColor: theme.backgroundSelected,
 					},
 					tabBarActiveTintColor: "#0077B6",
 					tabBarInactiveTintColor: theme.textSecondary,
+					tabBarButton: HapticTabButton,
 				}}
 			>
 				<Tabs.Screen

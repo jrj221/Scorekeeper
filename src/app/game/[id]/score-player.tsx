@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -9,6 +9,7 @@ import { Spacing } from "@/constants/theme";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
+import { HapticButton } from "@/components/haptic-button";
 
 const SCREEN_W = Dimensions.get("window").width;
 const SCREEN_H = Dimensions.get("window").height;
@@ -146,7 +147,7 @@ export default function ScorePlayerScreen() {
 									? theme.backgroundSelected
 									: theme.backgroundElement;
 								return (
-									<TouchableOpacity
+									<HapticButton
 										key={key}
 										style={[styles.key, { width: keySize, height: keySize, backgroundColor: bg }]}
 										onPress={() => !disabled && pressKey(key)}
@@ -160,27 +161,26 @@ export default function ScorePlayerScreen() {
 														? "transparent"
 														: signActive
 														? "#fff"
-														: theme.text,
-												},
+														: theme.text },
 											]}
 										>
 											{key}
 										</ThemedText>
-									</TouchableOpacity>
+									</HapticButton>
 								);
 							})}
 						</View>
 					))}
 				</View>
 
-				<TouchableOpacity
+				<HapticButton
 					style={[styles.doneBtn, { backgroundColor: CURRENT_TINT }]}
 					onPress={handleDone}
 				>
 					<ThemedText type="smallBold" style={{ color: "#fff", fontSize: 18 }}>
 						Done
 					</ThemedText>
-				</TouchableOpacity>
+				</HapticButton>
 			</SafeAreaView>
 		</ThemedView>
 	);
@@ -191,46 +191,36 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingHorizontal: PAD,
 		paddingTop: Spacing.two,
-		gap: Spacing.three,
-	},
+		gap: Spacing.three },
 	roundLabel: {
 		fontSize: 15,
 		textAlign: "center",
-		letterSpacing: 0.3,
-	},
+		letterSpacing: 0.3 },
 	displayArea: {
 		height: 100,
 		justifyContent: "center",
-		alignItems: "center",
-	},
+		alignItems: "center" },
 	display: {
 		fontSize: 72,
 		lineHeight: 88,
 		fontWeight: "300",
 		letterSpacing: -2,
-		textAlign: "center",
-	},
+		textAlign: "center" },
 	numpad: {
-		gap: GAP,
-	},
+		gap: GAP },
 	keyRow: {
 		flexDirection: "row",
-		gap: GAP,
-	},
+		gap: GAP },
 	key: {
 		borderRadius: 12,
 		alignItems: "center",
-		justifyContent: "center",
-	},
+		justifyContent: "center" },
 	keyText: {
 		fontSize: 28,
 		lineHeight: 34,
-		fontWeight: "400",
-	},
+		fontWeight: "400" },
 	doneBtn: {
 		height: 60,
 		borderRadius: 14,
 		alignItems: "center",
-		justifyContent: "center",
-	},
-});
+		justifyContent: "center" } });

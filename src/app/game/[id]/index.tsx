@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useRef, useState } from "react";
-import { Alert, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
@@ -13,6 +13,7 @@ import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { getTurnState } from "@/utils/game";
+import { HapticButton } from "@/components/haptic-button";
 
 const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
@@ -86,7 +87,7 @@ export default function GameScreen() {
 					title: game.name,
 					headerBackTitle: "Home",
 					headerTitle: () => (
-						<TouchableOpacity
+						<HapticButton
 							style={styles.headerTitleBtn}
 							onPress={() => router.push(`/game/${id}/info`)}
 							hitSlop={8}
@@ -101,9 +102,8 @@ export default function GameScreen() {
 								tintColor={CURRENT_TINT}
 								style={{ backgroundColor: "transparent" }}
 							/>
-						</TouchableOpacity>
-					),
-				}}
+						</HapticButton>
+					) }}
 			/>
 			<SafeAreaView style={styles.safe} edges={["bottom"]}>
 				{/* Round label row */}
@@ -114,7 +114,7 @@ export default function GameScreen() {
 				{/* Scores / Current Turn tab toggle */}
 				{!finished && (
 					<View style={[styles.viewToggle, { backgroundColor: theme.backgroundElement }]}>
-						<TouchableOpacity
+						<HapticButton
 							style={[styles.viewTab, viewMode === "scores" && styles.viewTabActive]}
 							onPress={() => setViewMode("scores")}
 						>
@@ -124,8 +124,8 @@ export default function GameScreen() {
 							>
 								Scorecard
 							</ThemedText>
-						</TouchableOpacity>
-						<TouchableOpacity
+						</HapticButton>
+						<HapticButton
 							style={[styles.viewTab, viewMode === "turns" && styles.viewTabActive]}
 							onPress={() => setViewMode("turns")}
 						>
@@ -135,7 +135,7 @@ export default function GameScreen() {
 							>
 								Current Turn
 							</ThemedText>
-						</TouchableOpacity>
+						</HapticButton>
 					</View>
 				)}
 
@@ -161,8 +161,7 @@ export default function GameScreen() {
 											styles.turnHeaderRow,
 											{
 												borderBottomColor: theme.backgroundSelected,
-												backgroundColor: theme.backgroundSelected,
-											},
+												backgroundColor: theme.backgroundSelected },
 										]}
 									>
 										<ThemedText style={styles.turnHeaderCell} themeColor="textSecondary">
@@ -185,7 +184,7 @@ export default function GameScreen() {
 											const isDealer = pid === dealerId;
 											const hasScore = getScore(currentRoundIndex, pid) !== null;
 											return (
-												<TouchableOpacity
+												<HapticButton
 													key={pid}
 													style={[
 														styles.turnRow,
@@ -240,8 +239,7 @@ export default function GameScreen() {
 																					color:
 																						roundScore < 0
 																							? "#C05050"
-																							: theme.text,
-																				},
+																							: theme.text },
 																			]}
 																		>
 																			{roundScore >= 0
@@ -253,35 +251,34 @@ export default function GameScreen() {
 															);
 														})()}
 													</View>
-												</TouchableOpacity>
+												</HapticButton>
 											);
 										})}
 									</ScrollView>
 									{allScored && (
-										<TouchableOpacity
+										<HapticButton
 											style={[styles.nextRoundBtn, { backgroundColor: CURRENT_TINT }]}
 											onPress={advanceRound}
 										>
 											<ThemedText type="smallBold" style={{ color: "#fff" }}>
 												Next Round
 											</ThemedText>
-										</TouchableOpacity>
+										</HapticButton>
 									)}
 									{game.turnOrder && (
-										<TouchableOpacity
+										<HapticButton
 											style={[
 												styles.editOrderBtn,
 												{
 													borderColor: theme.backgroundSelected,
-													backgroundColor: theme.backgroundElement,
-												},
+													backgroundColor: theme.backgroundElement },
 											]}
 											onPress={() => router.push(`/game/${id}/turn-order`)}
 										>
 											<ThemedText type="small" themeColor="textSecondary">
 												Edit Turn Order
 											</ThemedText>
-										</TouchableOpacity>
+										</HapticButton>
 									)}
 								</View>
 							);
@@ -373,7 +370,7 @@ export default function GameScreen() {
 														style={[styles.nameCell, { width: colW, height: ROW_H }]}
 													>
 														{finished ? (
-															<TouchableOpacity
+															<HapticButton
 																onPress={() => router.push(`/player/${p.id}`)}
 															>
 																<ThemedText style={styles.colHeader} numberOfLines={1}>
@@ -382,7 +379,7 @@ export default function GameScreen() {
 																		: ""}
 																	{p.name}
 																</ThemedText>
-															</TouchableOpacity>
+															</HapticButton>
 														) : (
 															<ThemedText style={styles.colHeader} numberOfLines={1}>
 																{firstRoundComplete && i < MEDALS.length
@@ -420,7 +417,7 @@ export default function GameScreen() {
 															{sortedPlayers.map((p) => {
 																const s = getScore(ri, p.id);
 																const tappable = !finished && ri <= currentRoundIndex;
-																const Cell = tappable ? TouchableOpacity : View;
+																const Cell = tappable ? HapticButton : View;
 																return (
 																	<Cell
 																		key={p.id}
@@ -433,9 +430,7 @@ export default function GameScreen() {
 																					onPress: () =>
 																						setEditCell({
 																							roundIndex: ri,
-																							player: p,
-																						}),
-																				}
+																							player: p }) }
 																			: {})}
 																	>
 																		<ThemedText
@@ -497,20 +492,20 @@ export default function GameScreen() {
 							game.players.length > 0 &&
 							game.players.every((p) => getScore(currentRoundIndex, p.id) !== null);
 						return allScored ? (
-							<TouchableOpacity
+							<HapticButton
 								style={[styles.nextRoundBtn, { backgroundColor: CURRENT_TINT }]}
 								onPress={advanceRound}
 							>
 								<ThemedText type="smallBold" style={{ color: "#fff" }}>
 									Next Round
 								</ThemedText>
-							</TouchableOpacity>
+							</HapticButton>
 						) : null;
 					})()}
 
 				{/* End Game */}
 				{!finished && (
-					<TouchableOpacity
+					<HapticButton
 						style={[
 							styles.endGameBtn,
 							{ borderColor: theme.backgroundElement, backgroundColor: theme.backgroundSelected },
@@ -520,7 +515,7 @@ export default function GameScreen() {
 						<ThemedText type="small" style={styles.endGameText}>
 							End Game
 						</ThemedText>
-					</TouchableOpacity>
+					</HapticButton>
 				)}
 			</SafeAreaView>
 
@@ -542,199 +537,159 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingHorizontal: Spacing.three,
 		paddingTop: Spacing.two,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	roundLabelRow: {
 		paddingHorizontal: 5,
-		paddingVertical: 4,
-	},
+		paddingVertical: 4 },
 	roundLabel: {
 		fontSize: 25,
 		fontWeight: "700",
-		letterSpacing: -0.3,
-	},
+		letterSpacing: -0.3 },
 	headerTitleBtn: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 5,
-	},
+		gap: 5 },
 	headerTitleText: {
 		fontSize: 17,
-		fontWeight: "600",
-	},
+		fontWeight: "600" },
 	viewToggle: {
 		flexDirection: "row",
 		borderRadius: Spacing.two,
 		overflow: "hidden",
-		padding: 3,
-	},
+		padding: 3 },
 	viewTab: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingVertical: Spacing.one + 2,
 		margin: 2,
-		borderRadius: Spacing.two - 3,
-	},
+		borderRadius: Spacing.two - 3 },
 	viewTabActive: {
-		backgroundColor: "#0077B6",
-	},
+		backgroundColor: "#0077B6" },
 	// Scorecard
 	labelCell: {
 		alignItems: "center",
-		justifyContent: "center",
-	},
+		justifyContent: "center" },
 	labelText: {
 		fontSize: 12,
 		fontWeight: "600",
-		textAlign: "center",
-	},
+		textAlign: "center" },
 	headerRow: {
-		flexDirection: "row",
-	},
+		flexDirection: "row" },
 	nameCell: {
 		alignItems: "center",
 		justifyContent: "center",
-		paddingHorizontal: 4,
-	},
+		paddingHorizontal: 4 },
 	colHeader: {
 		fontSize: 12,
 		fontWeight: "600",
-		textAlign: "center",
-	},
+		textAlign: "center" },
 	scoreRow: {
-		flexDirection: "row",
-	},
+		flexDirection: "row" },
 	scoreCell: {
 		alignItems: "center",
-		justifyContent: "center",
-	},
+		justifyContent: "center" },
 	score: {
 		fontSize: 13,
 		fontWeight: "500",
-		textAlign: "center",
-	},
+		textAlign: "center" },
 	emptyScore: {
 		fontSize: 13,
 		textAlign: "center",
-		opacity: 0.3,
-	},
+		opacity: 0.3 },
 	totalScore: {
 		fontSize: 13,
 		fontWeight: "700",
-		textAlign: "center",
-	},
+		textAlign: "center" },
 	endGameBtn: {
 		alignItems: "center",
 		paddingVertical: Spacing.two,
 		marginHorizontal: Spacing.three,
 		marginBottom: Spacing.two,
 		borderRadius: Spacing.two,
-		borderWidth: StyleSheet.hairlineWidth,
-	},
+		borderWidth: StyleSheet.hairlineWidth },
 	endGameText: {
-		color: "#C05050",
-	},
+		color: "#C05050" },
 	// Current Turn view
 	turnList: {
 		borderRadius: Spacing.two,
-		overflow: "hidden",
-	},
+		overflow: "hidden" },
 	turnRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.two + 2,
 		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: Spacing.two,
-	},
+		gap: Spacing.two },
 	turnNameRow: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6,
-	},
+		gap: 6 },
 	turnName: {
 		flexShrink: 1,
-		fontSize: 17,
-	},
+		fontSize: 17 },
 	dealerBadge: {
 		borderRadius: Spacing.one,
 		paddingHorizontal: Spacing.one,
-		paddingVertical: 2,
-	},
+		paddingVertical: 2 },
 	dealerLabel: {
 		fontSize: 10,
 		fontWeight: "700",
-		letterSpacing: 0.5,
-	},
+		letterSpacing: 0.5 },
 	turnScoreArea: {
 		alignItems: "flex-end",
-		gap: 4,
-	},
+		gap: 4 },
 	turnScoreRow: {
 		flexDirection: "row",
 		alignItems: "baseline",
-		gap: 4,
-	},
+		gap: 4 },
 	turnScore: {
 		fontSize: 22,
 		fontWeight: "600",
 		minWidth: 50,
-		textAlign: "right",
-	},
+		textAlign: "right" },
 	turnScoreDelta: {
 		fontSize: 16,
 		fontWeight: "500",
-		opacity: 0.45,
-	},
+		opacity: 0.45 },
 	addScoreBtn: {
 		borderRadius: 6,
 		paddingHorizontal: 10,
-		paddingVertical: 4,
-	},
+		paddingVertical: 4 },
 	addScoreLabel: {
 		fontSize: 13,
-		fontWeight: "600",
-	},
+		fontWeight: "600" },
 	editOrderBtn: {
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: Spacing.two,
 		alignItems: "center",
-		marginTop: Spacing.two,
-	},
+		marginTop: Spacing.two },
 	nextRoundBtn: {
 		borderRadius: Spacing.two,
 		paddingVertical: Spacing.two + 2,
 		alignItems: "center",
-		marginTop: Spacing.two,
-	},
+		marginTop: Spacing.two },
 	turnCheckmark: {
 		fontSize: 16,
 		color: CURRENT_TINT,
-		fontWeight: "700",
-	},
+		fontWeight: "700" },
 	goesFirstLabel: {
 		fontSize: 14,
-		paddingVertical: Spacing.two,
-	},
+		paddingVertical: Spacing.two },
 	turnHeaderRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.one,
-		borderBottomWidth: StyleSheet.hairlineWidth,
-	},
+		borderBottomWidth: StyleSheet.hairlineWidth },
 	turnHeaderCell: {
 		flex: 1,
 		fontSize: 11,
 		fontWeight: "600",
 		letterSpacing: 0.4,
-		textTransform: "uppercase",
-	},
+		textTransform: "uppercase" },
 	turnHeaderRight: {
 		flex: 0,
-		textAlign: "right",
-	},
-});
+		textAlign: "right" } });

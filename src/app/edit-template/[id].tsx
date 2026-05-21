@@ -6,9 +6,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+  TextInputView,
+	View,
+	TextInput,
+	Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,6 +20,7 @@ import { Spacing } from '@/constants/theme';
 import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
+import { HapticButton } from "@/components/haptic-button";
 
 export default function EditTemplateScreen() {
   const theme = useTheme();
@@ -55,8 +57,7 @@ export default function EditTemplateScreen() {
       name: trimmedName,
       description: description.trim() || undefined,
       totalRounds,
-      rankByLowest,
-    });
+      rankByLowest });
     router.back();
   }, [template, name, description, isIndefinite, roundCountStr, rankByLowest, updateTemplate, router]);
 
@@ -105,63 +106,63 @@ export default function EditTemplateScreen() {
           <View style={styles.section}>
             <ThemedText style={styles.label} themeColor="textSecondary">ROUNDS</ThemedText>
             <View style={styles.segmentRow}>
-              <TouchableOpacity
+              <HapticButton
                 style={[styles.segLeft, { backgroundColor: isIndefinite ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setIsIndefinite(true)}
               >
                 <ThemedText type="small" style={{ color: isIndefinite ? '#fff' : theme.text }}>Indefinite</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticButton>
+              <HapticButton
                 style={[styles.segRight, { backgroundColor: !isIndefinite ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setIsIndefinite(false)}
               >
                 <ThemedText type="small" style={{ color: !isIndefinite ? '#fff' : theme.text }}>Set number</ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
             {!isIndefinite && (
-              <TouchableOpacity
+              <HapticButton
                 style={[shared.input, { backgroundColor: theme.backgroundElement, justifyContent: 'center' }]}
                 onPress={() => setShowRoundNumpad(true)}
               >
                 <ThemedText style={{ color: roundCountStr ? theme.text : theme.textSecondary, fontSize: 16 }}>
                   {roundCountStr || 'Tap to set'}
                 </ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             )}
           </View>
 
           <View style={styles.section}>
             <ThemedText style={styles.label} themeColor="textSecondary">WINNER</ThemedText>
             <View style={styles.segmentRow}>
-              <TouchableOpacity
+              <HapticButton
                 style={[styles.segLeft, { backgroundColor: !rankByLowest ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setRankByLowest(false)}
               >
                 <ThemedText type="small" style={{ color: !rankByLowest ? '#fff' : theme.text }}>Highest score</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticButton>
+              <HapticButton
                 style={[styles.segRight, { backgroundColor: rankByLowest ? '#0077B6' : theme.backgroundElement }]}
                 onPress={() => setRankByLowest(true)}
               >
                 <ThemedText type="small" style={{ color: rankByLowest ? '#fff' : theme.text }}>Lowest score</ThemedText>
-              </TouchableOpacity>
+              </HapticButton>
             </View>
           </View>
 
           <View style={styles.btns}>
-            <TouchableOpacity
+            <HapticButton
               style={[shared.button, styles.cancelBtn, { backgroundColor: theme.backgroundElement }]}
               onPress={() => router.back()}
             >
               <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </HapticButton>
+            <HapticButton
               style={[shared.button, styles.saveBtn, { backgroundColor: canSave ? '#0077B6' : theme.backgroundSelected }]}
               onPress={handleSave}
               disabled={!canSave}
             >
               <ThemedText type="smallBold" style={{ color: canSave ? '#fff' : theme.textSecondary }}>Save</ThemedText>
-            </TouchableOpacity>
+            </HapticButton>
           </View>
         </ScrollView>
         <SafeAreaView edges={['bottom']} />
@@ -186,21 +187,17 @@ const styles = StyleSheet.create({
   scroll: {
     padding: Spacing.three,
     gap: Spacing.four,
-    paddingBottom: Spacing.six,
-  },
+    paddingBottom: Spacing.six },
   section: { gap: Spacing.two },
   labelRow: { flexDirection: 'row', alignItems: 'baseline' },
   label: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
   segmentRow: { flexDirection: 'row' },
   segLeft: {
     flex: 1, alignItems: 'center', paddingVertical: Spacing.two,
-    borderTopLeftRadius: Spacing.two, borderBottomLeftRadius: Spacing.two,
-  },
+    borderTopLeftRadius: Spacing.two, borderBottomLeftRadius: Spacing.two },
   segRight: {
     flex: 1, alignItems: 'center', paddingVertical: Spacing.two,
-    borderTopRightRadius: Spacing.two, borderBottomRightRadius: Spacing.two,
-  },
+    borderTopRightRadius: Spacing.two, borderBottomRightRadius: Spacing.two },
   btns: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   cancelBtn: { flex: 1, alignItems: 'center', paddingVertical: Spacing.three },
-  saveBtn: { flex: 2, alignItems: 'center', paddingVertical: Spacing.three },
-});
+  saveBtn: { flex: 2, alignItems: 'center', paddingVertical: Spacing.three } });
