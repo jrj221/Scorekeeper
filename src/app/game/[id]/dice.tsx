@@ -12,19 +12,37 @@ import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 
 const FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-const ROLL_MS = 1500;
+const ROLL_MS = 350;
 
-function randomFace() { return Math.floor(Math.random() * 6); }
+function randomFace() {
+	return Math.floor(Math.random() * 6);
+}
 
 function getDiceRows(count: number): number[][] {
 	switch (count) {
-		case 1: return [[0]];
-		case 2: return [[0, 1]];
-		case 3: return [[0, 1, 2]];
-		case 4: return [[0, 1], [2, 3]];
-		case 5: return [[0, 1, 2], [3, 4]];
-		case 6: return [[0, 1, 2], [3, 4, 5]];
-		default: return [Array.from({ length: count }, (_, i) => i)];
+		case 1:
+			return [[0]];
+		case 2:
+			return [[0, 1]];
+		case 3:
+			return [[0, 1, 2]];
+		case 4:
+			return [
+				[0, 1],
+				[2, 3],
+			];
+		case 5:
+			return [
+				[0, 1, 2],
+				[3, 4],
+			];
+		case 6:
+			return [
+				[0, 1, 2],
+				[3, 4, 5],
+			];
+		default:
+			return [Array.from({ length: count }, (_, i) => i)];
 	}
 }
 
@@ -40,10 +58,13 @@ export default function DiceScreen() {
 	const spinLoop = useRef<Animated.CompositeAnimation | null>(null);
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	useEffect(() => () => {
-		spinLoop.current?.stop();
-		if (timerRef.current) clearTimeout(timerRef.current);
-	}, []);
+	useEffect(
+		() => () => {
+			spinLoop.current?.stop();
+			if (timerRef.current) clearTimeout(timerRef.current);
+		},
+		[],
+	);
 
 	const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
 	// spinFadeAnim: opacity of the spinning ? (fades out while still spinning)
@@ -65,7 +86,7 @@ export default function DiceScreen() {
 				duration: 400,
 				easing: Easing.linear,
 				useNativeDriver: true,
-			})
+			}),
 		);
 		spinLoop.current.start();
 
@@ -117,10 +138,16 @@ export default function DiceScreen() {
 					{[1, 2, 3, 4, 5, 6].map((n) => (
 						<HapticButton
 							key={n}
-							style={[styles.countBtn, { backgroundColor: n === count ? theme.accent : theme.backgroundElement }]}
+							style={[
+								styles.countBtn,
+								{ backgroundColor: n === count ? theme.accent : theme.backgroundElement },
+							]}
 							onPress={() => changeCount(n)}
 						>
-							<ThemedText type="small" style={{ color: n === count ? theme.accentText : theme.text, fontWeight: "700" }}>
+							<ThemedText
+								type="small"
+								style={{ color: n === count ? theme.accentText : theme.text, fontWeight: "700" }}
+							>
 								{n}
 							</ThemedText>
 						</HapticButton>
@@ -135,25 +162,47 @@ export default function DiceScreen() {
 								{row.map((idx) => (
 									<View
 										key={idx}
-										style={[styles.die, {
-											backgroundColor: theme.backgroundElement,
-											borderColor: (!rolling && !rolled)
-												? theme.backgroundSelected
-												: rolled
-													? theme.accent
-													: theme.backgroundSelected,
-										}]}
+										style={[
+											styles.die,
+											{
+												backgroundColor: theme.backgroundElement,
+												borderColor:
+													!rolling && !rolled
+														? theme.backgroundSelected
+														: rolled
+															? theme.accent
+															: theme.backgroundSelected,
+											},
+										]}
 									>
 										{rolling ? (
-											<Animated.Text style={[styles.dieFace, { transform: [{ rotate: spin }], opacity: spinFadeAnim, color: theme.textSecondary }]}>
+											<Animated.Text
+												key={`spin-${idx}`}
+												style={[
+													styles.dieFace,
+													{
+														transform: [{ rotate: spin }],
+														opacity: spinFadeAnim,
+														color: theme.textSecondary,
+													},
+												]}
+											>
 												?
 											</Animated.Text>
 										) : rolled ? (
-											<Animated.Text style={[styles.dieFace, { opacity: diceFadeAnim, color: theme.text }]}>
+											<Animated.Text
+												key={`face-${idx}`}
+												style={[styles.dieFace, { opacity: diceFadeAnim, color: theme.text }]}
+											>
 												{FACES[values[idx] ?? 0]}
 											</Animated.Text>
 										) : (
-											<ThemedText style={[styles.dieFace, { color: theme.textSecondary, opacity: 0.35 }]}>?</ThemedText>
+											<ThemedText
+												key={`idle-${idx}`}
+												style={[styles.dieFace, { color: theme.textSecondary, opacity: 0.35 }]}
+											>
+												?
+											</ThemedText>
 										)}
 									</View>
 								))}
@@ -177,7 +226,10 @@ export default function DiceScreen() {
 					onPress={roll}
 					disabled={rolling}
 				>
-					<ThemedText type="smallBold" style={{ color: rolling ? theme.textSecondary : theme.accentText, fontSize: 20 }}>
+					<ThemedText
+						type="smallBold"
+						style={{ color: rolling ? theme.textSecondary : theme.accentText, fontSize: 20 }}
+					>
 						{rolling ? "Rolling…" : "Roll"}
 					</ThemedText>
 				</HapticButton>
@@ -195,7 +247,14 @@ const styles = StyleSheet.create({
 	diceArea: { flex: 1, justifyContent: "center", alignItems: "center", gap: Spacing.three },
 	diceRows: { gap: Spacing.two, alignItems: "center" },
 	diceRow: { flexDirection: "row", gap: Spacing.two, justifyContent: "center" },
-	die: { width: DIE_SIZE, height: DIE_SIZE, borderRadius: 18, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+	die: {
+		width: DIE_SIZE,
+		height: DIE_SIZE,
+		borderRadius: 18,
+		borderWidth: 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	dieFace: { fontSize: 56, lineHeight: 56, textAlign: "center", includeFontPadding: false },
 	total: { fontSize: 22, fontWeight: "600" },
 	totalSlot: { height: 34, alignItems: "center", justifyContent: "center" },

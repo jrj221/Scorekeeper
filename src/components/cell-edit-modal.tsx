@@ -184,7 +184,7 @@ export function CellEditModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'transparent',
     justifyContent: 'flex-end' },
   dismissArea: {
     flex: 1 },

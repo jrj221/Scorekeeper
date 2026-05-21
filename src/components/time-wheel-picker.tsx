@@ -109,7 +109,7 @@ const WheelColumn = forwardRef<WheelHandle, WheelProps>(function WheelColumn({ v
   );
 });
 
-const MINUTES = Array.from({ length: 61 }, (_, i) => i);  // 0–60
+const MINUTES = Array.from({ length: 60 }, (_, i) => i);  // 0–59
 const SECONDS = Array.from({ length: 60 }, (_, i) => i);  // 0–59
 
 // ─── Picker modal ───────────────────────────────────────────────────────────
