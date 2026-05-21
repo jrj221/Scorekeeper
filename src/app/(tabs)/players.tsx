@@ -24,6 +24,7 @@ import { homeStyles } from '@/styles/home';
 import { shared } from '@/styles/shared';
 import { getPlayerWinRate } from '@/utils/game';
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 export default function PlayersScreen() {
   const theme = useTheme();
@@ -135,7 +136,7 @@ export default function PlayersScreen() {
           ListFooterComponent={GroupsFooter}
           renderItem={({ item }) => (
             <HapticButton
-              style={[styles.card, { backgroundColor: theme.backgroundElement }]}
+              style={[forms.card, { backgroundColor: theme.backgroundElement }]}
               onPress={() => router.push(`/player/${item.id}`)}
             >
               <View style={{ flex: 1, gap: 2 }}>
@@ -219,10 +220,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: Spacing.six },
-  card: {
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three },
   groupCard: {
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.three,

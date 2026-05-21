@@ -1,7 +1,7 @@
 "use client";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
@@ -21,8 +21,10 @@ import { Spacing } from "@/constants/theme";
 import { DealerMode, Player, useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
+import { usePlayerSearch } from "@/hooks/use-player-search";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 
@@ -30,7 +32,7 @@ export default function NewGameScreen() {
 	const theme = useTheme();
 	const router = useRouter();
 	const { templateId } = useLocalSearchParams<{ templateId?: string }>();
-	const { createGame, globalPlayers, addGlobalPlayer, getTemplate, groups } = useGamesContext();
+	const { createGame, globalPlayers, getTemplate, groups } = useGamesContext();
 
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
@@ -48,9 +50,6 @@ export default function NewGameScreen() {
 	const [playersError, setPlayersError] = useState(false);
 
 	const [activeDropdown, setActiveDropdown] = useState<ActiveDropdown>(null);
-	const [playerSearch, setPlayerSearch] = useState("");
-	const [playerSearchError, setPlayerSearchError] = useState("");
-	const playerSearchRef = useRef<TextInput>(null);
 
 	// Dealer (optional)
 	const [dealerEnabled, setDealerEnabled] = useState(false);
@@ -80,65 +79,22 @@ export default function NewGameScreen() {
 
 	const toggleDropdown = (d: ActiveDropdown) => setActiveDropdown((prev) => (prev === d ? null : d));
 
-	const addExistingPlayer = useCallback((id: string, playerName: string) => {
-		setPlayers((prev) => {
-			if (prev.some((p) => p.id === id)) return prev;
-			const next = [...prev, { id, name: playerName }];
-			if (next.length > 0) setPlayersError(false);
-			return next;
-		});
-		setPlayerSearch("");
-		setPlayerSearchError("");
-	}, []);
-
-	const submitPlayerSearch = useCallback(() => {
-		const trimmed = playerSearch.trim();
-		if (!trimmed) return;
-		const match = globalPlayers.find(
-			(gp) => gp.name.toLowerCase() === trimmed.toLowerCase() && !players.some((p) => p.id === gp.id),
-		);
-		if (match) {
-			addExistingPlayer(match.id, match.name);
-			return;
-		}
-		if (players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
-			setPlayerSearchError(`"${trimmed}" is already added`);
-			return;
-		}
-		setPlayerSearchError("");
-		const global = addGlobalPlayer(trimmed);
-		const player = global ?? { id: `p_${Date.now()}`, name: trimmed };
-		setPlayers((prev) => {
-			if (prev.some((p) => p.id === player.id)) return prev;
-			setPlayersError(false);
-			return [...prev, player];
-		});
-		setPlayerSearch("");
-		playerSearchRef.current?.focus();
-	}, [playerSearch, players, globalPlayers, addGlobalPlayer, addExistingPlayer]);
+	const {
+		playerSearch, setPlayerSearch,
+		playerSearchError,
+		playerSearchRef,
+		filteredGlobalPlayers,
+		addById: addExistingPlayer,
+		submit: submitPlayerSearch,
+		addGroup,
+	} = usePlayerSearch(players, (next) => {
+		setPlayers(next);
+		setPlayersError(false);
+	});
 
 	const removePlayer = useCallback((id: string) => {
 		setPlayers((prev) => prev.filter((p) => p.id !== id));
 	}, []);
-
-	const addGroup = useCallback(
-		(groupId: string) => {
-			const group = groups.find((g) => g.id === groupId);
-			if (!group) return;
-			setPlayers((prev) => {
-				const toAdd = group.playerIds
-					.filter((pid) => !prev.some((p) => p.id === pid))
-					.map((pid) => {
-						const gp = globalPlayers.find((p) => p.id === pid);
-						return gp ? { id: gp.id, name: gp.name } : null;
-					})
-					.filter((p): p is Player => p !== null);
-				if (toAdd.length > 0) setPlayersError(false);
-				return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
-			});
-		},
-		[groups, globalPlayers],
-	);
 
 	const handleCreate = useCallback(() => {
 		if (players.length === 0) {
@@ -191,37 +147,12 @@ export default function NewGameScreen() {
 		router,
 	]);
 
-	const filteredGlobalPlayers = globalPlayers.filter(
-		(gp) =>
-			!players.some((p) => p.id === gp.id) &&
-			(playerSearch === "" || gp.name.toLowerCase().includes(playerSearch.toLowerCase())),
-	);
 	const availableGroups = groups.filter((g) => !g.playerIds.every((pid) => players.some((p) => p.id === pid)));
 
 	// Derived hint text
-	const dealerHint = dealerEnabled
-		? dealerMode === "random"
-			? "The dealer will be randomly determined each round."
-			: dealerMode === "rotation"
-				? fixedDealerId
-					? `${players.find((p) => p.id === fixedDealerId)?.name ?? "The selected player"} deals first, then it rotates to the next player each round.`
-					: "Dealing rotates through all players each round."
-				: fixedDealerId
-					? `${players.find((p) => p.id === fixedDealerId)?.name ?? "The selected player"} will deal every round.`
-					: "The same player will deal every round."
-		: null;
-
-	const turnHint = turnOrderEnabled
-		? firstPlayerMode === "random"
-			? "The first player will be randomly determined each round."
-			: firstPlayerMode === "left-of-dealer"
-				? "The player to the left of the dealer goes first each round."
-				: firstPlayerSpecificId
-					? `${players.find((p) => p.id === firstPlayerSpecificId)?.name ?? "The selected player"} goes first in Round 1, then it rotates to the next player each round.`
-					: "The first player rotates through the group each round."
-		: null;
-
-	const card = [styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }];
+	const dealerHint = getDealerHintText(dealerEnabled, dealerMode, players.find(p => p.id === fixedDealerId)?.name);
+	const turnHint = getTurnHintText(turnOrderEnabled, firstPlayerMode, players.find(p => p.id === firstPlayerSpecificId)?.name);
+	const card = [forms.card, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }];
 	const inner = { backgroundColor: theme.backgroundSelected } as const;
 	const innerInput = { backgroundColor: theme.background, color: theme.text } as const;
 
@@ -236,18 +167,18 @@ export default function NewGameScreen() {
 				>
 					{/* Game Name */}
 					<View style={card}>
-						<View style={styles.labelRow}>
-							<ThemedText style={styles.label} themeColor="textSecondary">
+						<View style={forms.labelRow}>
+							<ThemedText style={forms.label} themeColor="textSecondary">
 								GAME NAME
 							</ThemedText>
-							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
 								{" "}
 								(OPTIONAL)
 							</ThemedText>
 						</View>
-						<View style={styles.nameRow}>
+						<View style={forms.nameRow}>
 							<HapticButton
-								style={[styles.iconBtn, { backgroundColor: theme.background }]}
+								style={[forms.iconBtn, { backgroundColor: theme.background }]}
 								onPress={() => router.push("/icon-picker")}
 								activeOpacity={0.7}
 							>
@@ -271,11 +202,11 @@ export default function NewGameScreen() {
 
 					{/* Description */}
 					<View style={card}>
-						<View style={styles.labelRow}>
-							<ThemedText style={styles.label} themeColor="textSecondary">
+						<View style={forms.labelRow}>
+							<ThemedText style={forms.label} themeColor="textSecondary">
 								DESCRIPTION
 							</ThemedText>
-							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
 								{" "}
 								(OPTIONAL)
 							</ThemedText>
@@ -294,7 +225,7 @@ export default function NewGameScreen() {
 					{/* Players */}
 					<View
 						style={[
-							styles.card,
+							forms.card,
 							{
 								backgroundColor: theme.backgroundElement,
 								borderColor:
@@ -302,15 +233,15 @@ export default function NewGameScreen() {
 								borderWidth: playersError && players.length === 0 ? 1.5 : StyleSheet.hairlineWidth },
 						]}
 					>
-						<View style={styles.labelRow}>
+						<View style={forms.labelRow}>
 							<ThemedText
-								style={[styles.label, playersError && { color: "#C05050" }]}
+								style={[forms.label, playersError && { color: "#C05050" }]}
 								themeColor={playersError ? undefined : "textSecondary"}
 							>
 								PLAYERS
 							</ThemedText>
 							{players.length > 0 && (
-								<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+								<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
 									{" "}
 									{players.length}
 								</ThemedText>
@@ -318,17 +249,17 @@ export default function NewGameScreen() {
 						</View>
 
 						{playersError && players.length === 0 && (
-							<ThemedText style={styles.fieldError}>
+							<ThemedText style={forms.fieldError}>
 								Add at least one player to create the game.
 							</ThemedText>
 						)}
 
 						{players.length > 0 && (
-							<View style={styles.chipRow}>
+							<View style={forms.chipRow}>
 								{players.map((p) => (
 									<HapticButton
 										key={p.id}
-										style={[styles.chip, inner]}
+										style={[forms.chip, inner]}
 										onPress={() => removePlayer(p.id)}
 									>
 										<ThemedText type="small">{p.name}</ThemedText>
@@ -341,35 +272,35 @@ export default function NewGameScreen() {
 							</View>
 						)}
 
-						<View style={styles.dropdownBtns}>
+						<View style={forms.dropdownBtns}>
 							<HapticButton
 								style={[
-									styles.dropdownTrigger,
+									forms.dropdownTrigger,
 									inner,
-									activeDropdown === "player" && styles.dropdownTriggerActive,
+									activeDropdown === "player" && forms.dropdownTriggerActive,
 								]}
 								onPress={() => toggleDropdown("player")}
 							>
 								<ThemedText type="small" style={{ color: "#0077B6" }}>
 									Add Player
 								</ThemedText>
-								<ThemedText style={styles.chevron}>
+								<ThemedText style={forms.chevron}>
 									{activeDropdown === "player" ? "▴" : "▾"}
 								</ThemedText>
 							</HapticButton>
 							{groups.length > 0 && (
 								<HapticButton
 									style={[
-										styles.dropdownTrigger,
+										forms.dropdownTrigger,
 										inner,
-										activeDropdown === "group" && styles.dropdownTriggerActive,
+										activeDropdown === "group" && forms.dropdownTriggerActive,
 									]}
 									onPress={() => toggleDropdown("group")}
 								>
 									<ThemedText type="small" style={{ color: "#0077B6" }}>
 										Add Group
 									</ThemedText>
-									<ThemedText style={styles.chevron}>
+									<ThemedText style={forms.chevron}>
 										{activeDropdown === "group" ? "▴" : "▾"}
 									</ThemedText>
 								</HapticButton>
@@ -379,7 +310,7 @@ export default function NewGameScreen() {
 						{activeDropdown === "player" && (
 							<View
 								style={[
-									styles.dropdown,
+									forms.dropdown,
 									{ backgroundColor: theme.backgroundSelected, borderColor: theme.background },
 								]}
 							>
@@ -390,26 +321,23 @@ export default function NewGameScreen() {
 										placeholder="Search or enter new name"
 										placeholderTextColor={theme.textSecondary}
 										value={playerSearch}
-										onChangeText={(v) => {
-											setPlayerSearch(v);
-											setPlayerSearchError("");
-										}}
+										onChangeText={setPlayerSearch}
 										onSubmitEditing={submitPlayerSearch}
 										maxLength={15}
 										returnKeyType="done"
 										submitBehavior="submit"
 									/>
 									{playerSearchError ? (
-										<ThemedText style={styles.inputError}>{playerSearchError}</ThemedText>
+										<ThemedText style={forms.inputError}>{playerSearchError}</ThemedText>
 									) : null}
 								</View>
 								{filteredGlobalPlayers.length > 0 && (
-									<View style={[styles.dropdownList, { borderTopColor: theme.background }]}>
-										{filteredGlobalPlayers.map((gp, i) => (
+									<View style={[forms.dropdownList, { borderTopColor: theme.background }]}>
+										{filteredGlobalPlayers.map((gp: { id: string; name: string }, i: number) => (
 											<HapticButton
 												key={gp.id}
 												style={[
-													styles.dropdownRow,
+													forms.dropdownRow,
 													{ borderBottomColor: theme.background },
 													i === filteredGlobalPlayers.length - 1 && { borderBottomWidth: 0 },
 												]}
@@ -429,7 +357,7 @@ export default function NewGameScreen() {
 										<ThemedText
 											type="small"
 											themeColor="textSecondary"
-											style={styles.dropdownEmpty}
+											style={forms.dropdownEmpty}
 										>
 											All saved players are in this game
 										</ThemedText>
@@ -440,13 +368,13 @@ export default function NewGameScreen() {
 										<ThemedText
 											type="small"
 											themeColor="textSecondary"
-											style={styles.dropdownEmpty}
+											style={forms.dropdownEmpty}
 										>
 											No saved players — type a name to create one
 										</ThemedText>
 									)}
 								{filteredGlobalPlayers.length === 0 && playerSearch !== "" && (
-									<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>
+									<ThemedText type="small" themeColor="textSecondary" style={forms.dropdownEmpty}>
 										Press return to add "{playerSearch}"
 									</ThemedText>
 								)}
@@ -456,12 +384,12 @@ export default function NewGameScreen() {
 						{activeDropdown === "group" && (
 							<View
 								style={[
-									styles.dropdown,
+									forms.dropdown,
 									{ backgroundColor: theme.backgroundSelected, borderColor: theme.background },
 								]}
 							>
 								{availableGroups.length === 0 ? (
-									<ThemedText type="small" themeColor="textSecondary" style={styles.dropdownEmpty}>
+									<ThemedText type="small" themeColor="textSecondary" style={forms.dropdownEmpty}>
 										All groups are already in this game
 									</ThemedText>
 								) : (
@@ -474,7 +402,7 @@ export default function NewGameScreen() {
 											<HapticButton
 												key={g.id}
 												style={[
-													styles.dropdownRow,
+													forms.dropdownRow,
 													{ borderBottomColor: theme.background },
 													i === availableGroups.length - 1 && { borderBottomWidth: 0 },
 												]}
@@ -505,13 +433,13 @@ export default function NewGameScreen() {
 
 					{/* Rounds */}
 					<View style={card}>
-						<ThemedText style={styles.label} themeColor="textSecondary">
+						<ThemedText style={forms.label} themeColor="textSecondary">
 							ROUNDS
 						</ThemedText>
 						{!isIndefinite && (
-							<View style={styles.roundsRow}>
+							<View style={forms.roundsRow}>
 								<HapticButton
-									style={[styles.roundsInput, inner]}
+									style={[forms.roundsInput, inner]}
 									onPress={() => setShowRoundNumpad(true)}
 								>
 									<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
@@ -521,28 +449,28 @@ export default function NewGameScreen() {
 								<ThemedText type="default">rounds</ThemedText>
 							</View>
 						)}
-						<HapticButton style={[styles.toggleRow, inner]} onPress={() => setIsIndefinite((v) => !v)}>
+						<HapticButton style={[forms.toggleRow, inner]} onPress={() => setIsIndefinite((v) => !v)}>
 							<ThemedText type="default">Endless Mode</ThemedText>
 							<View
 								style={[
-									styles.toggle,
+									forms.toggle,
 									{ backgroundColor: isIndefinite ? "#0077B6" : theme.backgroundElement },
 								]}
 							>
-								<View style={[styles.toggleThumb, isIndefinite && styles.toggleThumbOn]} />
+								<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
 							</View>
 						</HapticButton>
 					</View>
 
 					{/* Winner */}
 					<View style={card}>
-						<ThemedText style={styles.label} themeColor="textSecondary">
+						<ThemedText style={forms.label} themeColor="textSecondary">
 							WINNER
 						</ThemedText>
-						<View style={styles.segmentRow}>
+						<View style={forms.segmentRow}>
 							<HapticButton
 								style={[
-									styles.segLeft,
+									forms.segLeft,
 									{ backgroundColor: !rankByLowest ? "#0077B6" : theme.backgroundSelected },
 								]}
 								onPress={() => setRankByLowest(false)}
@@ -553,7 +481,7 @@ export default function NewGameScreen() {
 							</HapticButton>
 							<HapticButton
 								style={[
-									styles.segRight,
+									forms.segRight,
 									{ backgroundColor: rankByLowest ? "#0077B6" : theme.backgroundSelected },
 								]}
 								onPress={() => setRankByLowest(true)}
@@ -567,17 +495,17 @@ export default function NewGameScreen() {
 
 					{/* Dealer */}
 					<View style={card}>
-						<View style={styles.labelRow}>
-							<ThemedText style={styles.label} themeColor="textSecondary">
+						<View style={forms.labelRow}>
+							<ThemedText style={forms.label} themeColor="textSecondary">
 								DEALER
 							</ThemedText>
-							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
 								{" "}
 								(OPTIONAL)
 							</ThemedText>
 						</View>
 						<HapticButton
-							style={[styles.toggleRow, inner]}
+							style={[forms.toggleRow, inner]}
 							onPress={() => {
 								setDealerEnabled((v) => !v);
 								setActiveDropdown(null);
@@ -586,23 +514,23 @@ export default function NewGameScreen() {
 							<ThemedText type="default">Track dealer</ThemedText>
 							<View
 								style={[
-									styles.toggle,
+									forms.toggle,
 									{ backgroundColor: dealerEnabled ? "#0077B6" : theme.backgroundElement },
 								]}
 							>
-								<View style={[styles.toggleThumb, dealerEnabled && styles.toggleThumbOn]} />
+								<View style={[forms.toggleThumb, dealerEnabled && forms.toggleThumbOn]} />
 							</View>
 						</HapticButton>
 
 						{dealerEnabled && (
 							<>
-								<ThemedText style={[styles.subLabel]} themeColor="textSecondary">
+								<ThemedText style={[forms.subLabel]} themeColor="textSecondary">
 									DEALER IS
 								</ThemedText>
-								<View style={styles.segmentRow}>
+								<View style={forms.segmentRow}>
 									<HapticButton
 										style={[
-											styles.segLeft,
+											forms.segLeft,
 											{
 												backgroundColor:
 													dealerMode === "rotation" ? "#0077B6" : theme.backgroundSelected },
@@ -619,10 +547,10 @@ export default function NewGameScreen() {
 											Rotation
 										</ThemedText>
 									</HapticButton>
-									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
+									<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
 									<HapticButton
 										style={[
-											styles.segMid,
+											forms.segMid,
 											{
 												backgroundColor:
 													dealerMode === "random" ? "#0077B6" : theme.backgroundSelected },
@@ -636,10 +564,10 @@ export default function NewGameScreen() {
 											Random
 										</ThemedText>
 									</HapticButton>
-									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
+									<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
 									<HapticButton
 										style={[
-											styles.segRight,
+											forms.segRight,
 											{
 												backgroundColor:
 													dealerMode === "fixed" ? "#0077B6" : theme.backgroundSelected },
@@ -661,9 +589,9 @@ export default function NewGameScreen() {
 									<>
 										<HapticButton
 											style={[
-												styles.dropdownTrigger,
+												forms.dropdownTrigger,
 												inner,
-												activeDropdown === "fixedDealer" && styles.dropdownTriggerActive,
+												activeDropdown === "fixedDealer" && forms.dropdownTriggerActive,
 											]}
 											onPress={() => toggleDropdown("fixedDealer")}
 										>
@@ -673,14 +601,14 @@ export default function NewGameScreen() {
 														"Pick Dealer")
 													: "Pick Dealer"}
 											</ThemedText>
-											<ThemedText style={styles.chevron}>
+											<ThemedText style={forms.chevron}>
 												{activeDropdown === "fixedDealer" ? "▴" : "▾"}
 											</ThemedText>
 										</HapticButton>
 										{activeDropdown === "fixedDealer" && (
 											<View
 												style={[
-													styles.dropdown,
+													forms.dropdown,
 													{
 														backgroundColor: theme.backgroundSelected,
 														borderColor: theme.background },
@@ -690,7 +618,7 @@ export default function NewGameScreen() {
 													<ThemedText
 														type="small"
 														themeColor="textSecondary"
-														style={styles.dropdownEmpty}
+														style={forms.dropdownEmpty}
 													>
 														Add players first
 													</ThemedText>
@@ -699,7 +627,7 @@ export default function NewGameScreen() {
 														<HapticButton
 															key={p.id}
 															style={[
-																styles.dropdownRow,
+																forms.dropdownRow,
 																{ borderBottomColor: theme.background },
 																i === players.length - 1 && { borderBottomWidth: 0 },
 															]}
@@ -721,24 +649,24 @@ export default function NewGameScreen() {
 										)}
 									</>
 								)}
-								{dealerHint && <ThemedText style={styles.hint}>{dealerHint}</ThemedText>}
+								{dealerHint && <ThemedText style={forms.hint}>{dealerHint}</ThemedText>}
 							</>
 						)}
 					</View>
 
 					{/* Turn Order */}
 					<View style={card}>
-						<View style={styles.labelRow}>
-							<ThemedText style={styles.label} themeColor="textSecondary">
+						<View style={forms.labelRow}>
+							<ThemedText style={forms.label} themeColor="textSecondary">
 								WHO GOES FIRST
 							</ThemedText>
-							<ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
 								{" "}
 								(OPTIONAL)
 							</ThemedText>
 						</View>
 						<HapticButton
-							style={[styles.toggleRow, inner]}
+							style={[forms.toggleRow, inner]}
 							onPress={() => {
 								setTurnOrderEnabled((v) => !v);
 								setActiveDropdown(null);
@@ -747,22 +675,22 @@ export default function NewGameScreen() {
 							<ThemedText type="default">Track who goes first</ThemedText>
 							<View
 								style={[
-									styles.toggle,
+									forms.toggle,
 									{ backgroundColor: turnOrderEnabled ? "#0077B6" : theme.backgroundElement },
 								]}
 							>
-								<View style={[styles.toggleThumb, turnOrderEnabled && styles.toggleThumbOn]} />
+								<View style={[forms.toggleThumb, turnOrderEnabled && forms.toggleThumbOn]} />
 							</View>
 						</HapticButton>
 
 						{turnOrderEnabled && (
 							<>
-								<View style={styles.segmentRow}>
+								<View style={forms.segmentRow}>
 									{dealerEnabled && (
 										<>
 											<HapticButton
 												style={[
-													styles.segLeft,
+													forms.segLeft,
 													{
 														backgroundColor:
 															firstPlayerMode === "left-of-dealer"
@@ -780,12 +708,12 @@ export default function NewGameScreen() {
 													Left of Dealer
 												</ThemedText>
 											</HapticButton>
-											<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
+											<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
 										</>
 									)}
 									<HapticButton
 										style={[
-											dealerEnabled ? styles.segMid : styles.segLeft,
+											dealerEnabled ? forms.segMid : forms.segLeft,
 											{
 												backgroundColor:
 													firstPlayerMode === "rotation"
@@ -805,10 +733,10 @@ export default function NewGameScreen() {
 											Rotation
 										</ThemedText>
 									</HapticButton>
-									<View style={[styles.segDivider, { backgroundColor: theme.background }]} />
+									<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
 									<HapticButton
 										style={[
-											styles.segRight,
+											forms.segRight,
 											{
 												backgroundColor:
 													firstPlayerMode === "random" ? "#0077B6" : theme.backgroundSelected },
@@ -827,9 +755,9 @@ export default function NewGameScreen() {
 									<>
 										<HapticButton
 											style={[
-												styles.dropdownTrigger,
+												forms.dropdownTrigger,
 												inner,
-												activeDropdown === "firstPlayer" && styles.dropdownTriggerActive,
+												activeDropdown === "firstPlayer" && forms.dropdownTriggerActive,
 											]}
 											onPress={() => toggleDropdown("firstPlayer")}
 										>
@@ -839,14 +767,14 @@ export default function NewGameScreen() {
 														"Pick Player")
 													: "Pick Player"}
 											</ThemedText>
-											<ThemedText style={styles.chevron}>
+											<ThemedText style={forms.chevron}>
 												{activeDropdown === "firstPlayer" ? "▴" : "▾"}
 											</ThemedText>
 										</HapticButton>
 										{activeDropdown === "firstPlayer" && (
 											<View
 												style={[
-													styles.dropdown,
+													forms.dropdown,
 													{
 														backgroundColor: theme.backgroundSelected,
 														borderColor: theme.background },
@@ -856,7 +784,7 @@ export default function NewGameScreen() {
 													<ThemedText
 														type="small"
 														themeColor="textSecondary"
-														style={styles.dropdownEmpty}
+														style={forms.dropdownEmpty}
 													>
 														Add players first
 													</ThemedText>
@@ -865,7 +793,7 @@ export default function NewGameScreen() {
 														<HapticButton
 															key={p.id}
 															style={[
-																styles.dropdownRow,
+																forms.dropdownRow,
 																{ borderBottomColor: theme.background },
 																i === players.length - 1 && { borderBottomWidth: 0 },
 															]}
@@ -887,14 +815,14 @@ export default function NewGameScreen() {
 										)}
 									</>
 								)}
-								{turnHint && <ThemedText style={styles.hint}>{turnHint}</ThemedText>}
+								{turnHint && <ThemedText style={forms.hint}>{turnHint}</ThemedText>}
 							</>
 						)}
 					</View>
 
 					{/* Create */}
 					<HapticButton
-						style={[shared.button, styles.createBtn, { backgroundColor: "#0077B6" }]}
+						style={[shared.button, forms.createBtn, { backgroundColor: "#0077B6" }]}
 						onPress={handleCreate}
 					>
 						<ThemedText type="smallBold" style={{ color: "#fff" }}>
@@ -923,86 +851,6 @@ export default function NewGameScreen() {
 
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
-	card: {
-		gap: Spacing.two,
-		borderRadius: Spacing.two,
-		padding: Spacing.three,
-		borderWidth: StyleSheet.hairlineWidth },
-	labelRow: { flexDirection: "row", alignItems: "baseline" },
-	label: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8 },
-	subLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8, opacity: 0.7 },
-	hint: { fontSize: 13, lineHeight: 18, opacity: 0.7 },
-	fieldError: { fontSize: 12, color: "#C05050" },
-	chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
-	chip: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: 10,
-		paddingHorizontal: 10,
-		paddingVertical: Spacing.one },
-	dropdownBtns: { flexDirection: "row", gap: Spacing.two },
-	dropdownTrigger: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: Spacing.two,
-		paddingVertical: Spacing.two,
-		paddingHorizontal: Spacing.three,
-		gap: Spacing.one },
-	dropdownTriggerActive: { opacity: 0.75 },
-	chevron: { fontSize: 18, color: "#0077B6", lineHeight: 22 },
-	dropdown: {
-		borderRadius: Spacing.two,
-		borderWidth: StyleSheet.hairlineWidth,
-		overflow: "hidden",
-		padding: Spacing.two,
-		gap: Spacing.two },
-	dropdownList: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.one },
-	dropdownRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingVertical: Spacing.two,
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: Spacing.two },
-	dropdownEmpty: { textAlign: "center", opacity: 0.6, paddingVertical: Spacing.one },
-	inputError: { fontSize: 12, color: "#C05050" },
-	segmentRow: { flexDirection: "row" },
-	segDivider: { width: StyleSheet.hairlineWidth + 1, alignSelf: "stretch" },
-	segLeft: {
-		flex: 1,
-		alignItems: "center",
-		paddingVertical: Spacing.two,
-		borderTopLeftRadius: Spacing.two,
-		borderBottomLeftRadius: Spacing.two },
-	segMid: { flex: 1, alignItems: "center", paddingVertical: Spacing.two },
-	segRight: {
-		flex: 1,
-		alignItems: "center",
-		paddingVertical: Spacing.two,
-		borderTopRightRadius: Spacing.two,
-		borderBottomRightRadius: Spacing.two },
-	toggleRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		borderRadius: Spacing.two,
-		paddingHorizontal: Spacing.three,
-		paddingVertical: Spacing.two },
-	toggle: { width: 44, height: 26, borderRadius: 13, justifyContent: "center", paddingHorizontal: 3 },
-	toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" },
-	toggleThumbOn: { alignSelf: "flex-end" },
-	createBtn: { alignSelf: "stretch", alignItems: "center", paddingVertical: Spacing.three, marginTop: Spacing.one },
-	roundsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
-	roundsInput: {
-		borderRadius: Spacing.one + 2,
-		paddingHorizontal: Spacing.two,
-		paddingVertical: Spacing.one,
-		minWidth: 52,
-		alignItems: "center" },
-	nameRow: {
-		flexDirection: "row",
-		alignItems: "stretch",
-		gap: Spacing.two },
 	iconBtn: {
 		borderRadius: Spacing.two,
 		aspectRatio: 1,

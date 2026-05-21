@@ -9,6 +9,7 @@ import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 export default function NewGameStartScreen() {
   const theme = useTheme();
@@ -30,8 +31,8 @@ export default function NewGameStartScreen() {
           </HapticButton>
 
           {templates.length > 0 && (
-            <View style={styles.section}>
-              <ThemedText style={styles.label} themeColor="textSecondary">FROM A TEMPLATE</ThemedText>
+            <View style={forms.section}>
+              <ThemedText style={forms.label} themeColor="textSecondary">FROM A TEMPLATE</ThemedText>
               <View style={styles.list}>
                 {templates.map(t => (
                   <HapticButton
@@ -77,12 +78,6 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
     padding: Spacing.three,
     gap: Spacing.one },
-  section: {
-    gap: Spacing.two },
-  label: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.8 },
   list: {
     gap: Spacing.two },
   templateCard: {

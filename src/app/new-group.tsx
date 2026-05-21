@@ -16,6 +16,7 @@ import { useGamesContext } from '@/context/games-context';
 import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 export default function NewGroupScreen() {
   const theme = useTheme();
@@ -52,8 +53,8 @@ export default function NewGroupScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}
           ListHeaderComponent={
-            <View style={styles.section}>
-              <ThemedText style={styles.label} themeColor="textSecondary">GROUP NAME</ThemedText>
+            <View style={forms.section}>
+              <ThemedText style={forms.label} themeColor="textSecondary">GROUP NAME</ThemedText>
               <View style={{ gap: 4 }}>
                 <TextInput
                   style={[shared.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
@@ -67,9 +68,9 @@ export default function NewGroupScreen() {
                 {nameError ? <ThemedText style={styles.error}>{nameError}</ThemedText> : null}
               </View>
               <View style={styles.membersHeader}>
-                <ThemedText style={styles.label} themeColor="textSecondary">MEMBERS</ThemedText>
+                <ThemedText style={forms.label} themeColor="textSecondary">MEMBERS</ThemedText>
                 {memberIds.length > 0 && (
-                  <ThemedText style={[styles.label, { opacity: 0.5 }]} themeColor="textSecondary">
+                  <ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
                     {memberIds.length}
                   </ThemedText>
                 )}
@@ -101,7 +102,7 @@ export default function NewGroupScreen() {
           }}
           ListFooterComponent={
             <HapticButton
-              style={[shared.button, styles.createBtn, { backgroundColor: canCreate ? '#0077B6' : theme.backgroundElement }]}
+              style={[shared.button, forms.createBtn, { backgroundColor: canCreate ? '#0077B6' : theme.backgroundElement }]}
               onPress={handleCreate}
               disabled={!canCreate}
             >
@@ -122,12 +123,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.four,
     paddingBottom: Spacing.six },
-  section: {
-    gap: Spacing.two },
-  label: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.8 },
   membersHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -152,11 +147,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 22,
     includeFontPadding: false },
-  createBtn: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    paddingVertical: Spacing.three,
-    marginTop: Spacing.two },
   error: {
     fontSize: 12,
     color: '#C05050' } });

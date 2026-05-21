@@ -10,6 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { homeStyles } from '@/styles/home';
 import { shared } from '@/styles/shared';
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 export default function TemplatesScreen() {
   const theme = useTheme();
@@ -45,7 +46,7 @@ export default function TemplatesScreen() {
           }
           renderItem={({ item }) => (
             <HapticButton
-              style={[styles.card, { backgroundColor: theme.backgroundElement }]}
+              style={[forms.card, { backgroundColor: theme.backgroundElement }]}
               onPress={() => router.push(`/template/${item.id}`)}
             >
               <View style={{ flex: 1, gap: 3 }}>
@@ -94,13 +95,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.one,
     paddingTop: Spacing.six },
-  card: {
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two },
   meta: {
     flexDirection: 'row',
     alignItems: 'center' } });

@@ -1,4 +1,4 @@
-import { Game } from '@/context/games-context';
+import { DealerMode, Game } from '@/context/games-context';
 
 export function getGameTotals(game: Game): Record<string, number> {
   const totals: Record<string, number> = {};
@@ -99,4 +99,33 @@ export function getTurnState(game: Game, roundIndex: number): {
   }
 
   return { orderedIds, firstPlayerId, dealerId };
+}
+
+export function getDealerHintText(
+  dealerEnabled: boolean,
+  dealerMode: DealerMode,
+  fixedDealerName?: string,
+): string | null {
+  if (!dealerEnabled) return null;
+  if (dealerMode === 'random') return 'The dealer will be randomly determined each round.';
+  if (dealerMode === 'rotation') {
+    return fixedDealerName
+      ? `${fixedDealerName} deals first, then it rotates to the next player each round.`
+      : 'Dealing rotates through all players each round.';
+  }
+  // fixed
+  return fixedDealerName
+    ? `${fixedDealerName} will deal every round.`
+    : 'The same player will deal every round.';
+}
+
+export function getTurnHintText(
+  turnsEnabled: boolean,
+  firstPlayerMode: 'left-of-dealer' | 'rotation' | 'random' | undefined,
+  firstPlayerName?: string,
+): string | null {
+  if (!turnsEnabled) return null;
+  if (firstPlayerMode === 'left-of-dealer') return 'The player to the left of the dealer goes first each round.';
+  if (firstPlayerMode === 'random' || !firstPlayerName) return 'The first player will be randomly determined each round.';
+  return `${firstPlayerName} goes first in Round 1, then it rotates to the next player each round.`;
 }

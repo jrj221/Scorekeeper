@@ -10,6 +10,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { setPendingIcon } from "@/utils/icon-picker-state";
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 type IconEntry = { name: string };
 
@@ -79,7 +80,7 @@ export default function IconPickerScreen() {
 			<SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
 				<ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 					{SECTIONS.map((section) => (
-						<View key={section.title} style={styles.section}>
+						<View key={section.title} style={forms.section}>
 							<ThemedText style={styles.sectionLabel} themeColor="textSecondary">
 								{section.title.toUpperCase()}
 							</ThemedText>
@@ -115,8 +116,6 @@ const styles = StyleSheet.create({
 		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: Spacing.two,
 		alignItems: "center" },
-	section: {
-		gap: Spacing.two },
 	sectionLabel: {
 		fontSize: 11,
 		fontWeight: "600",

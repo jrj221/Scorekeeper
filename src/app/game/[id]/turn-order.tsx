@@ -13,6 +13,7 @@ import { useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 type Item = { id: string; name: string };
 
@@ -63,7 +64,7 @@ export default function TurnOrderScreen() {
 			<Stack.Screen options={{ title: "Turn Order" }} />
 			<GestureHandlerRootView style={{ flex: 1 }}>
 				<SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
-					<ThemedText style={[styles.hint, { color: theme.textSecondary }]}>
+					<ThemedText style={[forms.hint, { color: theme.textSecondary }]}>
 						Hold to drag and drop to reorder players.
 					</ThemedText>
 
@@ -94,12 +95,6 @@ export default function TurnOrderScreen() {
 }
 
 const styles = StyleSheet.create({
-	hint: {
-		fontSize: 13,
-		lineHeight: 18,
-		paddingHorizontal: Spacing.three,
-		paddingTop: Spacing.two,
-		paddingBottom: Spacing.two },
 	listContent: {
 		paddingHorizontal: Spacing.three,
 		gap: Spacing.two,

@@ -6,6 +6,7 @@ import { ThemedText } from './themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { HapticButton } from "@/components/haptic-button";
+import { forms } from '@/styles/forms';
 
 const SCREEN_W = Dimensions.get('window').width;
 const SCREEN_H = Dimensions.get('window').height;
@@ -133,7 +134,7 @@ export function CellEditModal({
           </View>
 
           {hint ? (
-            <ThemedText style={styles.hint}>{hint}</ThemedText>
+            <ThemedText style={forms.hint}>{hint}</ThemedText>
           ) : null}
 
           <View style={styles.numpad}>
@@ -207,11 +208,6 @@ const styles = StyleSheet.create({
     lineHeight: 64,
     textAlign: 'center',
     letterSpacing: -1 },
-  hint: {
-    fontSize: 13,
-    color: '#C05050',
-    textAlign: 'center',
-    marginTop: -Spacing.one },
   numpad: {
     gap: KEY_GAP },
   keyRow: {
