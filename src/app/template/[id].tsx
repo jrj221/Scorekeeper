@@ -271,6 +271,29 @@ export default function TemplateScreen() {
 						)}
 					</View>
 
+					{/* Extras */}
+					<View style={[forms.card, { backgroundColor: theme.backgroundElement }]}>
+						<ThemedText style={forms.label} themeColor="textSecondary">EXTRAS</ThemedText>
+						<HapticButton
+							style={[forms.toggleRow, { backgroundColor: theme.backgroundSelected }]}
+							onPress={() => patch({ extras: { ...draft?.extras, dice: !draft?.extras?.dice } })}
+						>
+							<ThemedText type="default">🎲  Dice</ThemedText>
+							<View style={[forms.toggle, { backgroundColor: draft?.extras?.dice ? TINT : theme.backgroundElement }]}>
+								<View style={[forms.toggleThumb, draft?.extras?.dice && forms.toggleThumbOn]} />
+							</View>
+						</HapticButton>
+						<HapticButton
+							style={[forms.toggleRow, { backgroundColor: theme.backgroundSelected }]}
+							onPress={() => patch({ extras: { ...draft?.extras, timer: !draft?.extras?.timer } })}
+						>
+							<ThemedText type="default">⏱  Timer</ThemedText>
+							<View style={[forms.toggle, { backgroundColor: draft?.extras?.timer ? TINT : theme.backgroundElement }]}>
+								<View style={[forms.toggleThumb, draft?.extras?.timer && forms.toggleThumbOn]} />
+							</View>
+						</HapticButton>
+					</View>
+
 					{/* Description */}
 					{draft.description ? (
 						<View style={[forms.card, { backgroundColor: theme.backgroundElement }]}>

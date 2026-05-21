@@ -58,6 +58,11 @@ export default function NewGameScreen() {
 
 	// Turn order (optional)
 	const [turnOrderEnabled, setTurnOrderEnabled] = useState(true);
+
+	// Extras (optional)
+	const [extrasOpen, setExtrasOpen] = useState(false);
+	const [extraDice, setExtraDice] = useState(false);
+	const [extraTimer, setExtraTimer] = useState(false);
 	const [firstPlayerMode, setFirstPlayerMode] = useState<"random" | "left-of-dealer" | "rotation">("rotation");
 	const [firstPlayerSpecificId, setFirstPlayerSpecificId] = useState<string | null>(null);
 
@@ -128,7 +133,9 @@ export default function NewGameScreen() {
 			firstPlayerMode: resolvedFirstPlayerMode,
 			dealerEnabled: dealerEnabled || undefined,
 			dealerMode: dealerEnabled ? dealerMode : undefined,
-			fixedDealerId: dealerEnabled && dealerMode === "fixed" ? (fixedDealerId ?? undefined) : undefined });
+			fixedDealerId: dealerEnabled && dealerMode === "fixed" ? (fixedDealerId ?? undefined) : undefined,
+			extras: (extraDice || extraTimer) ? { dice: extraDice || undefined, timer: extraTimer || undefined } : undefined,
+		});
 		router.replace(`/game/${id}`);
 	}, [
 		name,
@@ -143,7 +150,7 @@ export default function NewGameScreen() {
 		dealerEnabled,
 		dealerMode,
 		fixedDealerId,
-		createGame,
+		extraDice, extraTimer, createGame,
 		router,
 	]);
 
@@ -820,6 +827,33 @@ export default function NewGameScreen() {
 						)}
 					</View>
 
+					{/* Extras */}
+					<View style={card}>
+						<HapticButton style={styles.extrasHeader} onPress={() => setExtrasOpen(v => !v)}>
+							<View style={forms.labelRow}>
+								<ThemedText style={forms.label} themeColor="textSecondary">EXTRAS</ThemedText>
+								<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							</View>
+							<ThemedText style={[forms.chevron, { color: theme.accent }]}>{extrasOpen ? "▴" : "▾"}</ThemedText>
+						</HapticButton>
+						{extrasOpen && (
+							<View style={{ gap: Spacing.two }}>
+								<HapticButton style={[forms.toggleRow, inner]} onPress={() => setExtraDice(v => !v)}>
+									<ThemedText type="default">🎲  Dice</ThemedText>
+									<View style={[forms.toggle, { backgroundColor: extraDice ? theme.accent : theme.backgroundElement }]}>
+										<View style={[forms.toggleThumb, extraDice && forms.toggleThumbOn]} />
+									</View>
+								</HapticButton>
+								<HapticButton style={[forms.toggleRow, inner]} onPress={() => setExtraTimer(v => !v)}>
+									<ThemedText type="default">⏱  Timer</ThemedText>
+									<View style={[forms.toggle, { backgroundColor: extraTimer ? theme.accent : theme.backgroundElement }]}>
+										<View style={[forms.toggleThumb, extraTimer && forms.toggleThumbOn]} />
+									</View>
+								</HapticButton>
+							</View>
+						)}
+					</View>
+
 					{/* Create */}
 					<HapticButton
 						style={[shared.button, forms.createBtn, { backgroundColor: theme.accent }]}
@@ -839,10 +873,7 @@ export default function NewGameScreen() {
 				initialValue={parseInt(roundCountStr) || null}
 				allowNegative={false}
 				minValue={1}
-				onSave={(v) => {
-					setRoundCountStr(v && v > 0 ? v.toString() : "10");
-					setShowRoundNumpad(false);
-				}}
+				onSave={(v) => { setRoundCountStr(v && v > 0 ? v.toString() : "10"); setShowRoundNumpad(false); }}
 				onCancel={() => setShowRoundNumpad(false)}
 			/>
 		</ThemedView>
@@ -857,4 +888,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		// height matches shared.input padding: Spacing.two*2 + fontSize 16 lineheight ≈ 40
-		width: 40 } });
+		width: 40,
+	},
+	extrasHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+	},
+	labelRow: { flexDirection: "row", alignItems: "baseline" },
+});

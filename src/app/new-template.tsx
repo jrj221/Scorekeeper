@@ -45,6 +45,11 @@ export default function NewTemplateScreen() {
 	const [turnOrderEnabled, setTurnOrderEnabled] = useState(true);
 	const [firstPlayerSetting, setFirstPlayerSetting] = useState<"random" | "left-of-dealer" | "rotation">("rotation");
 
+	// Extras
+	const [extrasOpen, setExtrasOpen] = useState(false);
+	const [extraDice, setExtraDice] = useState(false);
+	const [extraTimer, setExtraTimer] = useState(false);
+
 	useFocusEffect(useCallback(() => {
 		const icon = consumePendingIcon();
 		if (icon !== undefined) setSelectedIcon(icon);
@@ -62,9 +67,10 @@ export default function NewTemplateScreen() {
 			dealerMode: dealerEnabled ? dealerMode : undefined,
 			turnOrderEnabled: turnOrderEnabled || undefined,
 			firstPlayerSetting: turnOrderEnabled ? firstPlayerSetting : undefined,
+			extras: (extraDice || extraTimer) ? { dice: extraDice || undefined, timer: extraTimer || undefined } : undefined,
 		});
 		router.replace("/(tabs)/templates");
-	}, [name, description, selectedIcon, isIndefinite, roundCountStr, rankByLowest, dealerEnabled, dealerMode, turnOrderEnabled, firstPlayerSetting, createTemplate, router]);
+	}, [name, description, selectedIcon, isIndefinite, roundCountStr, rankByLowest, dealerEnabled, dealerMode, turnOrderEnabled, firstPlayerSetting, extraDice, extraTimer, createTemplate, router]);
 
 	const dealerHint = getDealerHintText(dealerEnabled, dealerMode);
 	const turnHint = getTurnHintText(turnOrderEnabled, firstPlayerSetting);
@@ -247,6 +253,36 @@ export default function NewTemplateScreen() {
 								</View>
 								{turnHint && <ThemedText style={forms.hint}>{turnHint}</ThemedText>}
 							</>
+						)}
+					</View>
+
+					{/* Extras */}
+					<View style={card}>
+						<HapticButton
+							style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+							onPress={() => setExtrasOpen(v => !v)}
+						>
+							<View style={forms.labelRow}>
+								<ThemedText style={forms.label} themeColor="textSecondary">EXTRAS</ThemedText>
+								<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							</View>
+							<ThemedText style={[forms.chevron, { color: theme.accent }]}>{extrasOpen ? "▴" : "▾"}</ThemedText>
+						</HapticButton>
+						{extrasOpen && (
+							<View style={{ gap: Spacing.two }}>
+								<HapticButton style={[forms.toggleRow, inner]} onPress={() => setExtraDice(v => !v)}>
+									<ThemedText type="default">🎲  Dice</ThemedText>
+									<View style={[forms.toggle, { backgroundColor: extraDice ? theme.accent : theme.backgroundElement }]}>
+										<View style={[forms.toggleThumb, extraDice && forms.toggleThumbOn]} />
+									</View>
+								</HapticButton>
+								<HapticButton style={[forms.toggleRow, inner]} onPress={() => setExtraTimer(v => !v)}>
+									<ThemedText type="default">⏱  Timer</ThemedText>
+									<View style={[forms.toggle, { backgroundColor: extraTimer ? theme.accent : theme.backgroundElement }]}>
+										<View style={[forms.toggleThumb, extraTimer && forms.toggleThumbOn]} />
+									</View>
+								</HapticButton>
+							</View>
 						)}
 					</View>
 

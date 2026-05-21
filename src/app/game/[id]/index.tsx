@@ -1,3 +1,4 @@
+import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useRef, useState } from "react";
@@ -109,6 +110,28 @@ export default function GameScreen() {
 				{/* Round label row */}
 				<View style={styles.roundLabelRow}>
 					<ThemedText style={styles.roundLabel}>{finished ? "Finished" : roundLabel}</ThemedText>
+					{!finished && (game.extras?.dice || game.extras?.timer) && (
+						<View style={styles.extraIcons}>
+							{game.extras?.dice && (
+								<HapticButton
+									onPress={() => router.push(`/game/${id}/dice`)}
+									hitSlop={8}
+									style={[styles.extraIconBtn, { borderColor: CURRENT_TINT }]}
+								>
+									<FontAwesome5 name="dice" size={22} color={CURRENT_TINT} />
+								</HapticButton>
+							)}
+							{game.extras?.timer && (
+								<HapticButton
+									onPress={() => router.push(`/game/${id}/timer`)}
+									hitSlop={8}
+									style={[styles.extraIconBtn, { borderColor: CURRENT_TINT }]}
+								>
+									<FontAwesome5 name="clock" size={22} color={CURRENT_TINT} />
+								</HapticButton>
+							)}
+						</View>
+					)}
 				</View>
 
 				{/* Scores / Current Turn tab toggle */}
@@ -539,8 +562,19 @@ const styles = StyleSheet.create({
 		paddingTop: Spacing.two,
 		gap: Spacing.two },
 	roundLabelRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		paddingHorizontal: 5,
 		paddingVertical: 4 },
+	extraIcons: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4 },
+	extraIconBtn: {
+		padding: 8,
+		borderRadius: 10,
+		borderWidth: 1.5 },
 	roundLabel: {
 		fontSize: 25,
 		fontWeight: "700",

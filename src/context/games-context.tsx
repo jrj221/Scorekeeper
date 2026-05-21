@@ -7,6 +7,12 @@ const STORAGE_KEY = '@scorekeeper/v2';
 export type Player = { id: string; name: string };
 export type Round = Record<string, number>;
 
+export type GameExtras = {
+  dice?: boolean;
+  timer?: boolean;
+  timerDuration?: number; // seconds, default 60
+};
+
 export type Game = {
   id: string;
   name: string;
@@ -25,6 +31,7 @@ export type Game = {
   firstPlayerMode?: 'left-of-dealer';
   turnOrder?: string[];
   currentRound?: number;
+  extras?: GameExtras;
 };
 
 export type GlobalPlayer = { id: string; name: string };
@@ -41,6 +48,7 @@ export type GameTemplate = {
   dealerMode?: DealerMode;
   turnOrderEnabled?: boolean;
   firstPlayerSetting?: 'random' | 'left-of-dealer' | 'rotation';
+  extras?: GameExtras;
 };
 
 export type PlayerGroup = {
@@ -64,6 +72,7 @@ export type CreateGameOpts = {
   firstPlayerId?: string;
   firstPlayerMode?: 'left-of-dealer';
   turnOrder?: string[];
+  extras?: GameExtras;
 };
 
 type GamesContextValue = {
@@ -137,6 +146,7 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
       firstPlayerId: opts.firstPlayerId,
       firstPlayerMode: opts.firstPlayerMode,
       turnOrder: opts.turnOrder,
+      extras: opts.extras,
     }, ...prev]);
     return id;
   }, []);
