@@ -22,6 +22,7 @@ export type Game = {
   fixedDealerId?: string;
   firstPlayerId?: string;
   turnOrder?: string[];
+  currentRound?: number;
 };
 
 export type GlobalPlayer = { id: string; name: string };

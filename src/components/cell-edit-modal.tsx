@@ -53,32 +53,50 @@ export function CellEditModal({
 
   const [numStr, setNumStr] = useState('');
   const [negative, setNegative] = useState(false);
+  // When reopened with an existing value, the first digit keypress overwrites
+  const [overwriteNext, setOverwriteNext] = useState(false);
 
   useEffect(() => {
     if (visible) {
       if (initialValue !== null) {
         setNumStr(Math.abs(initialValue).toString());
         setNegative(allowNegative && initialValue < 0);
+        setOverwriteNext(true);
       } else {
         setNumStr('');
         setNegative(false);
+        setOverwriteNext(false);
       }
     }
   }, [visible, initialValue, allowNegative]);
 
   const pressKey = (key: string) => {
     if (key === '±') {
-      if (allowNegative) setNegative(v => !v);
+      if (allowNegative) {
+        setNegative(v => !v);
+        setOverwriteNext(false);
+      }
     } else if (key === '⌫') {
+      setOverwriteNext(false);
       setNumStr(prev => prev.slice(0, -1));
     } else {
-      setNumStr(prev => (prev.length >= 6 ? prev : prev + key));
+      if (overwriteNext) {
+        setNumStr(key);
+        setOverwriteNext(false);
+      } else {
+        setNumStr(prev => (prev.length >= 6 ? prev : prev + key));
+      }
     }
   };
 
   const handleDone = () => {
     if (!numStr) {
-      onSave(null);
+      // If there was a pre-existing value and the user didn't type anything, keep it
+      if (overwriteNext && initialValue !== null) {
+        onSave(initialValue);
+      } else {
+        onSave(null);
+      }
     } else {
       const n = parseInt(numStr, 10);
       onSave(isNaN(n) ? null : allowNegative && negative ? -n : n);
