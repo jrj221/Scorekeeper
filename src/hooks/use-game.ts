@@ -19,13 +19,33 @@ export function useGame(id: string) {
       )
     : [];
 
+  // Score-based current round: last complete round index + 1, or first incomplete round.
+  // Used as a fallback for turn-based games where currentRound hasn't been explicitly set.
+  let scoreBasedCurrentRound = 0;
+  if (game) {
+    let lastComplete = -1;
+    for (let i = 0; i < game.rounds.length; i++) {
+      if (game.players.every(p => game.rounds[i][p.id] !== undefined)) {
+        lastComplete = i;
+      }
+    }
+    scoreBasedCurrentRound = Math.max(0, lastComplete + 1);
+    for (let i = 0; i <= lastComplete + 1; i++) {
+      const r = game.rounds[i] ?? {};
+      if (game.players.some(p => r[p.id] === undefined)) {
+        scoreBasedCurrentRound = i;
+        break;
+      }
+    }
+  }
+
   let visibleRoundCount = 0;
   if (game) {
     if (game.totalRounds !== undefined) {
       visibleRoundCount = game.totalRounds;
     } else if (game.turnOrder?.length) {
       // Turn-based game: never auto-advance; wait for explicit Next Round press
-      visibleRoundCount = (game.currentRound ?? 0) + 1;
+      visibleRoundCount = (game.currentRound ?? scoreBasedCurrentRound) + 1;
     } else {
       let lastComplete = -1;
       for (let i = 0; i < game.rounds.length; i++) {
@@ -49,10 +69,10 @@ export function useGame(id: string) {
     }
   }
 
-  // For turn-based games, currentRound (defaulting to 0) is always the active round
+  // For turn-based games, use currentRound if set, otherwise fall back to score-based round
   const currentRoundIndex =
     game?.turnOrder?.length
-      ? (game.currentRound ?? 0)
+      ? (game.currentRound ?? scoreBasedCurrentRound)
       : autoCurrentRoundIndex;
 
   const endGame = useCallback(() => {

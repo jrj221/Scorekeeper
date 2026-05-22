@@ -113,12 +113,13 @@ export default function EditGameScreen() {
 			}
 		}
 
-		// Update turnOrder: keep existing order, remove deleted players, append new ones
-		const existingTurnOrder = game.turnOrder ?? game.players.map(p => p.id);
-		const updatedTurnOrder = [
-			...existingTurnOrder.filter(pid => newIds.has(pid)),
-			...players.filter(p => !origIds.has(p.id)).map(p => p.id),
-		];
+		// Update turnOrder only if the game already uses turn tracking
+		const updatedTurnOrder = game.turnOrder !== undefined
+			? [
+				...game.turnOrder.filter(pid => newIds.has(pid)),
+				...players.filter(p => !origIds.has(p.id)).map(p => p.id),
+			]
+			: undefined;
 
 		// If firstPlayerId was removed, clear it
 		const updatedFirstPlayerId = game.firstPlayerId && newIds.has(game.firstPlayerId)
