@@ -32,7 +32,7 @@ export default function NewGameScreen() {
 	const theme = useTheme();
 	const router = useRouter();
 	const { templateId } = useLocalSearchParams<{ templateId?: string }>();
-	const { createGame, globalPlayers, getTemplate, groups } = useGamesContext();
+	const { createGame, globalPlayers, getTemplate, groups, registerGlobalPlayer } = useGamesContext();
 
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
@@ -95,7 +95,7 @@ export default function NewGameScreen() {
 	} = usePlayerSearch(players, (next) => {
 		setPlayers(next);
 		setPlayersError(false);
-	});
+	}, { deferGlobalSave: true });
 
 	const removePlayer = useCallback((id: string) => {
 		setPlayers((prev) => prev.filter((p) => p.id !== id));
@@ -106,6 +106,7 @@ export default function NewGameScreen() {
 			setPlayersError(true);
 			return;
 		}
+		for (const p of players) registerGlobalPlayer(p);
 		const totalRounds = !isIndefinite ? Math.max(1, parseInt(roundCountStr, 10) || 1) : undefined;
 
 		let resolvedFirstPlayerId: string | undefined;
@@ -150,7 +151,7 @@ export default function NewGameScreen() {
 		dealerEnabled,
 		dealerMode,
 		fixedDealerId,
-		extraDice, extraTimer, createGame,
+		extraDice, extraTimer, createGame, registerGlobalPlayer,
 		router,
 	]);
 

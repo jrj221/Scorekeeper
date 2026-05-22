@@ -86,6 +86,8 @@ type GamesContextValue = {
   getGame: (id: string) => Game | undefined;
   // Returns the player (existing or newly created), null if name is blank
   addGlobalPlayer: (name: string) => GlobalPlayer | null;
+  // Adds a pre-built player object to globalPlayers if not already present (by ID)
+  registerGlobalPlayer: (player: GlobalPlayer) => void;
   removeGlobalPlayer: (id: string) => void;
   // Renames a player everywhere: global list + all games that reference them by ID
   renameGlobalPlayer: (id: string, newName: string) => void;
@@ -175,6 +177,10 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
     setGlobalPlayers(prev => [...prev, player]);
     return player;
   }, [globalPlayers]);
+
+  const registerGlobalPlayer = useCallback((player: GlobalPlayer) => {
+    setGlobalPlayers(prev => prev.some(p => p.id === player.id) ? prev : [...prev, player]);
+  }, []);
 
   const removeGlobalPlayer = useCallback((id: string) => {
     setGlobalPlayers(prev => prev.filter(p => p.id !== id));
@@ -282,7 +288,7 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
     <GamesContext.Provider value={{
       games, globalPlayers, templates, groups, loaded,
       createGame, deleteGame, updateGame, getGame,
-      addGlobalPlayer, removeGlobalPlayer, renameGlobalPlayer, resetGlobalPlayer,
+      addGlobalPlayer, registerGlobalPlayer, removeGlobalPlayer, renameGlobalPlayer, resetGlobalPlayer,
       createTemplate, updateTemplate, deleteTemplate, saveGameAsTemplate, getTemplate,
       createGroup, updateGroup, deleteGroup,
       seedData, resetData,

@@ -10,6 +10,7 @@ import { Player, useGamesContext } from '@/context/games-context';
 export function usePlayerSearch(
   players: Player[],
   onAdd: (next: Player[]) => void,
+  options?: { deferGlobalSave?: boolean },
 ) {
   const { globalPlayers, addGlobalPlayer, groups } = useGamesContext();
 
@@ -42,8 +43,15 @@ export function usePlayerSearch(
       return;
     }
     setPlayerSearchError('');
-    const global = addGlobalPlayer(trimmed);
-    const player = global ?? { id: `p_${Date.now()}`, name: trimmed };
+    let player: Player;
+    if (options?.deferGlobalSave) {
+      // Don't persist to globalPlayers yet — caller is responsible for registering on save.
+      const existing = globalPlayers.find(gp => gp.name.toLowerCase() === trimmed.toLowerCase());
+      player = existing ?? { id: `gp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name: trimmed };
+    } else {
+      const global = addGlobalPlayer(trimmed);
+      player = global ?? { id: `p_${Date.now()}`, name: trimmed };
+    }
     if (!players.some(p => p.id === player.id)) {
       onAdd([...players, player]);
     }

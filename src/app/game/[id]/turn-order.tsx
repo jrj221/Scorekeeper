@@ -2,7 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet } from "react-native";
+import { Alert, Animated, Pressable, StyleSheet } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -21,9 +21,10 @@ type RowProps = {
 	item: Item;
 	drag: () => void;
 	isActive: boolean;
+	onRename: (id: string, newName: string) => void;
 };
 
-function Row({ item, drag, isActive }: RowProps) {
+function Row({ item, drag, isActive, onRename }: RowProps) {
 	const theme = useTheme();
 	const highlightAnim = useRef(new Animated.Value(0)).current;
 
@@ -40,8 +41,19 @@ function Row({ item, drag, isActive }: RowProps) {
 		outputRange: [theme.backgroundElement, theme.backgroundSelected],
 	});
 
+	const handlePress = () => {
+		Alert.prompt(
+			"Rename Player",
+			undefined,
+			(text) => { if (text?.trim()) onRename(item.id, text.trim()); },
+			"plain-text",
+			item.name,
+		);
+	};
+
 	return (
 		<HapticButton
+			onPress={handlePress}
 			onLongPress={drag}
 			delayLongPress={150}
 			activeOpacity={1}
@@ -64,7 +76,7 @@ export default function TurnOrderScreen() {
 	const router = useRouter();
 	const navigation = useNavigation();
 	const { id } = useLocalSearchParams<{ id: string }>();
-	const { getGame, updateGame } = useGamesContext();
+	const { getGame, updateGame, renameGlobalPlayer } = useGamesContext();
 
 	const game = getGame(id);
 	const playerMap = Object.fromEntries((game?.players ?? []).map((p) => [p.id, p]));
@@ -132,9 +144,14 @@ export default function TurnOrderScreen() {
 		outputRange: ["transparent", theme.accent],
 	});
 
+	const handleRename = useCallback((playerId: string, newName: string) => {
+		renameGlobalPlayer(playerId, newName);
+		setOrder((prev) => prev.map((item) => item.id === playerId ? { ...item, name: newName } : item));
+	}, [renameGlobalPlayer]);
+
 	const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
 		<ScaleDecorator activeScale={1.03}>
-			<Row item={item} drag={drag} isActive={isActive} />
+			<Row item={item} drag={drag} isActive={isActive} onRename={handleRename} />
 		</ScaleDecorator>
 	);
 
