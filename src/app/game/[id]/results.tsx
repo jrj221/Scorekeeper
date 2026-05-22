@@ -7,10 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
-import { Player } from "@/context/games-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
+import { buildTiers } from "@/utils/game";
 
 const PODIUM_H = 260;
 const PLATFORM_H = [150, 108, 76];
@@ -24,16 +24,6 @@ const RANK_ICONS = [
 	{ name: "medal", color: "#CD7F32" },
 ] as const;
 
-function buildTiers(sortedPlayers: Player[], totals: Record<string, number>): Player[][] {
-	const tiers: Player[][] = [];
-	for (const p of sortedPlayers) {
-		const score = totals[p.id] ?? 0;
-		const last = tiers[tiers.length - 1];
-		if (last && (totals[last[0].id] ?? 0) === score) last.push(p);
-		else tiers.push([p]);
-	}
-	return tiers;
-}
 
 export default function ResultsScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();

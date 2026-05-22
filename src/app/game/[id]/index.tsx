@@ -14,7 +14,7 @@ import { Player } from "@/context/games-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
-import { getTurnState } from "@/utils/game";
+import { buildTiers, getTurnState } from "@/utils/game";
 
 const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
@@ -33,16 +33,6 @@ const RANK_ICONS = [
 	{ name: "medal", color: "#CD7F32" },
 ] as const;
 
-function buildTiers(sorted: Player[], totals: Record<string, number>): Player[][] {
-	const tiers: Player[][] = [];
-	for (const p of sorted) {
-		const score = totals[p.id] ?? 0;
-		const last = tiers[tiers.length - 1];
-		if (last && (totals[last[0].id] ?? 0) === score) last.push(p);
-		else tiers.push([p]);
-	}
-	return tiers;
-}
 
 export default function GameScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();

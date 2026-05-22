@@ -1,4 +1,20 @@
-import { DealerMode, Game } from '@/context/games-context';
+import { DealerMode, Game, Player } from '@/context/games-context';
+
+/**
+ * Groups a pre-sorted player array into tiers of equal score.
+ * Tier 0 = 1st place, tier 1 = 2nd place, etc. (dense ranking).
+ * Used by both the podium and the rest-list displays.
+ */
+export function buildTiers(sortedPlayers: Player[], totals: Record<string, number>): Player[][] {
+  const tiers: Player[][] = [];
+  for (const p of sortedPlayers) {
+    const score = totals[p.id] ?? 0;
+    const last = tiers[tiers.length - 1];
+    if (last && (totals[last[0].id] ?? 0) === score) last.push(p);
+    else tiers.push([p]);
+  }
+  return tiers;
+}
 
 export function getGameTotals(game: Game): Record<string, number> {
   const totals: Record<string, number> = {};
