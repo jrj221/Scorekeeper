@@ -12,7 +12,6 @@ import { Spacing } from "@/constants/theme";
 import { useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { forms } from "@/styles/forms";
-import { homeStyles } from "@/styles/home";
 import { shared } from "@/styles/shared";
 import { getPlayerWinRate } from "@/utils/game";
 
@@ -35,7 +34,7 @@ export default function PlayersScreen() {
 
 	const handleAdd = () => {
 		const trimmed = nameInput.trim();
-		if (!trimmed) return;
+		if (!trimmed) { closeAddDialog(); return; }
 		if (globalPlayers.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
 			setAddError(`"${trimmed}" is already a player`);
 			return;
@@ -59,9 +58,22 @@ export default function PlayersScreen() {
 		]);
 	};
 
+	const PlayersHeader = (
+		<View style={styles.sectionHeader}>
+			<ThemedText style={styles.sectionLabel} themeColor="textSecondary">
+				PLAYERS
+			</ThemedText>
+			<HapticButton onPress={() => setShowAddDialog(true)}>
+				<ThemedText type="small" style={{ color: theme.accent }}>
+					+ New Player
+				</ThemedText>
+			</HapticButton>
+		</View>
+	);
+
 	const GroupsFooter = (
 		<View style={styles.groupsSection}>
-			<View style={styles.groupsHeader}>
+			<View style={styles.sectionHeader}>
 				<ThemedText style={styles.sectionLabel} themeColor="textSecondary">
 					GROUPS
 				</ThemedText>
@@ -73,7 +85,7 @@ export default function PlayersScreen() {
 			</View>
 
 			{groups.length === 0 ? (
-				<ThemedText type="small" themeColor="textSecondary" style={styles.emptyGroups}>
+				<ThemedText type="small" themeColor="textSecondary" style={styles.emptySection}>
 					No groups yet
 				</ThemedText>
 			) : (
@@ -116,13 +128,12 @@ export default function PlayersScreen() {
 					data={globalPlayers}
 					keyExtractor={(p) => p.id}
 					keyboardShouldPersistTaps="handled"
-					contentContainerStyle={[styles.listContent, globalPlayers.length === 0 && styles.emptyContainer]}
+					contentContainerStyle={styles.listContent}
+					ListHeaderComponent={PlayersHeader}
 					ListEmptyComponent={
-						<View style={styles.empty}>
-							<ThemedText type="small" themeColor="textSecondary">
-								No players yet — tap + to add one
-							</ThemedText>
-						</View>
+						<ThemedText type="small" themeColor="textSecondary" style={styles.emptySection}>
+							No players yet
+						</ThemedText>
 					}
 					ListFooterComponent={GroupsFooter}
 					renderItem={({ item }) => (
@@ -139,25 +150,13 @@ export default function PlayersScreen() {
 						</HapticButton>
 					)}
 				/>
-
-				<HapticButton
-					style={[homeStyles.fab, { backgroundColor: theme.accent }]}
-					onPress={() => setShowAddDialog(true)}
-				>
-					<ThemedText type="subtitle" style={{ color: "#fff", lineHeight: 32 }}>
-						+
-					</ThemedText>
-				</HapticButton>
 			</KeyboardAvoidingView>
 
 			<SafeAreaView edges={["bottom"]} />
 
-			{/* Centered add player dialog */}
+			{/* Add player dialog */}
 			<Modal visible={showAddDialog} transparent animationType="fade" onRequestClose={closeAddDialog}>
-				<KeyboardAvoidingView
-					style={styles.dialogOverlay}
-					behavior={Platform.OS === "ios" ? "padding" : "height"}
-				>
+				<View style={styles.dialogOverlay}>
 					<HapticButton style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeAddDialog} />
 					<View style={[styles.dialogCard, { backgroundColor: theme.backgroundElement }]}>
 						<ThemedText style={styles.dialogTitle} themeColor="textSecondary">
@@ -212,7 +211,7 @@ export default function PlayersScreen() {
 							</HapticButton>
 						</View>
 					</View>
-				</KeyboardAvoidingView>
+				</View>
 			</Modal>
 		</ThemedView>
 	);
@@ -222,15 +221,16 @@ const styles = StyleSheet.create({
 	listContent: {
 		padding: Spacing.three,
 		gap: Spacing.two,
-		paddingBottom: Spacing.six + Spacing.four,
+		paddingBottom: Spacing.six,
 	},
-	emptyContainer: { flex: 1 },
-	empty: {
-		flex: 1,
+	sectionHeader: {
+		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "center",
-		paddingTop: Spacing.six,
+		justifyContent: "space-between",
+		marginBottom: Spacing.one,
 	},
+	sectionLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8 },
+	emptySection: { opacity: 0.6, paddingTop: Spacing.one },
 	groupCard: {
 		borderRadius: Spacing.two,
 		paddingHorizontal: Spacing.three,
@@ -239,15 +239,8 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: Spacing.two,
 	},
-	error: { fontSize: 12, color: "#C05050" },
-	sectionLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8 },
 	groupsSection: { marginTop: Spacing.four, gap: Spacing.two },
-	groupsHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-	},
-	emptyGroups: { opacity: 0.6, paddingTop: Spacing.one },
+	error: { fontSize: 12, color: "#C05050" },
 	dialogOverlay: {
 		flex: 1,
 		backgroundColor: "rgba(0,0,0,0.45)",

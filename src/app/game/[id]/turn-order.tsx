@@ -45,7 +45,9 @@ function Row({ item, drag, isActive, onRename }: RowProps) {
 		Alert.prompt(
 			"Rename Player",
 			undefined,
-			(text) => { if (text?.trim()) onRename(item.id, text.trim()); },
+			(text) => {
+				if (text?.trim()) onRename(item.id, text.trim());
+			},
 			"plain-text",
 			item.name,
 		);
@@ -96,8 +98,8 @@ export default function TurnOrderScreen() {
 			setFooterVisible(true);
 			Animated.timing(footerOpacity, { toValue: 1, duration: FOOTER_FADE_MS, useNativeDriver: true }).start();
 		} else {
-			Animated.timing(footerOpacity, { toValue: 0, duration: FOOTER_FADE_MS, useNativeDriver: true }).start(
-				() => setFooterVisible(false)
+			Animated.timing(footerOpacity, { toValue: 0, duration: FOOTER_FADE_MS, useNativeDriver: true }).start(() =>
+				setFooterVisible(false),
 			);
 		}
 	}, [isDirty, footerOpacity]);
@@ -144,10 +146,13 @@ export default function TurnOrderScreen() {
 		outputRange: ["transparent", theme.accent],
 	});
 
-	const handleRename = useCallback((playerId: string, newName: string) => {
-		renameGlobalPlayer(playerId, newName);
-		setOrder((prev) => prev.map((item) => item.id === playerId ? { ...item, name: newName } : item));
-	}, [renameGlobalPlayer]);
+	const handleRename = useCallback(
+		(playerId: string, newName: string) => {
+			renameGlobalPlayer(playerId, newName);
+			setOrder((prev) => prev.map((item) => (item.id === playerId ? { ...item, name: newName } : item)));
+		},
+		[renameGlobalPlayer],
+	);
 
 	const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
 		<ScaleDecorator activeScale={1.03}>
@@ -169,7 +174,7 @@ export default function TurnOrderScreen() {
 						},
 					]}
 				>
-					Hold to drag and drop to reorder players.
+					Hold to drag and drop to reorder players.{"\n"}Tap a player to rename them.
 				</ThemedText>
 
 				<DraggableFlatList
