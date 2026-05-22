@@ -1,25 +1,26 @@
+import { useNavigation } from "@react-navigation/native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Pressable, StyleSheet } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { HapticButton } from "@/components/haptic-button";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
+import { forms } from "@/styles/forms";
 import { shared } from "@/styles/shared";
-import { HapticButton } from "@/components/haptic-button";
-import { forms } from '@/styles/forms';
 
 type Item = { id: string; name: string };
 
 export default function TurnOrderScreen() {
 	const theme = useTheme();
 	const router = useRouter();
+	const navigation = useNavigation();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { getGame, updateGame } = useGamesContext();
 
@@ -32,15 +33,51 @@ export default function TurnOrderScreen() {
 
 	const [order, setOrder] = useState<Item[]>(initialOrder);
 
+	const isDirty = JSON.stringify(order.map((i) => i.id)) !== JSON.stringify(initialOrder.map((i) => i.id));
+
+	// Pulse animation for footer when user tries to back with unsaved changes
+	const pulseAnim = useRef(new Animated.Value(0)).current;
+	const bypassRef = useRef(false);
+
+	const triggerPulse = useCallback(() => {
+		Animated.sequence([
+			Animated.timing(pulseAnim, { toValue: 1, duration: 120, useNativeDriver: false }),
+			Animated.timing(pulseAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+			Animated.timing(pulseAnim, { toValue: 1, duration: 120, useNativeDriver: false }),
+			Animated.timing(pulseAnim, { toValue: 0, duration: 350, useNativeDriver: false }),
+		]).start();
+	}, [pulseAnim]);
+
+	// Intercept back navigation when there are unsaved changes
+	useEffect(() => {
+		const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+			if (!isDirty || bypassRef.current) return;
+			e.preventDefault();
+			triggerPulse();
+		});
+		return unsubscribe;
+	}, [navigation, isDirty, triggerPulse]);
+
 	const handleSave = useCallback(() => {
 		if (!game) return;
+		bypassRef.current = true;
 		updateGame({ ...game, turnOrder: order.map((item) => item.id) });
 		router.back();
 	}, [game, order, updateGame, router]);
 
+	const handleRevert = useCallback(() => {
+		bypassRef.current = true;
+		router.back();
+	}, [router]);
+
 	if (!game) return null;
 
-	const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
+	const footerBorderColor = pulseAnim.interpolate({
+		inputRange: [0, 1],
+		outputRange: ["transparent", theme.accent],
+	});
+
+	const renderItem = ({ item, drag }: RenderItemParams<Item>) => (
 		<ScaleDecorator activeScale={1.03}>
 			<HapticButton
 				onLongPress={drag}
@@ -48,23 +85,32 @@ export default function TurnOrderScreen() {
 				activeOpacity={1}
 				style={[
 					styles.row,
-					{
-						backgroundColor: isActive ? theme.backgroundSelected : theme.backgroundElement,
-						borderBottomColor: theme.backgroundSelected },
+					{ backgroundColor: theme.backgroundElement, borderBottomColor: theme.backgroundSelected },
 				]}
 			>
 				<ThemedText style={styles.name}>{item.name}</ThemedText>
-				<SymbolView name="line.3.horizontal" size={18} tintColor={theme.textSecondary} />
+				{/* Pressing the handle starts drag immediately; long-pressing anywhere else also works */}
+				<Pressable onPressIn={drag} hitSlop={16} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+					<SymbolView name="line.3.horizontal" size={18} tintColor={theme.textSecondary} />
+				</Pressable>
 			</HapticButton>
 		</ScaleDecorator>
 	);
 
 	return (
 		<ThemedView style={shared.screen}>
-			<Stack.Screen options={{ title: "Turn Order" }} />
-			<GestureHandlerRootView style={{ flex: 1 }}>
-				<SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
-					<ThemedText style={[forms.hint, { color: theme.textSecondary }]}>
+			<Stack.Screen options={{ title: "Turn Order", gestureEnabled: !isDirty }} />
+			<SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+					<ThemedText
+						style={[
+							forms.hint,
+							{
+								color: theme.textSecondary,
+								paddingHorizontal: Spacing.three,
+								paddingVertical: Spacing.two,
+							},
+						]}
+					>
 						Hold to drag and drop to reorder players.
 					</ThemedText>
 
@@ -77,19 +123,37 @@ export default function TurnOrderScreen() {
 						contentContainerStyle={styles.listContent}
 					/>
 
-					<View style={styles.footer}>
-						<HapticButton
-							style={[shared.button, styles.saveBtn, { backgroundColor: theme.accent }]}
-							onPress={handleSave}
+					{isDirty && (
+						<Animated.View
+							style={[
+								styles.footer,
+								{
+									borderWidth: 2,
+									borderColor: footerBorderColor,
+									borderRadius: Spacing.two,
+									margin: Spacing.three,
+								},
+							]}
 						>
-							<ThemedText type="smallBold" style={{ color: "#fff" }}>
-								Save Order
-							</ThemedText>
-						</HapticButton>
-					</View>
-					<SafeAreaView edges={["bottom"]} />
-				</SafeAreaView>
-			</GestureHandlerRootView>
+							<HapticButton
+								style={[styles.revertBtn, { backgroundColor: theme.backgroundElement }]}
+								onPress={handleRevert}
+							>
+								<ThemedText type="small" themeColor="textSecondary">
+									Revert
+								</ThemedText>
+							</HapticButton>
+							<HapticButton
+								style={[styles.saveBtn, { backgroundColor: theme.accent }]}
+								onPress={handleSave}
+							>
+								<ThemedText type="smallBold" style={{ color: theme.accentText }}>
+									Save Order
+								</ThemedText>
+							</HapticButton>
+						</Animated.View>
+					)}
+			</SafeAreaView>
 		</ThemedView>
 	);
 }
@@ -97,22 +161,33 @@ export default function TurnOrderScreen() {
 const styles = StyleSheet.create({
 	listContent: {
 		paddingHorizontal: Spacing.three,
-		gap: Spacing.two,
-		paddingBottom: Spacing.three },
+	},
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
 		borderRadius: Spacing.two,
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.three,
-		gap: Spacing.two },
-	name: {
-		flex: 1,
-		fontSize: 16 },
+		gap: Spacing.two,
+		marginBottom: Spacing.two,
+	},
+	name: { flex: 1, fontSize: 16 },
 	footer: {
-		paddingHorizontal: Spacing.three,
-		paddingBottom: Spacing.two },
-	saveBtn: {
-		alignSelf: "stretch",
+		flexDirection: "row",
+		gap: Spacing.two,
+		paddingVertical: Spacing.two,
+		paddingHorizontal: Spacing.two,
+	},
+	revertBtn: {
+		flex: 1,
 		alignItems: "center",
-		paddingVertical: Spacing.three } });
+		paddingVertical: Spacing.two + 2,
+		borderRadius: Spacing.two,
+	},
+	saveBtn: {
+		flex: 2,
+		alignItems: "center",
+		paddingVertical: Spacing.two + 2,
+		borderRadius: Spacing.two,
+	},
+});

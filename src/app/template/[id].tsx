@@ -39,7 +39,7 @@ export default function TemplateScreen() {
 
 	const { draft, patch, isDirty, save: saveDraft, reset: resetDraft } = useDraft(template, updateTemplate);
 	const scrollRef = useRef<ScrollView>(null);
-	const { highlightStyle } = useUnsavedChangesScroll(isDirty, scrollRef);
+	const { highlightStyle, exitSafely } = useUnsavedChangesScroll(isDirty, scrollRef);
 	const [editing, setEditing] = useState<Section>(null);
 	const [showRoundNumpad, setShowRoundNumpad] = useState(false);
 
@@ -307,13 +307,13 @@ export default function TemplateScreen() {
 						<View style={[styles.actionsContainer, highlightStyle]}>
 							<HapticButton
 								style={[styles.cancelBtn, { backgroundColor: theme.backgroundElement }]}
-								onPress={() => { resetDraft(); setEditing(null); }}
+								onPress={() => { exitSafely(); resetDraft(); setEditing(null); router.back(); }}
 							>
 								<ThemedText type="small" themeColor="textSecondary">Cancel Changes</ThemedText>
 							</HapticButton>
 							<HapticButton
 								style={[styles.saveBtn, { backgroundColor: TINT }]}
-								onPress={() => { saveDraft(); setEditing(null); }}
+								onPress={() => { exitSafely(); saveDraft(); setEditing(null); router.back(); }}
 							>
 								<ThemedText type="smallBold" style={{ color: "#fff" }}>Save Changes</ThemedText>
 							</HapticButton>

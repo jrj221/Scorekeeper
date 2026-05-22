@@ -6,6 +6,7 @@ import { Alert, Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
+import { HapticButton } from "@/components/haptic-button";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
@@ -14,7 +15,6 @@ import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { getTurnState } from "@/utils/game";
-import { HapticButton } from "@/components/haptic-button";
 
 const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
@@ -22,6 +22,11 @@ const ROUND_LABEL_W = 48;
 const ROW_H = 44;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+
+// Podium constants (used in static results view for finished games)
+const PODIUM_H = 260;
+const PLATFORM_H = [150, 108, 76];
+const COL_RANK = [1, 0, 2];
 
 export default function GameScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,17 +38,31 @@ export default function GameScreen() {
 
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
 	const finished = !!game?.finishedAt;
-	const [viewMode, setViewMode] = useState<"scores" | "turns">(game?.finishedAt ? "scores" : "turns");
+	const [viewMode, setViewMode] = useState<"scores" | "turns" | "results">(game?.finishedAt ? "scores" : "turns");
 	const leftScrollRef = useRef<ScrollView>(null);
 	const mainScrollRef = useRef<ScrollView>(null);
 	const handleMainScroll = useCallback((e: any) => {
 		leftScrollRef.current?.scrollTo({ y: e.nativeEvent.contentOffset.y, animated: false });
 	}, []);
 
+	const isFinalRound = game?.totalRounds !== undefined && currentRoundIndex >= game.totalRounds - 1;
+
+	const handleShowFinalScores = () => {
+		endGame();
+		router.replace(`/game/${id}/results`);
+	};
+
 	const confirmEndGame = () =>
-		Alert.alert("End Game", "Lock this game? Scores will be frozen and cannot be edited.", [
+		Alert.alert("End Game", "Finish this game? Scores will be frozen and cannot be edited.", [
 			{ text: "Cancel", style: "cancel" },
-			{ text: "End Game", style: "destructive", onPress: endGame },
+			{
+				text: "End Game",
+				style: "destructive",
+				onPress: () => {
+					endGame();
+					router.replace(`/game/${id}/results`);
+				},
+			},
 		]);
 
 	if (!game) {
@@ -104,12 +123,13 @@ export default function GameScreen() {
 								style={{ backgroundColor: "transparent" }}
 							/>
 						</HapticButton>
-					) }}
+					),
+				}}
 			/>
 			<SafeAreaView style={styles.safe} edges={["bottom"]}>
 				{/* Round label row */}
 				<View style={styles.roundLabelRow}>
-					<ThemedText style={styles.roundLabel}>{finished ? "Finished" : roundLabel}</ThemedText>
+					{!finished && <ThemedText style={styles.roundLabel}>{roundLabel}</ThemedText>}
 					{!finished && (game.extras?.dice || game.extras?.timer) && (
 						<View style={styles.extraIcons}>
 							{game.extras?.dice && (
@@ -134,20 +154,32 @@ export default function GameScreen() {
 					)}
 				</View>
 
-				{/* Scores / Current Turn tab toggle */}
-				{!finished && (
-					<View style={[styles.viewToggle, { backgroundColor: theme.backgroundElement }]}>
+				{/* Tab toggle */}
+				<View style={[styles.viewToggle, { backgroundColor: theme.backgroundElement }]}>
+					<HapticButton
+						style={[styles.viewTab, viewMode === "scores" && { backgroundColor: CURRENT_TINT }]}
+						onPress={() => setViewMode("scores")}
+					>
+						<ThemedText
+							type="small"
+							style={{ color: viewMode === "scores" ? "#fff" : theme.textSecondary }}
+						>
+							Scorecard
+						</ThemedText>
+					</HapticButton>
+					{finished ? (
 						<HapticButton
-							style={[styles.viewTab, viewMode === "scores" && { backgroundColor: CURRENT_TINT }]}
-							onPress={() => setViewMode("scores")}
+							style={[styles.viewTab, viewMode === "results" && { backgroundColor: CURRENT_TINT }]}
+							onPress={() => setViewMode("results")}
 						>
 							<ThemedText
 								type="small"
-								style={{ color: viewMode === "scores" ? "#fff" : theme.textSecondary }}
+								style={{ color: viewMode === "results" ? "#fff" : theme.textSecondary }}
 							>
-								Scorecard
+								Final Results
 							</ThemedText>
 						</HapticButton>
+					) : (
 						<HapticButton
 							style={[styles.viewTab, viewMode === "turns" && { backgroundColor: CURRENT_TINT }]}
 							onPress={() => setViewMode("turns")}
@@ -159,8 +191,8 @@ export default function GameScreen() {
 								Current Turn
 							</ThemedText>
 						</HapticButton>
-					</View>
-				)}
+					)}
+				</View>
 
 				{/* Current Turn view */}
 				{viewMode === "turns" && !finished
@@ -184,7 +216,8 @@ export default function GameScreen() {
 											styles.turnHeaderRow,
 											{
 												borderBottomColor: theme.backgroundSelected,
-												backgroundColor: theme.backgroundSelected },
+												backgroundColor: theme.backgroundSelected,
+											},
 										]}
 									>
 										<ThemedText style={styles.turnHeaderCell} themeColor="textSecondary">
@@ -225,7 +258,11 @@ export default function GameScreen() {
 															{p.name}
 														</ThemedText>
 														{hasScore && (
-															<ThemedText style={[styles.turnCheckmark, { color: CURRENT_TINT }]}>✓</ThemedText>
+															<ThemedText
+																style={[styles.turnCheckmark, { color: CURRENT_TINT }]}
+															>
+																✓
+															</ThemedText>
 														)}
 														{isDealer && (
 															<View
@@ -262,7 +299,8 @@ export default function GameScreen() {
 																					color:
 																						roundScore < 0
 																							? theme.danger
-																							: theme.text },
+																							: theme.text,
+																				},
 																			]}
 																		>
 																			{roundScore >= 0
@@ -281,20 +319,21 @@ export default function GameScreen() {
 									{allScored && (
 										<HapticButton
 											style={[styles.nextRoundBtn, { backgroundColor: CURRENT_TINT }]}
-											onPress={advanceRound}
+											onPress={isFinalRound ? handleShowFinalScores : advanceRound}
 										>
 											<ThemedText type="smallBold" style={{ color: "#fff" }}>
-												Next Round
+												{isFinalRound ? "Show Final Scores" : "Next Round"}
 											</ThemedText>
 										</HapticButton>
 									)}
-									{game.turnOrder && (
+									{game.players.length > 0 && (
 										<HapticButton
 											style={[
 												styles.editOrderBtn,
 												{
 													borderColor: theme.backgroundSelected,
-													backgroundColor: theme.backgroundElement },
+													backgroundColor: theme.backgroundElement,
+												},
 											]}
 											onPress={() => router.push(`/game/${id}/turn-order`)}
 										>
@@ -309,7 +348,7 @@ export default function GameScreen() {
 					: null}
 
 				{/* Scorecard: players as columns, rounds as rows */}
-				{viewMode === "scores" || finished
+				{viewMode === "scores"
 					? (() => {
 							const MAX_VISIBLE_ROWS = 10;
 							const CURRENT_ROW_BG = CURRENT_TINT + "40";
@@ -453,7 +492,9 @@ export default function GameScreen() {
 																					onPress: () =>
 																						setEditCell({
 																							roundIndex: ri,
-																							player: p }) }
+																							player: p,
+																						}),
+																				}
 																			: {})}
 																	>
 																		<ThemedText
@@ -507,6 +548,51 @@ export default function GameScreen() {
 						})()
 					: null}
 
+				{/* Static Final Results view (finished games only) */}
+				{viewMode === "results" && finished && (() => {
+					const podiumPlayers = COL_RANK.map((rankIdx) => sortedPlayers[rankIdx] ?? null);
+					const restPlayers = sortedPlayers.slice(3);
+					const accentColors = [CURRENT_TINT, theme.backgroundSelected, theme.backgroundSelected];
+					return (
+						<ScrollView contentContainerStyle={{ gap: Spacing.three, paddingBottom: Spacing.six }} showsVerticalScrollIndicator={false}>
+							{/* Podium */}
+							<View style={[podiumStyles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}>
+								<View style={[podiumStyles.podiumRow, { height: PODIUM_H }]}>
+									{podiumPlayers.map((player, colIdx) => {
+										const rankIdx = COL_RANK[colIdx];
+										if (!player) return <View key={colIdx} style={podiumStyles.podiumCol} />;
+										return (
+											<View key={player.id} style={podiumStyles.podiumCol}>
+												<View style={[podiumStyles.playerInfo, { bottom: PLATFORM_H[rankIdx] + Spacing.two }]}>
+													<ThemedText style={podiumStyles.medal}>{MEDALS[rankIdx]}</ThemedText>
+													<ThemedText style={podiumStyles.playerName} numberOfLines={2}>{player.name}</ThemedText>
+													<ThemedText style={[podiumStyles.playerScore, { color: CURRENT_TINT }]}>{totals[player.id] ?? 0}</ThemedText>
+												</View>
+												<View style={[podiumStyles.platform, { height: PLATFORM_H[rankIdx], backgroundColor: accentColors[rankIdx] }]}>
+													<ThemedText style={[podiumStyles.rankNum, { color: rankIdx === 0 ? theme.accentText : theme.textSecondary }]}>{["1st", "2nd", "3rd"][rankIdx]}</ThemedText>
+												</View>
+											</View>
+										);
+									})}
+								</View>
+							</View>
+
+							{/* 4th place and below */}
+							{restPlayers.length > 0 && (
+								<View style={[podiumStyles.restList, { backgroundColor: theme.backgroundElement }]}>
+									{restPlayers.map((player, i) => (
+										<View key={player.id} style={[podiumStyles.restRow, { borderBottomColor: theme.backgroundSelected }]}>
+											<ThemedText style={[podiumStyles.restRank, { color: theme.textSecondary }]}>#{i + 4}</ThemedText>
+											<ThemedText style={podiumStyles.restName} numberOfLines={1}>{player.name}</ThemedText>
+											<ThemedText style={[podiumStyles.restScore, { color: theme.text }]}>{totals[player.id] ?? 0}</ThemedText>
+										</View>
+									))}
+								</View>
+							)}
+						</ScrollView>
+					);
+				})()}
+
 				{/* Next Round (scorecard view) */}
 				{viewMode === "scores" &&
 					!finished &&
@@ -517,10 +603,10 @@ export default function GameScreen() {
 						return allScored ? (
 							<HapticButton
 								style={[styles.nextRoundBtn, { backgroundColor: CURRENT_TINT }]}
-								onPress={advanceRound}
+								onPress={isFinalRound ? handleShowFinalScores : advanceRound}
 							>
 								<ThemedText type="smallBold" style={{ color: "#fff" }}>
-									Next Round
+									{isFinalRound ? "Show Final Scores" : "Next Round"}
 								</ThemedText>
 							</HapticButton>
 						) : null;
@@ -560,166 +646,240 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingHorizontal: Spacing.three,
 		paddingTop: Spacing.two,
-		gap: Spacing.two },
+		gap: Spacing.two,
+	},
 	roundLabelRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 5,
-		paddingVertical: 4 },
+		paddingVertical: 4,
+	},
 	extraIcons: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4 },
+		gap: 4,
+	},
 	extraIconBtn: {
 		padding: 8,
 		borderRadius: 10,
-		borderWidth: 1.5 },
+		borderWidth: 1.5,
+	},
 	roundLabel: {
 		fontSize: 25,
 		fontWeight: "700",
-		letterSpacing: -0.3 },
+		letterSpacing: -0.3,
+	},
 	headerTitleBtn: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 5 },
+		gap: 5,
+	},
 	headerTitleText: {
 		fontSize: 17,
-		fontWeight: "600" },
+		fontWeight: "600",
+	},
 	viewToggle: {
 		flexDirection: "row",
 		borderRadius: Spacing.two,
 		overflow: "hidden",
-		padding: 3 },
+		padding: 3,
+	},
 	viewTab: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingVertical: Spacing.one + 2,
 		margin: 2,
-		borderRadius: Spacing.two - 3 },
+		borderRadius: Spacing.two - 3,
+	},
 	// Scorecard
 	labelCell: {
 		alignItems: "center",
-		justifyContent: "center" },
+		justifyContent: "center",
+	},
 	labelText: {
 		fontSize: 12,
 		fontWeight: "600",
-		textAlign: "center" },
+		textAlign: "center",
+	},
 	headerRow: {
-		flexDirection: "row" },
+		flexDirection: "row",
+	},
 	nameCell: {
 		alignItems: "center",
 		justifyContent: "center",
-		paddingHorizontal: 4 },
+		paddingHorizontal: 4,
+	},
 	colHeader: {
 		fontSize: 12,
 		fontWeight: "600",
-		textAlign: "center" },
+		textAlign: "center",
+	},
 	scoreRow: {
-		flexDirection: "row" },
+		flexDirection: "row",
+	},
 	scoreCell: {
 		alignItems: "center",
-		justifyContent: "center" },
+		justifyContent: "center",
+	},
 	score: {
 		fontSize: 13,
 		fontWeight: "500",
-		textAlign: "center" },
+		textAlign: "center",
+	},
 	emptyScore: {
 		fontSize: 13,
 		textAlign: "center",
-		opacity: 0.3 },
+		opacity: 0.3,
+	},
 	totalScore: {
 		fontSize: 13,
 		fontWeight: "700",
-		textAlign: "center" },
+		textAlign: "center",
+	},
 	endGameBtn: {
 		alignItems: "center",
 		paddingVertical: Spacing.two,
 		marginHorizontal: Spacing.three,
 		marginBottom: Spacing.two,
 		borderRadius: Spacing.two,
-		borderWidth: StyleSheet.hairlineWidth },
+		borderWidth: StyleSheet.hairlineWidth,
+	},
 	endGameText: {},
 	// Current Turn view
 	turnList: {
 		borderRadius: Spacing.two,
-		overflow: "hidden" },
+		overflow: "hidden",
+	},
 	turnRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.two + 2,
 		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: Spacing.two },
+		gap: Spacing.two,
+	},
 	turnNameRow: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6 },
+		gap: 6,
+	},
 	turnName: {
 		flexShrink: 1,
-		fontSize: 17 },
+		fontSize: 17,
+	},
 	dealerBadge: {
 		borderRadius: Spacing.one,
 		paddingHorizontal: Spacing.one,
-		paddingVertical: 2 },
+		paddingVertical: 2,
+	},
 	dealerLabel: {
 		fontSize: 10,
 		fontWeight: "700",
-		letterSpacing: 0.5 },
+		letterSpacing: 0.5,
+	},
 	turnScoreArea: {
 		alignItems: "flex-end",
-		gap: 4 },
+		gap: 4,
+	},
 	turnScoreRow: {
 		flexDirection: "row",
 		alignItems: "baseline",
-		gap: 4 },
+		gap: 4,
+	},
 	turnScore: {
 		fontSize: 22,
 		fontWeight: "600",
 		minWidth: 50,
-		textAlign: "right" },
+		textAlign: "right",
+	},
 	turnScoreDelta: {
 		fontSize: 16,
 		fontWeight: "500",
-		opacity: 0.45 },
+		opacity: 0.45,
+	},
 	addScoreBtn: {
 		borderRadius: 6,
 		paddingHorizontal: 10,
-		paddingVertical: 4 },
+		paddingVertical: 4,
+	},
 	addScoreLabel: {
 		fontSize: 13,
-		fontWeight: "600" },
+		fontWeight: "600",
+	},
 	editOrderBtn: {
 		borderRadius: Spacing.two,
 		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: Spacing.two,
 		alignItems: "center",
-		marginTop: Spacing.two },
+		marginTop: Spacing.two,
+	},
 	nextRoundBtn: {
 		borderRadius: Spacing.two,
 		paddingVertical: Spacing.two + 2,
 		alignItems: "center",
-		marginTop: Spacing.two },
+		marginTop: Spacing.two,
+	},
 	turnCheckmark: {
 		fontSize: 16,
-		fontWeight: "700" },
+		fontWeight: "700",
+	},
 	goesFirstLabel: {
 		fontSize: 14,
-		paddingVertical: Spacing.two },
+		paddingVertical: Spacing.two,
+	},
 	turnHeaderRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.one,
-		borderBottomWidth: StyleSheet.hairlineWidth },
+		borderBottomWidth: StyleSheet.hairlineWidth,
+	},
 	turnHeaderCell: {
 		flex: 1,
 		fontSize: 11,
 		fontWeight: "600",
 		letterSpacing: 0.4,
-		textTransform: "uppercase" },
+		textTransform: "uppercase",
+	},
 	turnHeaderRight: {
 		flex: 0,
-		textAlign: "right" } });
+		textAlign: "right",
+	},
+});
+
+const podiumStyles = StyleSheet.create({
+	podiumWrapper: { borderRadius: Spacing.two, overflow: "hidden" },
+	podiumRow: { flexDirection: "row", alignItems: "flex-end" },
+	podiumCol: { flex: 1, position: "relative", alignItems: "center" },
+	playerInfo: { position: "absolute", left: 4, right: 4, alignItems: "center", gap: 2 },
+	medal: { fontSize: 28, lineHeight: 34 },
+	playerName: { fontSize: 13, fontWeight: "600", textAlign: "center" },
+	playerScore: { fontSize: 20, fontWeight: "700" },
+	platform: {
+		position: "absolute",
+		bottom: 0,
+		left: 2,
+		right: 2,
+		borderTopLeftRadius: 6,
+		borderTopRightRadius: 6,
+		alignItems: "center",
+		justifyContent: "flex-start",
+		paddingTop: Spacing.one,
+	},
+	rankNum: { fontSize: 22, fontWeight: "700", opacity: 0.4 },
+	restList: { borderRadius: Spacing.two, overflow: "hidden" },
+	restRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: Spacing.three,
+		paddingVertical: Spacing.two + 2,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		gap: Spacing.two,
+	},
+	restRank: { fontSize: 13, fontWeight: "600", width: 32 },
+	restName: { flex: 1, fontSize: 16 },
+	restScore: { fontSize: 18, fontWeight: "600" },
+});

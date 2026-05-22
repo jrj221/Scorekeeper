@@ -3,6 +3,7 @@ import { SymbolView } from "expo-symbols";
 import { setBackgroundColorAsync } from "expo-system-ui";
 import React, { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ColorSchemeProvider } from "@/context/color-scheme-context";
@@ -78,19 +79,21 @@ function AppShell() {
 	}, [theme.background]);
 
 	return (
-		<GamesProvider>
-			<View style={{ flex: 1, backgroundColor: theme.background }}>
-				<Stack
-					screenOptions={{
-						headerShadowVisible: false,
-						contentStyle: { backgroundColor: theme.background },
-						header: ({ options, back, route }) => (
-							<CustomHeader options={options} back={back as any} route={route} />
-						),
-					}}
-				/>
-			</View>
-		</GamesProvider>
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<GamesProvider>
+				<View style={{ flex: 1, backgroundColor: theme.background }}>
+					<Stack
+						screenOptions={{
+							headerShadowVisible: false,
+							contentStyle: { backgroundColor: theme.background },
+							header: ({ options, back, route }) => (
+								<CustomHeader options={options} back={back as any} route={route} />
+							),
+						}}
+					/>
+				</View>
+			</GamesProvider>
+		</GestureHandlerRootView>
 	);
 }
 

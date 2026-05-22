@@ -34,7 +34,7 @@ export default function GameInfoScreen() {
 
 	const { draft, patch, isDirty, save: saveDraft, reset: resetDraft } = useDraft(game, updateGame);
 	const scrollRef = useRef<ScrollView>(null);
-	const { highlightStyle } = useUnsavedChangesScroll(isDirty, scrollRef);
+	const { highlightStyle, exitSafely } = useUnsavedChangesScroll(isDirty, scrollRef);
 
 	// Pick up icon selected in icon-picker screen
 	useFocusEffect(
@@ -863,13 +863,13 @@ export default function GameInfoScreen() {
 						<View style={[styles.actionsContainer, highlightStyle]}>
 							<HapticButton
 								style={[styles.cancelBtn, { backgroundColor: theme.backgroundElement }]}
-								onPress={() => { resetDraft(); setEditing(null); }}
+								onPress={() => { exitSafely(); resetDraft(); setEditing(null); router.back(); }}
 							>
 								<ThemedText type="small" themeColor="textSecondary">Cancel Changes</ThemedText>
 							</HapticButton>
 							<HapticButton
 								style={[styles.templateBtn, { backgroundColor: TINT }]}
-								onPress={() => { saveDraft(); setEditing(null); }}
+								onPress={() => { exitSafely(); saveDraft(); setEditing(null); router.back(); }}
 							>
 								<ThemedText type="smallBold" style={{ color: "#fff" }}>Save Changes</ThemedText>
 							</HapticButton>

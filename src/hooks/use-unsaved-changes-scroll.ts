@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/hooks/use-theme';
@@ -10,17 +10,13 @@ export function useUnsavedChangesScroll(
   const navigation = useNavigation();
   const theme = useTheme();
   const [highlighted, setHighlighted] = useState(false);
+  // Set true before programmatic back navigation so the listener won't intercept it
+  const bypassRef = useRef(false);
 
-  // Disable swipe-back gesture while dirty so the gesture can't start a
-  // navigation that we'd have to cancel mid-animation.
   useEffect(() => {
+    if (!isDirty) { setHighlighted(false); bypassRef.current = false; }
     navigation.setOptions({ gestureEnabled: !isDirty });
   }, [navigation, isDirty]);
-
-  // Clear highlight once changes are saved or cancelled
-  useEffect(() => {
-    if (!isDirty) setHighlighted(false);
-  }, [isDirty]);
 
   const trigger = useCallback(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -29,14 +25,16 @@ export function useUnsavedChangesScroll(
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (!isDirty) return;
+      if (!isDirty || bypassRef.current) return;
       e.preventDefault();
       trigger();
     });
     return unsubscribe;
   }, [navigation, isDirty, trigger]);
 
-  // Keep borderWidth constant to avoid layout shift; only color changes
+  /** Call before router.back() so the beforeRemove listener lets it through. */
+  const exitSafely = useCallback(() => { bypassRef.current = true; }, []);
+
   const highlightStyle = {
     borderWidth: 2,
     borderRadius: 10,
@@ -44,5 +42,5 @@ export function useUnsavedChangesScroll(
     padding: 4,
   };
 
-  return { highlightStyle };
+  return { highlightStyle, exitSafely };
 }
