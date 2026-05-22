@@ -261,14 +261,14 @@ export default function GameInfoScreen() {
 											forms.segLeft,
 											{
 												backgroundColor:
-													game.totalRounds === undefined ? TINT : theme.backgroundSelected,
+													draft?.totalRounds === undefined ? TINT : theme.backgroundSelected,
 											},
 										]}
 										onPress={() => patch({ totalRounds: undefined })}
 									>
 										<ThemedText
 											type="small"
-											style={{ color: game.totalRounds === undefined ? "#fff" : theme.text }}
+											style={{ color: draft?.totalRounds === undefined ? "#fff" : theme.text }}
 										>
 											Indefinite
 										</ThemedText>
@@ -278,23 +278,23 @@ export default function GameInfoScreen() {
 											forms.segRight,
 											{
 												backgroundColor:
-													game.totalRounds !== undefined ? TINT : theme.backgroundSelected,
+													draft?.totalRounds !== undefined ? TINT : theme.backgroundSelected,
 											},
 										]}
 										onPress={() => {
-											if (game.totalRounds === undefined) patch({ totalRounds: 10 });
+											if (draft?.totalRounds === undefined) patch({ totalRounds: 10 });
 											else setShowRoundNumpad(true);
 										}}
 									>
 										<ThemedText
 											type="small"
-											style={{ color: game.totalRounds !== undefined ? "#fff" : theme.text }}
+											style={{ color: draft?.totalRounds !== undefined ? "#fff" : theme.text }}
 										>
 											Set number
 										</ThemedText>
 									</HapticButton>
 								</View>
-								{game.totalRounds !== undefined && (
+								{draft?.totalRounds !== undefined && (
 									<HapticButton
 										style={[
 											shared.input,
@@ -303,14 +303,14 @@ export default function GameInfoScreen() {
 										onPress={() => setShowRoundNumpad(true)}
 									>
 										<ThemedText style={{ color: theme.text, fontSize: 16 }}>
-											{game.totalRounds}
+											{draft?.totalRounds}
 										</ThemedText>
 									</HapticButton>
 								)}
 							</View>
 						) : (
 							<ThemedText type="default">
-								{game.totalRounds !== undefined ? `${game.totalRounds} rounds` : "Indefinite"}
+								{draft?.totalRounds !== undefined ? `${draft.totalRounds} rounds` : "Indefinite"}
 							</ThemedText>
 						)}
 					</View>

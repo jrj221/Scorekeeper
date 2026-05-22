@@ -19,23 +19,12 @@ export function useGame(id: string) {
       )
     : [];
 
-  // Score-based current round: last complete round index + 1, or first incomplete round.
-  // Used as a fallback for turn-based games where currentRound hasn't been explicitly set.
-  let scoreBasedCurrentRound = 0;
+  // Highest round index that has at least one score entered. Used as the fallback
+  // current round for games that haven't had an explicit Next Round press yet.
+  let lastScoredRound = -1;
   if (game) {
-    let lastComplete = -1;
     for (let i = 0; i < game.rounds.length; i++) {
-      if (game.players.every(p => game.rounds[i][p.id] !== undefined)) {
-        lastComplete = i;
-      }
-    }
-    scoreBasedCurrentRound = Math.max(0, lastComplete + 1);
-    for (let i = 0; i <= lastComplete + 1; i++) {
-      const r = game.rounds[i] ?? {};
-      if (game.players.some(p => r[p.id] === undefined)) {
-        scoreBasedCurrentRound = i;
-        break;
-      }
+      if (Object.keys(game.rounds[i]).length > 0) lastScoredRound = i;
     }
   }
 
@@ -43,37 +32,21 @@ export function useGame(id: string) {
   if (game) {
     if (game.totalRounds !== undefined) {
       visibleRoundCount = game.totalRounds;
-    } else if (game.turnOrder?.length) {
-      // Turn-based game: never auto-advance; wait for explicit Next Round press
-      visibleRoundCount = (game.currentRound ?? scoreBasedCurrentRound) + 1;
     } else {
-      let lastComplete = -1;
-      for (let i = 0; i < game.rounds.length; i++) {
-        if (game.players.every(p => game.rounds[i][p.id] !== undefined)) {
-          lastComplete = i;
-        }
-      }
-      visibleRoundCount = Math.max(1, lastComplete + 2);
+      // A new round row only appears after an explicit Next Round press (game.currentRound
+      // advances) or when a score is actually entered in a new round (data migration safety).
+      visibleRoundCount = Math.max(1, Math.max(game.currentRound ?? -1, lastScoredRound) + 1);
     }
   }
 
-  // First incomplete round index (used for scorecard highlighting)
-  let autoCurrentRoundIndex = visibleRoundCount - 1;
-  if (game) {
-    for (let i = 0; i < visibleRoundCount; i++) {
-      const r = game.rounds[i] ?? {};
-      if (game.players.some(p => r[p.id] === undefined)) {
-        autoCurrentRoundIndex = i;
-        break;
-      }
-    }
-  }
-
-  // For turn-based games, use currentRound if set, otherwise fall back to score-based round
-  const currentRoundIndex =
-    game?.turnOrder?.length
-      ? (game.currentRound ?? scoreBasedCurrentRound)
-      : autoCurrentRoundIndex;
+  // game.currentRound is the authority once explicitly set. Clamp it to lastScoredRound + 1
+  // so stale stored values (e.g. from previous testing) can never skip past unscored data.
+  // Before any Next Round press, fall back to lastScoredRound so the active round stays on
+  // the last round that has scores and does NOT scan forward for the first empty row.
+  const storedRound = game?.currentRound;
+  const currentRoundIndex = storedRound !== undefined
+    ? Math.min(storedRound, Math.max(0, lastScoredRound + 1))
+    : Math.max(0, lastScoredRound);
 
   const endGame = useCallback(() => {
     if (!game || game.finishedAt) return;

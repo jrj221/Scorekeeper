@@ -17,7 +17,7 @@ const PLATFORM_H = [150, 108, 76];
 // Column order on podium: left=2nd, centre=1st, right=3rd
 const COL_RANK = [1, 0, 2];
 // Stagger: 3rd rises first, then 2nd, then 1st
-const RISE_DELAYS = [1000, 3000, 5000];
+const RISE_DELAYS = [500, 1000, 1500];
 
 export default function ResultsScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();

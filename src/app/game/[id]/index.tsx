@@ -188,7 +188,7 @@ export default function GameScreen() {
 								type="small"
 								style={{ color: viewMode === "turns" ? "#fff" : theme.textSecondary }}
 							>
-								Current Turn
+								Current Round
 							</ThemedText>
 						</HapticButton>
 					)}
@@ -549,49 +549,103 @@ export default function GameScreen() {
 					: null}
 
 				{/* Static Final Results view (finished games only) */}
-				{viewMode === "results" && finished && (() => {
-					const podiumPlayers = COL_RANK.map((rankIdx) => sortedPlayers[rankIdx] ?? null);
-					const restPlayers = sortedPlayers.slice(3);
-					const accentColors = [CURRENT_TINT, theme.backgroundSelected, theme.backgroundSelected];
-					return (
-						<ScrollView contentContainerStyle={{ gap: Spacing.three, paddingBottom: Spacing.six }} showsVerticalScrollIndicator={false}>
-							{/* Podium */}
-							<View style={[podiumStyles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}>
-								<View style={[podiumStyles.podiumRow, { height: PODIUM_H }]}>
-									{podiumPlayers.map((player, colIdx) => {
-										const rankIdx = COL_RANK[colIdx];
-										if (!player) return <View key={colIdx} style={podiumStyles.podiumCol} />;
-										return (
-											<View key={player.id} style={podiumStyles.podiumCol}>
-												<View style={[podiumStyles.playerInfo, { bottom: PLATFORM_H[rankIdx] + Spacing.two }]}>
-													<ThemedText style={podiumStyles.medal}>{MEDALS[rankIdx]}</ThemedText>
-													<ThemedText style={podiumStyles.playerName} numberOfLines={2}>{player.name}</ThemedText>
-													<ThemedText style={[podiumStyles.playerScore, { color: CURRENT_TINT }]}>{totals[player.id] ?? 0}</ThemedText>
+				{viewMode === "results" &&
+					finished &&
+					(() => {
+						const podiumPlayers = COL_RANK.map((rankIdx) => sortedPlayers[rankIdx] ?? null);
+						const restPlayers = sortedPlayers.slice(3);
+						const accentColors = [CURRENT_TINT, theme.backgroundSelected, theme.backgroundSelected];
+						return (
+							<ScrollView
+								contentContainerStyle={{ gap: Spacing.three, paddingBottom: Spacing.six }}
+								showsVerticalScrollIndicator={false}
+							>
+								{/* Podium */}
+								<View
+									style={[podiumStyles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}
+								>
+									<View style={[podiumStyles.podiumRow, { height: PODIUM_H }]}>
+										{podiumPlayers.map((player, colIdx) => {
+											const rankIdx = COL_RANK[colIdx];
+											if (!player) return <View key={colIdx} style={podiumStyles.podiumCol} />;
+											return (
+												<View key={player.id} style={podiumStyles.podiumCol}>
+													<View
+														style={[
+															podiumStyles.playerInfo,
+															{ bottom: PLATFORM_H[rankIdx] + Spacing.two },
+														]}
+													>
+														<ThemedText style={podiumStyles.medal}>
+															{MEDALS[rankIdx]}
+														</ThemedText>
+														<ThemedText style={podiumStyles.playerName} numberOfLines={2}>
+															{player.name}
+														</ThemedText>
+														<ThemedText
+															style={[podiumStyles.playerScore, { color: CURRENT_TINT }]}
+														>
+															{totals[player.id] ?? 0}
+														</ThemedText>
+													</View>
+													<View
+														style={[
+															podiumStyles.platform,
+															{
+																height: PLATFORM_H[rankIdx],
+																backgroundColor: accentColors[rankIdx],
+															},
+														]}
+													>
+														<ThemedText
+															style={[
+																podiumStyles.rankNum,
+																{
+																	color:
+																		rankIdx === 0
+																			? theme.accentText
+																			: theme.textSecondary,
+																},
+															]}
+														>
+															{["1st", "2nd", "3rd"][rankIdx]}
+														</ThemedText>
+													</View>
 												</View>
-												<View style={[podiumStyles.platform, { height: PLATFORM_H[rankIdx], backgroundColor: accentColors[rankIdx] }]}>
-													<ThemedText style={[podiumStyles.rankNum, { color: rankIdx === 0 ? theme.accentText : theme.textSecondary }]}>{["1st", "2nd", "3rd"][rankIdx]}</ThemedText>
-												</View>
-											</View>
-										);
-									})}
+											);
+										})}
+									</View>
 								</View>
-							</View>
 
-							{/* 4th place and below */}
-							{restPlayers.length > 0 && (
-								<View style={[podiumStyles.restList, { backgroundColor: theme.backgroundElement }]}>
-									{restPlayers.map((player, i) => (
-										<View key={player.id} style={[podiumStyles.restRow, { borderBottomColor: theme.backgroundSelected }]}>
-											<ThemedText style={[podiumStyles.restRank, { color: theme.textSecondary }]}>#{i + 4}</ThemedText>
-											<ThemedText style={podiumStyles.restName} numberOfLines={1}>{player.name}</ThemedText>
-											<ThemedText style={[podiumStyles.restScore, { color: theme.text }]}>{totals[player.id] ?? 0}</ThemedText>
-										</View>
-									))}
-								</View>
-							)}
-						</ScrollView>
-					);
-				})()}
+								{/* 4th place and below */}
+								{restPlayers.length > 0 && (
+									<View style={[podiumStyles.restList, { backgroundColor: theme.backgroundElement }]}>
+										{restPlayers.map((player, i) => (
+											<View
+												key={player.id}
+												style={[
+													podiumStyles.restRow,
+													{ borderBottomColor: theme.backgroundSelected },
+												]}
+											>
+												<ThemedText
+													style={[podiumStyles.restRank, { color: theme.textSecondary }]}
+												>
+													#{i + 4}
+												</ThemedText>
+												<ThemedText style={podiumStyles.restName} numberOfLines={1}>
+													{player.name}
+												</ThemedText>
+												<ThemedText style={[podiumStyles.restScore, { color: theme.text }]}>
+													{totals[player.id] ?? 0}
+												</ThemedText>
+											</View>
+										))}
+									</View>
+								)}
+							</ScrollView>
+						);
+					})()}
 
 				{/* Next Round (scorecard view) */}
 				{viewMode === "scores" &&
