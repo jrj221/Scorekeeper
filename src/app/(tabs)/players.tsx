@@ -125,7 +125,7 @@ export default function PlayersScreen() {
 			>
 				<FlatList
 					style={{ flex: 1 }}
-					data={globalPlayers}
+					data={[...globalPlayers].sort((a, b) => a.name.localeCompare(b.name))}
 					keyExtractor={(p) => p.id}
 					keyboardShouldPersistTaps="handled"
 					contentContainerStyle={styles.listContent}

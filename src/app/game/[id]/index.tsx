@@ -33,7 +33,6 @@ const RANK_ICONS = [
 	{ name: "medal", color: "#CD7F32" },
 ] as const;
 
-
 export default function GameScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
@@ -203,9 +202,9 @@ export default function GameScreen() {
 				{/* Current Turn view */}
 				{viewMode === "turns" && !finished
 					? (() => {
-							const { firstPlayerId, dealerId } = getTurnState(game, currentRoundIndex);
+							const { firstPlayerId, dealerId, orderedIds } = getTurnState(game, currentRoundIndex);
 							const playerMap = Object.fromEntries(game.players.map((p) => [p.id, p]));
-							const displayOrder = game.turnOrder ?? game.players.map((p) => p.id);
+							const displayOrder = orderedIds;
 							const allScored =
 								game.players.length > 0 &&
 								game.players.every((p) => getScore(currentRoundIndex, p.id) !== null);
@@ -435,23 +434,42 @@ export default function GameScreen() {
 												{(() => {
 													const rankMap = new Map(
 														buildTiers(sortedPlayers, totals).flatMap((tier, ti) =>
-															tier.map((p) => [p.id, ti])
-														)
+															tier.map((p) => [p.id, ti]),
+														),
 													);
 													return sortedPlayers.map((p) => {
 														const ri = rankMap.get(p.id) ?? 99;
-														const medal = firstRoundComplete && ri < MEDALS.length ? MEDALS[ri] + " " : "";
+														const medal =
+															firstRoundComplete && ri < MEDALS.length
+																? MEDALS[ri] + " "
+																: "";
 														return (
-															<View key={p.id} style={[styles.nameCell, { width: colW, height: ROW_H }]}>
+															<View
+																key={p.id}
+																style={[
+																	styles.nameCell,
+																	{ width: colW, height: ROW_H },
+																]}
+															>
 																{finished ? (
-																	<HapticButton onPress={() => router.push(`/player/${p.id}`)}>
-																		<ThemedText style={styles.colHeader} numberOfLines={1}>
-																			{medal}{p.name}
+																	<HapticButton
+																		onPress={() => router.push(`/player/${p.id}`)}
+																	>
+																		<ThemedText
+																			style={styles.colHeader}
+																			numberOfLines={1}
+																		>
+																			{medal}
+																			{p.name}
 																		</ThemedText>
 																	</HapticButton>
 																) : (
-																	<ThemedText style={styles.colHeader} numberOfLines={1}>
-																		{medal}{p.name}
+																	<ThemedText
+																		style={styles.colHeader}
+																		numberOfLines={1}
+																	>
+																		{medal}
+																		{p.name}
 																	</ThemedText>
 																)}
 															</View>
@@ -611,7 +629,10 @@ export default function GameScreen() {
 																))}
 															</View>
 															<ThemedText
-																style={[podiumStyles.playerScore, { color: CURRENT_TINT }]}
+																style={[
+																	podiumStyles.playerScore,
+																	{ color: CURRENT_TINT },
+																]}
 															>
 																{tierScore}
 															</ThemedText>
@@ -670,7 +691,7 @@ export default function GameScreen() {
 														{totals[player.id] ?? 0}
 													</ThemedText>
 												</View>
-											))
+											)),
 										)}
 									</View>
 								)}
