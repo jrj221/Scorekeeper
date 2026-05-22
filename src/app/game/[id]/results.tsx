@@ -1,3 +1,4 @@
+import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, ScrollView, StyleSheet, View } from "react-native";
@@ -6,18 +7,33 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { Player } from "@/context/games-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 
-const MEDALS = ["🥇", "🥈", "🥉"];
 const PODIUM_H = 260;
-// Heights for 1st, 2nd, 3rd place platforms
 const PLATFORM_H = [150, 108, 76];
-// Column order on podium: left=2nd, centre=1st, right=3rd
+// Column order: left=2nd(idx1), centre=1st(idx0), right=3rd(idx2)
 const COL_RANK = [1, 0, 2];
-// Stagger: 3rd rises first, then 2nd, then 1st
 const RISE_DELAYS = [500, 1000, 1500];
+
+const RANK_ICONS = [
+	{ name: "trophy", color: "#FFD700" },
+	{ name: "medal", color: "#888888" },
+	{ name: "medal", color: "#CD7F32" },
+] as const;
+
+function buildTiers(sortedPlayers: Player[], totals: Record<string, number>): Player[][] {
+	const tiers: Player[][] = [];
+	for (const p of sortedPlayers) {
+		const score = totals[p.id] ?? 0;
+		const last = tiers[tiers.length - 1];
+		if (last && (totals[last[0].id] ?? 0) === score) last.push(p);
+		else tiers.push([p]);
+	}
+	return tiers;
+}
 
 export default function ResultsScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,9 +53,10 @@ export default function ResultsScreen() {
 	const restOpacity = useRef(new Animated.Value(0)).current;
 	const restTranslateY = useRef(new Animated.Value(20)).current;
 
+	const tiers = buildTiers(sortedPlayers, totals);
+
 	useEffect(() => {
-		// Animate in order: rank-index 2 (3rd), 1 (2nd), 0 (1st), skipping missing players
-		const ranksToAnimate = [2, 1, 0].filter((rankIdx) => sortedPlayers[rankIdx] != null);
+		const ranksToAnimate = [2, 1, 0].filter((rankIdx) => (tiers[rankIdx]?.length ?? 0) > 0);
 		ranksToAnimate.forEach((rankIdx, i) => {
 			const delay = RISE_DELAYS[i];
 			setTimeout(() => {
@@ -50,7 +67,6 @@ export default function ResultsScreen() {
 					stiffness: 100,
 					mass: 0.8,
 				}).start();
-				// Name fades in after platform is ~80% risen
 				const riseDuration = (PLATFORM_H[rankIdx] / 150) * 500;
 				setTimeout(() => {
 					Animated.timing(nameOpacity[rankIdx], {
@@ -58,20 +74,10 @@ export default function ResultsScreen() {
 						duration: 300,
 						useNativeDriver: true,
 					}).start(() => {
-						// After 1st place name fades in, reveal the rest list
 						if (rankIdx === 0) {
 							Animated.parallel([
-								Animated.timing(restOpacity, {
-									toValue: 1,
-									duration: 400,
-									useNativeDriver: true,
-								}),
-								Animated.spring(restTranslateY, {
-									toValue: 0,
-									useNativeDriver: true,
-									damping: 14,
-									stiffness: 120,
-								}),
+								Animated.timing(restOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+								Animated.spring(restTranslateY, { toValue: 0, useNativeDriver: true, damping: 14, stiffness: 120 }),
 							]).start();
 						}
 					});
@@ -82,9 +88,7 @@ export default function ResultsScreen() {
 
 	if (!game) return null;
 
-	const podiumPlayers = COL_RANK.map((rankIdx) => sortedPlayers[rankIdx] ?? null);
-	const restPlayers = sortedPlayers.slice(3);
-
+	const restTiers = tiers.slice(3);
 	const accentColors = [theme.accent, theme.backgroundSelected, theme.backgroundSelected];
 
 	return (
@@ -95,31 +99,49 @@ export default function ResultsScreen() {
 					{/* Podium */}
 					<View style={[styles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}>
 						<View style={styles.podiumRow}>
-							{podiumPlayers.map((player, colIdx) => {
-								const rankIdx = COL_RANK[colIdx];
-								if (!player) return <View key={colIdx} style={styles.podiumCol} />;
+							{COL_RANK.map((rankIdx, colIdx) => {
+								const tierPlayers = tiers[rankIdx] ?? [];
+								const tierScore = tierPlayers[0] ? (totals[tierPlayers[0].id] ?? 0) : 0;
 								return (
-									<View key={player.id} style={styles.podiumCol}>
-										{/* Player info — positioned just above where platform will end */}
-										<Animated.View
-											style={[
-												styles.playerInfo,
-												{
-													bottom: PLATFORM_H[rankIdx] + Spacing.two,
-													opacity: nameOpacity[rankIdx],
-												},
-											]}
-										>
-											<ThemedText style={styles.medal}>{MEDALS[rankIdx]}</ThemedText>
-											<ThemedText style={styles.playerName} numberOfLines={2}>
-												{player.name}
-											</ThemedText>
-											<ThemedText style={[styles.playerScore, { color: theme.accent }]}>
-												{totals[player.id] ?? 0}
-											</ThemedText>
-										</Animated.View>
-
-										{/* Platform block — grows from bottom */}
+									<View key={colIdx} style={styles.podiumCol}>
+										{tierPlayers.length > 0 && (
+											<Animated.View
+												style={[
+													styles.playerInfo,
+													{
+														bottom: PLATFORM_H[rankIdx] + Spacing.two,
+														opacity: nameOpacity[rankIdx],
+													},
+												]}
+											>
+												<View
+													style={[
+														styles.rankIcon,
+														{
+															borderColor: theme.accent + "55",
+															shadowColor: theme.accent,
+															backgroundColor: theme.accent + "18",
+														},
+													]}
+												>
+													<FontAwesome5
+														name={RANK_ICONS[rankIdx].name as any}
+														size={18}
+														color={RANK_ICONS[rankIdx].color}
+													/>
+												</View>
+												<View style={styles.names}>
+													{tierPlayers.map((p) => (
+														<ThemedText key={p.id} style={styles.playerName} numberOfLines={1}>
+															{p.name}
+														</ThemedText>
+													))}
+												</View>
+												<ThemedText style={[styles.playerScore, { color: theme.accent }]}>
+													{tierScore}
+												</ThemedText>
+											</Animated.View>
+										)}
 										<Animated.View
 											style={[
 												styles.platform,
@@ -129,7 +151,6 @@ export default function ResultsScreen() {
 												},
 											]}
 										>
-											{/* Rank number on platform */}
 											<ThemedText
 												style={[
 													styles.rankNum,
@@ -145,8 +166,8 @@ export default function ResultsScreen() {
 						</View>
 					</View>
 
-					{/* Players ranked 4th and below — hidden until podium is fully revealed */}
-					{restPlayers.length > 0 && (
+					{/* 4th place and below — dense ranked, fade in after podium */}
+					{restTiers.length > 0 && (
 						<Animated.View
 							style={[
 								styles.restList,
@@ -154,22 +175,24 @@ export default function ResultsScreen() {
 								{ opacity: restOpacity, transform: [{ translateY: restTranslateY }] },
 							]}
 						>
-							{restPlayers.map((player, i) => (
-								<View
-									key={player.id}
-									style={[styles.restRow, { borderBottomColor: theme.backgroundSelected }]}
-								>
-									<ThemedText style={[styles.restRank, { color: theme.textSecondary }]}>
-										#{i + 4}
-									</ThemedText>
-									<ThemedText style={styles.restName} numberOfLines={1}>
-										{player.name}
-									</ThemedText>
-									<ThemedText style={[styles.restScore, { color: theme.text }]}>
-										{totals[player.id] ?? 0}
-									</ThemedText>
-								</View>
-							))}
+							{restTiers.map((tierPlayers, tierIdx) =>
+								tierPlayers.map((player) => (
+									<View
+										key={player.id}
+										style={[styles.restRow, { borderBottomColor: theme.backgroundSelected }]}
+									>
+										<ThemedText style={[styles.restRank, { color: theme.textSecondary }]}>
+											#{tierIdx + 4}
+										</ThemedText>
+										<ThemedText style={styles.restName} numberOfLines={1}>
+											{player.name}
+										</ThemedText>
+										<ThemedText style={[styles.restScore, { color: theme.text }]}>
+											{totals[player.id] ?? 0}
+										</ThemedText>
+									</View>
+								))
+							)}
 						</Animated.View>
 					)}
 				</ScrollView>
@@ -181,26 +204,10 @@ export default function ResultsScreen() {
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
 	podiumWrapper: { borderRadius: Spacing.two, overflow: "hidden" },
-	podiumRow: {
-		flexDirection: "row",
-		height: PODIUM_H,
-		alignItems: "flex-end",
-	},
-	podiumCol: {
-		flex: 1,
-		height: PODIUM_H,
-		position: "relative",
-		alignItems: "center",
-	},
-	playerInfo: {
-		position: "absolute",
-		left: 4,
-		right: 4,
-		alignItems: "center",
-		gap: 2,
-	},
-	medal: { fontSize: 28, lineHeight: 34 },
-	playerName: { fontSize: 13, fontWeight: "600", textAlign: "center" },
+	podiumRow: { flexDirection: "row", height: PODIUM_H, alignItems: "flex-end" },
+	podiumCol: { flex: 1, height: PODIUM_H, position: "relative", alignItems: "center" },
+	playerInfo: { position: "absolute", left: 4, right: 4, alignItems: "center", gap: 2 },
+	playerName: { fontSize: 12, fontWeight: "600", textAlign: "center" },
 	playerScore: { fontSize: 20, fontWeight: "700" },
 	platform: {
 		position: "absolute",
@@ -214,10 +221,20 @@ const styles = StyleSheet.create({
 		paddingTop: Spacing.one,
 	},
 	rankNum: { fontSize: 22, fontWeight: "700", opacity: 0.4 },
-	restList: {
-		borderRadius: Spacing.two,
-		overflow: "hidden",
+	rankIcon: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
+		borderWidth: 1.5,
+		alignItems: "center",
+		justifyContent: "center",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.5,
+		shadowRadius: 4,
+		elevation: 4,
 	},
+	names: { gap: 0, alignItems: "center" },
+	restList: { borderRadius: Spacing.two, overflow: "hidden" },
 	restRow: {
 		flexDirection: "row",
 		alignItems: "center",

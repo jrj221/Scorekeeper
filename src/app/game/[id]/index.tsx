@@ -27,6 +27,22 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 const PODIUM_H = 260;
 const PLATFORM_H = [150, 108, 76];
 const COL_RANK = [1, 0, 2];
+const RANK_ICONS = [
+	{ name: "trophy", color: "#FFD700" },
+	{ name: "medal", color: "#888888" },
+	{ name: "medal", color: "#CD7F32" },
+] as const;
+
+function buildTiers(sorted: Player[], totals: Record<string, number>): Player[][] {
+	const tiers: Player[][] = [];
+	for (const p of sorted) {
+		const score = totals[p.id] ?? 0;
+		const last = tiers[tiers.length - 1];
+		if (last && (totals[last[0].id] ?? 0) === score) last.push(p);
+		else tiers.push([p]);
+	}
+	return tiers;
+}
 
 export default function GameScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -426,32 +442,32 @@ export default function GameScreen() {
 													{ backgroundColor: theme.backgroundSelected },
 												]}
 											>
-												{sortedPlayers.map((p, i) => (
-													<View
-														key={p.id}
-														style={[styles.nameCell, { width: colW, height: ROW_H }]}
-													>
-														{finished ? (
-															<HapticButton
-																onPress={() => router.push(`/player/${p.id}`)}
-															>
-																<ThemedText style={styles.colHeader} numberOfLines={1}>
-																	{firstRoundComplete && i < MEDALS.length
-																		? MEDALS[i] + " "
-																		: ""}
-																	{p.name}
-																</ThemedText>
-															</HapticButton>
-														) : (
-															<ThemedText style={styles.colHeader} numberOfLines={1}>
-																{firstRoundComplete && i < MEDALS.length
-																	? MEDALS[i] + " "
-																	: ""}
-																{p.name}
-															</ThemedText>
-														)}
-													</View>
-												))}
+												{(() => {
+													const rankMap = new Map(
+														buildTiers(sortedPlayers, totals).flatMap((tier, ti) =>
+															tier.map((p) => [p.id, ti])
+														)
+													);
+													return sortedPlayers.map((p) => {
+														const ri = rankMap.get(p.id) ?? 99;
+														const medal = firstRoundComplete && ri < MEDALS.length ? MEDALS[ri] + " " : "";
+														return (
+															<View key={p.id} style={[styles.nameCell, { width: colW, height: ROW_H }]}>
+																{finished ? (
+																	<HapticButton onPress={() => router.push(`/player/${p.id}`)}>
+																		<ThemedText style={styles.colHeader} numberOfLines={1}>
+																			{medal}{p.name}
+																		</ThemedText>
+																	</HapticButton>
+																) : (
+																	<ThemedText style={styles.colHeader} numberOfLines={1}>
+																		{medal}{p.name}
+																	</ThemedText>
+																)}
+															</View>
+														);
+													});
+												})()}
 											</View>
 
 											{/* Score rows */}
@@ -552,8 +568,8 @@ export default function GameScreen() {
 				{viewMode === "results" &&
 					finished &&
 					(() => {
-						const podiumPlayers = COL_RANK.map((rankIdx) => sortedPlayers[rankIdx] ?? null);
-						const restPlayers = sortedPlayers.slice(3);
+						const tiers = buildTiers(sortedPlayers, totals);
+						const restTiers = tiers.slice(3);
 						const accentColors = [CURRENT_TINT, theme.backgroundSelected, theme.backgroundSelected];
 						return (
 							<ScrollView
@@ -565,29 +581,52 @@ export default function GameScreen() {
 									style={[podiumStyles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}
 								>
 									<View style={[podiumStyles.podiumRow, { height: PODIUM_H }]}>
-										{podiumPlayers.map((player, colIdx) => {
-											const rankIdx = COL_RANK[colIdx];
-											if (!player) return <View key={colIdx} style={podiumStyles.podiumCol} />;
+										{COL_RANK.map((rankIdx, colIdx) => {
+											const tierPlayers = tiers[rankIdx] ?? [];
+											const tierScore = tierPlayers[0] ? (totals[tierPlayers[0].id] ?? 0) : 0;
 											return (
-												<View key={player.id} style={podiumStyles.podiumCol}>
-													<View
-														style={[
-															podiumStyles.playerInfo,
-															{ bottom: PLATFORM_H[rankIdx] + Spacing.two },
-														]}
-													>
-														<ThemedText style={podiumStyles.medal}>
-															{MEDALS[rankIdx]}
-														</ThemedText>
-														<ThemedText style={podiumStyles.playerName} numberOfLines={2}>
-															{player.name}
-														</ThemedText>
-														<ThemedText
-															style={[podiumStyles.playerScore, { color: CURRENT_TINT }]}
+												<View key={colIdx} style={podiumStyles.podiumCol}>
+													{tierPlayers.length > 0 && (
+														<View
+															style={[
+																podiumStyles.playerInfo,
+																{ bottom: PLATFORM_H[rankIdx] + Spacing.two },
+															]}
 														>
-															{totals[player.id] ?? 0}
-														</ThemedText>
-													</View>
+															<View
+																style={[
+																	podiumStyles.rankIcon,
+																	{
+																		borderColor: CURRENT_TINT + "55",
+																		shadowColor: CURRENT_TINT,
+																		backgroundColor: CURRENT_TINT + "18",
+																	},
+																]}
+															>
+																<FontAwesome5
+																	name={RANK_ICONS[rankIdx].name as any}
+																	size={18}
+																	color={RANK_ICONS[rankIdx].color}
+																/>
+															</View>
+															<View style={podiumStyles.names}>
+																{tierPlayers.map((p: Player) => (
+																	<ThemedText
+																		key={p.id}
+																		style={podiumStyles.playerName}
+																		numberOfLines={1}
+																	>
+																		{p.name}
+																	</ThemedText>
+																))}
+															</View>
+															<ThemedText
+																style={[podiumStyles.playerScore, { color: CURRENT_TINT }]}
+															>
+																{tierScore}
+															</ThemedText>
+														</View>
+													)}
 													<View
 														style={[
 															podiumStyles.platform,
@@ -617,30 +656,32 @@ export default function GameScreen() {
 									</View>
 								</View>
 
-								{/* 4th place and below */}
-								{restPlayers.length > 0 && (
+								{/* 4th place and below — dense ranked */}
+								{restTiers.length > 0 && (
 									<View style={[podiumStyles.restList, { backgroundColor: theme.backgroundElement }]}>
-										{restPlayers.map((player, i) => (
-											<View
-												key={player.id}
-												style={[
-													podiumStyles.restRow,
-													{ borderBottomColor: theme.backgroundSelected },
-												]}
-											>
-												<ThemedText
-													style={[podiumStyles.restRank, { color: theme.textSecondary }]}
+										{restTiers.map((tierPlayers: Player[], tierIdx: number) =>
+											tierPlayers.map((player: Player) => (
+												<View
+													key={player.id}
+													style={[
+														podiumStyles.restRow,
+														{ borderBottomColor: theme.backgroundSelected },
+													]}
 												>
-													#{i + 4}
-												</ThemedText>
-												<ThemedText style={podiumStyles.restName} numberOfLines={1}>
-													{player.name}
-												</ThemedText>
-												<ThemedText style={[podiumStyles.restScore, { color: theme.text }]}>
-													{totals[player.id] ?? 0}
-												</ThemedText>
-											</View>
-										))}
+													<ThemedText
+														style={[podiumStyles.restRank, { color: theme.textSecondary }]}
+													>
+														#{tierIdx + 4}
+													</ThemedText>
+													<ThemedText style={podiumStyles.restName} numberOfLines={1}>
+														{player.name}
+													</ThemedText>
+													<ThemedText style={[podiumStyles.restScore, { color: theme.text }]}>
+														{totals[player.id] ?? 0}
+													</ThemedText>
+												</View>
+											))
+										)}
 									</View>
 								)}
 							</ScrollView>
@@ -924,6 +965,19 @@ const podiumStyles = StyleSheet.create({
 		paddingTop: Spacing.one,
 	},
 	rankNum: { fontSize: 22, fontWeight: "700", opacity: 0.4 },
+	rankIcon: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
+		borderWidth: 1.5,
+		alignItems: "center",
+		justifyContent: "center",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.5,
+		shadowRadius: 4,
+		elevation: 4,
+	},
+	names: { gap: 0, alignItems: "center" },
 	restList: { borderRadius: Spacing.two, overflow: "hidden" },
 	restRow: {
 		flexDirection: "row",

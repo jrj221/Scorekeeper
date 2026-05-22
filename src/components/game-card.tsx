@@ -24,29 +24,28 @@ const sameDay = (a: number, b: number) => {
 	return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
 };
 
-function winnerSuffix(game: Game): string {
-	if (!game.finishedAt || game.players.length === 0) return "";
+function winnerInfo(game: Game): { icon: string; label: string } | null {
+	if (!game.finishedAt || game.players.length === 0) return null;
 	const totals = getGameTotals(game);
 	const scores = game.players.map(p => ({ ...p, total: totals[p.id] ?? 0 }));
 	const best = game.rankByLowest
 		? Math.min(...scores.map(s => s.total))
 		: Math.max(...scores.map(s => s.total));
 	const winners = scores.filter(s => s.total === best);
-	if (winners.length === 1) return `  ·  🏆 ${winners[0].name}`;
-	return `  ·  🤝 ${winners.length}-way Tie`;
+	if (winners.length === 1) return { icon: "trophy", label: winners[0].name };
+	return { icon: "handshake", label: `${winners.length}-way Tie` };
 }
 
 export function GameCard({ game, onPress, onDelete }: Props) {
 	const theme = useTheme();
 	const finished = !!game.finishedAt;
+	const winner = winnerInfo(game);
 
 	const subtitle = finished
 		? sameDay(game.createdAt, game.finishedAt!)
 			? `${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
 			: `${fmt(game.createdAt)} – ${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
 		: `${game.players.length} player${game.players.length !== 1 ? "s" : ""}  ·  Round ${game.rounds.length}`;
-
-	const displayName = finished ? `${game.name}${winnerSuffix(game)}` : game.name;
 
 	return (
 		<HapticButton
@@ -62,11 +61,21 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 			</View>
 			<View style={homeStyles.cardContent}>
 				<ThemedText type="default" style={finished ? { opacity: 0.75 } : undefined} numberOfLines={1}>
-					{displayName}
+					{game.name}
 				</ThemedText>
-				<ThemedText type="small" themeColor="textSecondary">
-					{subtitle}
-				</ThemedText>
+				{winner && (
+					<View style={styles.winnerRow}>
+						<FontAwesome5 name={winner.icon as any} size={10} color={theme.textSecondary} />
+						<ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+							{"  "}{winner.label}{"  ·  "}{subtitle}
+						</ThemedText>
+					</View>
+				)}
+				{!winner && (
+					<ThemedText type="small" themeColor="textSecondary">
+						{subtitle}
+					</ThemedText>
+				)}
 			</View>
 			<HapticButton onPress={onDelete} hitSlop={8}>
 				<SymbolView name="trash" size={16} tintColor={theme.textSecondary} />
@@ -76,11 +85,16 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 }
 
 const styles = StyleSheet.create({
-	finished: {
-		opacity: 0.85 },
+	finished: { opacity: 0.85 },
 	iconContainer: {
 		width: 44,
 		alignSelf: "stretch",
 		borderRadius: 8,
 		alignItems: "center",
-		justifyContent: "center" } });
+		justifyContent: "center",
+	},
+	winnerRow: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+});
