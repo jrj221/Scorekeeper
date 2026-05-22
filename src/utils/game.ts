@@ -92,7 +92,7 @@ export function getTurnState(game: Game, roundIndex: number): {
     if (idx !== -1) baseIndex = idx;
   }
 
-  const firstIdx = (baseIndex + roundIndex) % n;
+  const firstIdx = ((baseIndex - roundIndex) % n + n) % n;
   const firstPlayerId = order[firstIdx];
   const orderedIds = [...order.slice(firstIdx), ...order.slice(0, firstIdx)];
 

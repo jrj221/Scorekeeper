@@ -1,8 +1,9 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Alert, Dimensions, ScrollView, StyleSheet, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
@@ -20,6 +21,7 @@ const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
 const ROUND_LABEL_W = 48;
 const ROW_H = 44;
+const ROTATION_MS = 400;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -46,6 +48,59 @@ export default function GameScreen() {
 	const [viewMode, setViewMode] = useState<"scores" | "turns" | "results">(game?.finishedAt ? "scores" : "turns");
 	const leftScrollRef = useRef<ScrollView>(null);
 	const mainScrollRef = useRef<ScrollView>(null);
+
+	// Turn order rotation animation.
+	// Ghost = the OLD first player appended below the list.
+	// We animate slideY: 0 → -ROW_H (slide up).
+	// At animation end: visible rows are [new[0], new[1], ..., new[n-2], ghost]
+	// which maps exactly to new order at slideY=0 → snap is invisible.
+	const [displayedOrder, setDisplayedOrder] = useState<string[]>(() =>
+		game ? getTurnState(game, 0).orderedIds : [],
+	);
+	const displayedOrderRef = useRef(displayedOrder);
+	const [ghostId, setGhostId] = useState<string | null>(null);
+	const slideY = useSharedValue(0);
+	const prevRoundRef = useRef(currentRoundIndex);
+	const pendingOrderRef = useRef<string[]>([]);
+	const isAnimatingRef = useRef(false);
+
+	useEffect(() => { displayedOrderRef.current = displayedOrder; }, [displayedOrder]);
+
+	const turnListAnimatedStyle = useAnimatedStyle(() => ({
+		transform: [{ translateY: slideY.value }],
+	}));
+
+	// Detect round change → capture old first player as ghost, queue new order
+	useEffect(() => {
+		if (!game) return;
+		const newOrder = getTurnState(game, currentRoundIndex).orderedIds;
+		if (prevRoundRef.current === currentRoundIndex) {
+			if (!isAnimatingRef.current) setDisplayedOrder(newOrder);
+			return;
+		}
+		prevRoundRef.current = currentRoundIndex;
+		pendingOrderRef.current = newOrder;
+		setGhostId(newOrder[0] ?? null); // new first player (old bottom) enters from top
+	}, [currentRoundIndex, game]);
+
+	// After ghost renders below the list, slide everything up
+	useEffect(() => {
+		if (!ghostId) return;
+		isAnimatingRef.current = true;
+		slideY.value = withTiming(ROW_H, { duration: ROTATION_MS });
+		const t = setTimeout(() => {
+			isAnimatingRef.current = false;
+			setDisplayedOrder(pendingOrderRef.current);
+			setGhostId(null);
+		}, ROTATION_MS);
+		return () => clearTimeout(t);
+	}, [ghostId]);
+
+	// Snap slideY back to 0 after new order commits — seamless because end-of-animation
+	// positions match the new order at translateY=0 exactly.
+	useLayoutEffect(() => {
+		if (!ghostId) slideY.value = 0;
+	}, [ghostId]);
 	const handleMainScroll = useCallback((e: any) => {
 		leftScrollRef.current?.scrollTo({ y: e.nativeEvent.contentOffset.y, animated: false });
 	}, []);
@@ -202,9 +257,8 @@ export default function GameScreen() {
 				{/* Current Turn view */}
 				{viewMode === "turns" && !finished
 					? (() => {
-							const { firstPlayerId, dealerId, orderedIds } = getTurnState(game, currentRoundIndex);
+							const { firstPlayerId, dealerId } = getTurnState(game, currentRoundIndex);
 							const playerMap = Object.fromEntries(game.players.map((p) => [p.id, p]));
-							const displayOrder = orderedIds;
 							const allScored =
 								game.players.length > 0 &&
 								game.players.every((p) => getScore(currentRoundIndex, p.id) !== null);
@@ -235,92 +289,130 @@ export default function GameScreen() {
 											Points so far
 										</ThemedText>
 									</View>
-									<ScrollView
-										style={[styles.turnList, { flex: 1 }]}
-										showsVerticalScrollIndicator={false}
-									>
-										{displayOrder.map((pid) => {
-											const p = playerMap[pid];
-											if (!p) return null;
-											const isDealer = pid === dealerId;
-											const hasScore = getScore(currentRoundIndex, pid) !== null;
-											return (
-												<HapticButton
-													key={pid}
-													style={[
-														styles.turnRow,
-														{ borderBottomColor: theme.backgroundSelected },
-													]}
-													onPress={() =>
-														router.push(
-															`/game/${id}/score-player?playerId=${pid}&roundIndex=${currentRoundIndex}`,
-														)
-													}
-													activeOpacity={0.7}
-												>
-													<View style={styles.turnNameRow}>
-														<ThemedText style={styles.turnName} numberOfLines={1}>
-															{p.name}
-														</ThemedText>
-														{hasScore && (
-															<ThemedText
-																style={[styles.turnCheckmark, { color: CURRENT_TINT }]}
-															>
-																✓
+									{/* Fixed-height clipped container so rows slide in/out cleanly */}
+									<View style={[styles.turnList, { height: displayedOrder.length * ROW_H }]}>
+										<Animated.View style={turnListAnimatedStyle}>
+											{/* Ghost: new first player (old bottom) enters from above */}
+											{ghostId && playerMap[ghostId] && (() => {
+												const gp = playerMap[ghostId];
+												const isDealer = ghostId === dealerId;
+												const hasScore = getScore(currentRoundIndex, ghostId) !== null;
+												const roundScore = getScore(currentRoundIndex, ghostId);
+												const prevTotal = (totals[ghostId] ?? 0) - (roundScore ?? 0);
+												return (
+													<View style={[styles.turnRow, { height: ROW_H, marginTop: -ROW_H, borderBottomColor: theme.backgroundSelected }]}>
+														<View style={styles.turnNameRow}>
+															<ThemedText style={styles.turnName} numberOfLines={1}>{gp.name}</ThemedText>
+															{hasScore && <ThemedText style={[styles.turnCheckmark, { color: CURRENT_TINT }]}>✓</ThemedText>}
+															{isDealer && (
+																<View style={[styles.dealerBadge, { backgroundColor: CURRENT_TINT + "20" }]}>
+																	<ThemedText style={[styles.dealerLabel, { color: CURRENT_TINT }]}>DEALER</ThemedText>
+																</View>
+															)}
+														</View>
+														<View style={styles.turnScoreArea}>
+															<View style={styles.turnScoreRow}>
+																<ThemedText style={styles.turnScore}>{prevTotal}</ThemedText>
+																{roundScore !== null && (
+																	<ThemedText style={[styles.turnScoreDelta, { color: roundScore < 0 ? theme.danger : theme.text }]}>
+																		{roundScore >= 0 ? ` +${roundScore}` : ` ${roundScore}`}
+																	</ThemedText>
+																)}
+															</View>
+														</View>
+													</View>
+												);
+											})()}
+											{displayedOrder.map((pid: string) => {
+												const p = playerMap[pid];
+												if (!p) return null;
+												const isDealer = pid === dealerId;
+												const hasScore = getScore(currentRoundIndex, pid) !== null;
+												return (
+													<HapticButton
+														key={pid}
+														style={[
+															styles.turnRow,
+															{
+																height: ROW_H,
+																borderBottomColor: theme.backgroundSelected,
+															},
+														]}
+														onPress={() =>
+															router.push(
+																`/game/${id}/score-player?playerId=${pid}&roundIndex=${currentRoundIndex}`,
+															)
+														}
+														activeOpacity={0.7}
+													>
+														<View style={styles.turnNameRow}>
+															<ThemedText style={styles.turnName} numberOfLines={1}>
+																{p.name}
 															</ThemedText>
-														)}
-														{isDealer && (
-															<View
-																style={[
-																	styles.dealerBadge,
-																	{ backgroundColor: CURRENT_TINT + "20" },
-																]}
-															>
+															{hasScore && (
 																<ThemedText
 																	style={[
-																		styles.dealerLabel,
+																		styles.turnCheckmark,
 																		{ color: CURRENT_TINT },
 																	]}
 																>
-																	DEALER
+																	✓
 																</ThemedText>
-															</View>
-														)}
-													</View>
-													<View style={styles.turnScoreArea}>
-														{(() => {
-															const roundScore = getScore(currentRoundIndex, pid);
-															const prevTotal = (totals[pid] ?? 0) - (roundScore ?? 0);
-															return (
-																<View style={styles.turnScoreRow}>
-																	<ThemedText style={styles.turnScore}>
-																		{prevTotal}
+															)}
+															{isDealer && (
+																<View
+																	style={[
+																		styles.dealerBadge,
+																		{ backgroundColor: CURRENT_TINT + "20" },
+																	]}
+																>
+																	<ThemedText
+																		style={[
+																			styles.dealerLabel,
+																			{ color: CURRENT_TINT },
+																		]}
+																	>
+																		DEALER
 																	</ThemedText>
-																	{roundScore !== null && (
-																		<ThemedText
-																			style={[
-																				styles.turnScoreDelta,
-																				{
-																					color:
-																						roundScore < 0
-																							? theme.danger
-																							: theme.text,
-																				},
-																			]}
-																		>
-																			{roundScore >= 0
-																				? ` +${roundScore}`
-																				: ` ${roundScore}`}
-																		</ThemedText>
-																	)}
 																</View>
-															);
-														})()}
-													</View>
-												</HapticButton>
-											);
-										})}
-									</ScrollView>
+															)}
+														</View>
+														<View style={styles.turnScoreArea}>
+															{(() => {
+																const roundScore = getScore(currentRoundIndex, pid);
+																const prevTotal =
+																	(totals[pid] ?? 0) - (roundScore ?? 0);
+																return (
+																	<View style={styles.turnScoreRow}>
+																		<ThemedText style={styles.turnScore}>
+																			{prevTotal}
+																		</ThemedText>
+																		{roundScore !== null && (
+																			<ThemedText
+																				style={[
+																					styles.turnScoreDelta,
+																					{
+																						color:
+																							roundScore < 0
+																								? theme.danger
+																								: theme.text,
+																					},
+																				]}
+																			>
+																				{roundScore >= 0
+																					? ` +${roundScore}`
+																					: ` ${roundScore}`}
+																			</ThemedText>
+																		)}
+																	</View>
+																);
+															})()}
+														</View>
+													</HapticButton>
+												);
+											})}
+										</Animated.View>
+									</View>
 									{allScored && (
 										<HapticButton
 											style={[styles.nextRoundBtn, { backgroundColor: CURRENT_TINT }]}
