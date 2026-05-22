@@ -37,8 +37,10 @@ export default function HomeScreen() {
 	const active = games.filter((g) => !g.finishedAt);
 	const finished = games.filter((g) => !!g.finishedAt).sort((a, b) => b.finishedAt! - a.finishedAt!);
 
+	const showInProgress = active.length > 0 || finished.length > 0;
+
 	const sections = [
-		...(active.length > 0 ? [{ title: "In Progress", data: active }] : []),
+		...(showInProgress ? [{ title: "In Progress", data: active }] : []),
 		...(finished.length > 0 ? [{ title: "Finished", data: finished }] : []),
 	];
 
@@ -74,6 +76,13 @@ export default function HomeScreen() {
 								</ThemedText>
 							</View>
 						)}
+						renderSectionFooter={({ section }) =>
+							section.title === "In Progress" && section.data.length === 0 ? (
+								<ThemedText type="small" themeColor="textSecondary" style={styles.emptyHint}>
+									No games in progress. Grab a few friends and get one started!
+								</ThemedText>
+							) : null
+						}
 						renderItem={({ item }) => (
 							<GameCard
 								game={item}
@@ -106,5 +115,8 @@ const styles = StyleSheet.create({
 		fontSize: 11,
 		fontWeight: "600",
 		letterSpacing: 0.8,
+	},
+	emptyHint: {
+		fontSize: 12,
 	},
 });
