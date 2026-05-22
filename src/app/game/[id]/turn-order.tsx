@@ -17,6 +17,48 @@ import { shared } from "@/styles/shared";
 
 type Item = { id: string; name: string };
 
+type RowProps = {
+	item: Item;
+	drag: () => void;
+	isActive: boolean;
+};
+
+function Row({ item, drag, isActive }: RowProps) {
+	const theme = useTheme();
+	const highlightAnim = useRef(new Animated.Value(0)).current;
+
+	useEffect(() => {
+		Animated.timing(highlightAnim, {
+			toValue: isActive ? 1 : 0,
+			duration: 150,
+			useNativeDriver: false,
+		}).start();
+	}, [isActive, highlightAnim]);
+
+	const backgroundColor = highlightAnim.interpolate({
+		inputRange: [0, 1],
+		outputRange: [theme.backgroundElement, theme.backgroundSelected],
+	});
+
+	return (
+		<HapticButton
+			onLongPress={drag}
+			delayLongPress={150}
+			activeOpacity={1}
+			style={[styles.row, { borderBottomColor: theme.backgroundSelected }]}
+		>
+			<Animated.View style={[StyleSheet.absoluteFill, { backgroundColor, borderRadius: Spacing.two }]} />
+			<ThemedText style={styles.name}>{item.name}</ThemedText>
+			{/* Pressing the handle starts drag immediately; long-pressing anywhere else also works */}
+			<Pressable onPressIn={drag} hitSlop={8} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+				<SymbolView name="line.3.horizontal" size={18} tintColor={theme.textSecondary} />
+			</Pressable>
+		</HapticButton>
+	);
+}
+
+const FOOTER_FADE_MS = 180;
+
 export default function TurnOrderScreen() {
 	const theme = useTheme();
 	const router = useRouter();
@@ -32,8 +74,21 @@ export default function TurnOrderScreen() {
 	).map((pid) => ({ id: pid, name: playerMap[pid]?.name ?? pid }));
 
 	const [order, setOrder] = useState<Item[]>(initialOrder);
+	const [footerVisible, setFooterVisible] = useState(false);
+	const footerOpacity = useRef(new Animated.Value(0)).current;
 
 	const isDirty = JSON.stringify(order.map((i) => i.id)) !== JSON.stringify(initialOrder.map((i) => i.id));
+
+	useEffect(() => {
+		if (isDirty) {
+			setFooterVisible(true);
+			Animated.timing(footerOpacity, { toValue: 1, duration: FOOTER_FADE_MS, useNativeDriver: true }).start();
+		} else {
+			Animated.timing(footerOpacity, { toValue: 0, duration: FOOTER_FADE_MS, useNativeDriver: true }).start(
+				() => setFooterVisible(false)
+			);
+		}
+	}, [isDirty, footerOpacity]);
 
 	// Pulse animation for footer when user tries to back with unsaved changes
 	const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -77,23 +132,9 @@ export default function TurnOrderScreen() {
 		outputRange: ["transparent", theme.accent],
 	});
 
-	const renderItem = ({ item, drag }: RenderItemParams<Item>) => (
+	const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => (
 		<ScaleDecorator activeScale={1.03}>
-			<HapticButton
-				onLongPress={drag}
-				delayLongPress={150}
-				activeOpacity={1}
-				style={[
-					styles.row,
-					{ backgroundColor: theme.backgroundElement, borderBottomColor: theme.backgroundSelected },
-				]}
-			>
-				<ThemedText style={styles.name}>{item.name}</ThemedText>
-				{/* Pressing the handle starts drag immediately; long-pressing anywhere else also works */}
-				<Pressable onPressIn={drag} hitSlop={16} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
-					<SymbolView name="line.3.horizontal" size={18} tintColor={theme.textSecondary} />
-				</Pressable>
-			</HapticButton>
+			<Row item={item} drag={drag} isActive={isActive} />
 		</ScaleDecorator>
 	);
 
@@ -101,58 +142,57 @@ export default function TurnOrderScreen() {
 		<ThemedView style={shared.screen}>
 			<Stack.Screen options={{ title: "Turn Order", gestureEnabled: !isDirty }} />
 			<SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
-					<ThemedText
+				<ThemedText
+					style={[
+						forms.hint,
+						{
+							color: theme.textSecondary,
+							paddingHorizontal: Spacing.three,
+							paddingVertical: Spacing.two,
+						},
+					]}
+				>
+					Hold to drag and drop to reorder players.
+				</ThemedText>
+
+				<DraggableFlatList
+					data={order}
+					keyExtractor={(item) => item.id}
+					onDragEnd={({ data }) => setOrder(data)}
+					renderItem={renderItem}
+					containerStyle={{ flex: 1 }}
+					contentContainerStyle={styles.listContent}
+					activationDistance={10}
+				/>
+
+				{footerVisible && (
+					<Animated.View
 						style={[
-							forms.hint,
+							styles.footer,
 							{
-								color: theme.textSecondary,
-								paddingHorizontal: Spacing.three,
-								paddingVertical: Spacing.two,
+								borderWidth: 2,
+								borderColor: footerBorderColor,
+								borderRadius: Spacing.two,
+								margin: Spacing.three,
+								opacity: footerOpacity,
 							},
 						]}
 					>
-						Hold to drag and drop to reorder players.
-					</ThemedText>
-
-					<DraggableFlatList
-						data={order}
-						keyExtractor={(item) => item.id}
-						onDragEnd={({ data }) => setOrder(data)}
-						renderItem={renderItem}
-						containerStyle={{ flex: 1 }}
-						contentContainerStyle={styles.listContent}
-					/>
-
-					{isDirty && (
-						<Animated.View
-							style={[
-								styles.footer,
-								{
-									borderWidth: 2,
-									borderColor: footerBorderColor,
-									borderRadius: Spacing.two,
-									margin: Spacing.three,
-								},
-							]}
+						<HapticButton
+							style={[styles.revertBtn, { backgroundColor: theme.backgroundElement }]}
+							onPress={handleRevert}
 						>
-							<HapticButton
-								style={[styles.revertBtn, { backgroundColor: theme.backgroundElement }]}
-								onPress={handleRevert}
-							>
-								<ThemedText type="small" themeColor="textSecondary">
-									Revert
-								</ThemedText>
-							</HapticButton>
-							<HapticButton
-								style={[styles.saveBtn, { backgroundColor: theme.accent }]}
-								onPress={handleSave}
-							>
-								<ThemedText type="smallBold" style={{ color: theme.accentText }}>
-									Save Order
-								</ThemedText>
-							</HapticButton>
-						</Animated.View>
-					)}
+							<ThemedText type="small" themeColor="textSecondary">
+								Revert
+							</ThemedText>
+						</HapticButton>
+						<HapticButton style={[styles.saveBtn, { backgroundColor: theme.accent }]} onPress={handleSave}>
+							<ThemedText type="smallBold" style={{ color: theme.accentText }}>
+								Save Order
+							</ThemedText>
+						</HapticButton>
+					</Animated.View>
+				)}
 			</SafeAreaView>
 		</ThemedView>
 	);
@@ -170,6 +210,7 @@ const styles = StyleSheet.create({
 		paddingVertical: Spacing.three,
 		gap: Spacing.two,
 		marginBottom: Spacing.two,
+		overflow: "hidden",
 	},
 	name: { flex: 1, fontSize: 16 },
 	footer: {
