@@ -1,9 +1,9 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Alert, Dimensions, ScrollView, StyleSheet, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
@@ -46,8 +46,14 @@ export default function GameScreen() {
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
 	const finished = !!game?.finishedAt;
 	const [viewMode, setViewMode] = useState<"scores" | "turns" | "results">(game?.finishedAt ? "scores" : "turns");
-	const leftScrollRef = useRef<ScrollView>(null);
-	const mainScrollRef = useRef<ScrollView>(null);
+	// Scorecard vertical sync — runs on UI thread, no JS-bridge lag
+	const scorecardScrollY = useSharedValue(0);
+	const scorecardScrollHandler = useAnimatedScrollHandler((e) => {
+		scorecardScrollY.value = e.contentOffset.y;
+	});
+	const roundLabelAnimStyle = useAnimatedStyle(() => ({
+		transform: [{ translateY: -scorecardScrollY.value }],
+	}));
 
 	// Turn order rotation animation.
 	// Ghost = the OLD first player appended below the list.
@@ -106,9 +112,6 @@ export default function GameScreen() {
 	useLayoutEffect(() => {
 		if (ghostIds.length === 0) slideY.value = 0;
 	}, [ghostIds]);
-	const handleMainScroll = useCallback((e: any) => {
-		leftScrollRef.current?.scrollTo({ y: e.nativeEvent.contentOffset.y, animated: false });
-	}, []);
 
 	const isFinalRound = game?.totalRounds !== undefined && currentRoundIndex >= game.totalRounds - 1;
 
@@ -475,35 +478,32 @@ export default function GameScreen() {
 												{ height: ROW_H, backgroundColor: theme.backgroundSelected },
 											]}
 										/>
-										<ScrollView
-											ref={leftScrollRef}
-											scrollEnabled={false}
-											showsVerticalScrollIndicator={false}
-											style={{ maxHeight: MAX_VISIBLE_ROWS * ROW_H }}
-										>
-											{rounds.map((ri) => {
-												const isCurrent = ri === currentRoundIndex && !finished;
-												return (
-													<View
-														key={ri}
-														style={[
-															styles.labelCell,
-															{ height: ROW_H, backgroundColor: rowBg(ri) },
-															isCurrent && { backgroundColor: CURRENT_ROW_BG },
-														]}
-													>
-														<ThemedText
+										<View style={{ maxHeight: MAX_VISIBLE_ROWS * ROW_H, overflow: "hidden" }}>
+											<Animated.View style={roundLabelAnimStyle}>
+												{rounds.map((ri) => {
+													const isCurrent = ri === currentRoundIndex && !finished;
+													return (
+														<View
+															key={ri}
 															style={[
-																styles.labelText,
-																isCurrent && { color: CURRENT_TINT },
+																styles.labelCell,
+																{ height: ROW_H, backgroundColor: rowBg(ri) },
+																isCurrent && { backgroundColor: CURRENT_ROW_BG },
 															]}
 														>
-															{ri + 1}
-														</ThemedText>
-													</View>
-												);
-											})}
-										</ScrollView>
+															<ThemedText
+																style={[
+																	styles.labelText,
+																	isCurrent && { color: CURRENT_TINT },
+																]}
+															>
+																{ri + 1}
+															</ThemedText>
+														</View>
+													);
+												})}
+											</Animated.View>
+										</View>
 										<View
 											style={[
 												styles.labelCell,
@@ -587,10 +587,9 @@ export default function GameScreen() {
 											</View>
 
 											{/* Score rows */}
-											<ScrollView
-												ref={mainScrollRef}
-												onScroll={handleMainScroll}
-												scrollEventThrottle={16}
+											<Animated.ScrollView
+												onScroll={scorecardScrollHandler}
+												scrollEventThrottle={1}
 												showsVerticalScrollIndicator={false}
 												style={{ maxHeight: MAX_VISIBLE_ROWS * ROW_H }}
 												scrollEnabled={rounds.length > MAX_VISIBLE_ROWS}
@@ -647,7 +646,7 @@ export default function GameScreen() {
 														</View>
 													);
 												})}
-											</ScrollView>
+											</Animated.ScrollView>
 
 											{/* Total row */}
 											<View
