@@ -55,8 +55,13 @@ export function getPlayerWinRate(playerId: string, games: Game[]): string {
 }
 
 function deterministicIdx(gameId: string, roundIndex: number, n: number): number {
-  const seed = parseInt(gameId.replace(/\D/g, '').slice(-8) || '0') + roundIndex * 7919;
-  return Math.abs(seed) % n;
+  const base = parseInt(gameId.replace(/\D/g, '').slice(-6) || '1') || 1;
+  // Murmur-style integer hash — avoids the n-1 aliasing of a simple step
+  let h = Math.imul(roundIndex + 1, base);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = h ^ (h >>> 16);
+  return Math.abs(h) % n;
 }
 
 /** Returns the effective turn order, first player, and dealer for a given round. */
@@ -92,7 +97,15 @@ export function getTurnState(game: Game, roundIndex: number): {
     if (idx !== -1) baseIndex = idx;
   }
 
-  const firstIdx = ((baseIndex - roundIndex) % n + n) % n;
+  // No firstPlayerId = random mode: pseudo-random, never same player twice in a row
+  const firstIdx = !game.firstPlayerId
+    ? (() => {
+        const idx = deterministicIdx(game.id, roundIndex, n);
+        if (roundIndex === 0 || n <= 1) return idx;
+        const prevIdx = deterministicIdx(game.id, roundIndex - 1, n);
+        return idx === prevIdx ? (idx + 1) % n : idx;
+      })()
+    : ((baseIndex - roundIndex) % n + n) % n;
   const firstPlayerId = order[firstIdx];
   const orderedIds = [...order.slice(firstIdx), ...order.slice(0, firstIdx)];
 

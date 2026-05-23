@@ -58,7 +58,8 @@ export default function GameScreen() {
 		game ? getTurnState(game, 0).orderedIds : [],
 	);
 	const displayedOrderRef = useRef(displayedOrder);
-	const [ghostId, setGhostId] = useState<string | null>(null);
+	// ghostIds: the players entering from the top (K of them for a K-slot scroll)
+	const [ghostIds, setGhostIds] = useState<string[]>([]);
 	const slideY = useSharedValue(0);
 	const prevRoundRef = useRef(currentRoundIndex);
 	const pendingOrderRef = useRef<string[]>([]);
@@ -70,7 +71,7 @@ export default function GameScreen() {
 		transform: [{ translateY: slideY.value }],
 	}));
 
-	// Detect round change → capture old first player as ghost, queue new order
+	// Detect round change → compute how many slots to scroll (K), set K ghost rows
 	useEffect(() => {
 		if (!game) return;
 		const newOrder = getTurnState(game, currentRoundIndex).orderedIds;
@@ -80,27 +81,31 @@ export default function GameScreen() {
 		}
 		prevRoundRef.current = currentRoundIndex;
 		pendingOrderRef.current = newOrder;
-		setGhostId(newOrder[0] ?? null); // new first player (old bottom) enters from top
+		const old = displayedOrderRef.current;
+		const j = old.indexOf(newOrder[0]);
+		// K = right-rotation distance: how far newOrder[0] is from the bottom
+		const K = j <= 0 ? 1 : old.length - j;
+		setGhostIds(newOrder.slice(0, K));
 	}, [currentRoundIndex, game]);
 
-	// After ghost renders below the list, slide everything up
+	// After K ghost rows render above the list, slide everything down by K slots
 	useEffect(() => {
-		if (!ghostId) return;
+		if (ghostIds.length === 0) return;
 		isAnimatingRef.current = true;
-		slideY.value = withTiming(ROW_H, { duration: ROTATION_MS });
+		slideY.value = withTiming(ghostIds.length * ROW_H, { duration: ROTATION_MS });
 		const t = setTimeout(() => {
 			isAnimatingRef.current = false;
 			setDisplayedOrder(pendingOrderRef.current);
-			setGhostId(null);
+			setGhostIds([]);
 		}, ROTATION_MS);
 		return () => clearTimeout(t);
-	}, [ghostId]);
+	}, [ghostIds]);
 
-	// Snap slideY back to 0 after new order commits — seamless because end-of-animation
-	// positions match the new order at translateY=0 exactly.
+	// Snap slideY to 0 after new order commits — seamless because the K ghost positions
+	// at animation end exactly match the new order at translateY=0.
 	useLayoutEffect(() => {
-		if (!ghostId) slideY.value = 0;
-	}, [ghostId]);
+		if (ghostIds.length === 0) slideY.value = 0;
+	}, [ghostIds]);
 	const handleMainScroll = useCallback((e: any) => {
 		leftScrollRef.current?.scrollTo({ y: e.nativeEvent.contentOffset.y, animated: false });
 	}, []);
@@ -292,15 +297,26 @@ export default function GameScreen() {
 									{/* Fixed-height clipped container so rows slide in/out cleanly */}
 									<View style={[styles.turnList, { height: displayedOrder.length * ROW_H }]}>
 										<Animated.View style={turnListAnimatedStyle}>
-											{/* Ghost: new first player (old bottom) enters from above */}
-											{ghostId && playerMap[ghostId] && (() => {
-												const gp = playerMap[ghostId];
-												const isDealer = ghostId === dealerId;
-												const hasScore = getScore(currentRoundIndex, ghostId) !== null;
-												const roundScore = getScore(currentRoundIndex, ghostId);
-												const prevTotal = (totals[ghostId] ?? 0) - (roundScore ?? 0);
+											{/* K ghost rows entering from above — first one offset by -K*ROW_H */}
+											{ghostIds.map((pid, idx) => {
+												const gp = playerMap[pid];
+												if (!gp) return null;
+												const isDealer = pid === dealerId;
+												const hasScore = getScore(currentRoundIndex, pid) !== null;
+												const roundScore = getScore(currentRoundIndex, pid);
+												const prevTotal = (totals[pid] ?? 0) - (roundScore ?? 0);
 												return (
-													<View style={[styles.turnRow, { height: ROW_H, marginTop: -ROW_H, borderBottomColor: theme.backgroundSelected }]}>
+													<View
+														key={`ghost-${idx}`}
+														style={[
+															styles.turnRow,
+															{
+																height: ROW_H,
+																borderBottomColor: theme.backgroundSelected,
+																...(idx === 0 && { marginTop: -ghostIds.length * ROW_H }),
+															},
+														]}
+													>
 														<View style={styles.turnNameRow}>
 															<ThemedText style={styles.turnName} numberOfLines={1}>{gp.name}</ThemedText>
 															{hasScore && <ThemedText style={[styles.turnCheckmark, { color: CURRENT_TINT }]}>✓</ThemedText>}
@@ -322,7 +338,7 @@ export default function GameScreen() {
 														</View>
 													</View>
 												);
-											})()}
+											})}
 											{displayedOrder.map((pid: string) => {
 												const p = playerMap[pid];
 												if (!p) return null;
