@@ -1,5 +1,5 @@
 import { FontAwesome5 } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { AudioPlayer, createAudioPlayer, setAudioModeAsync } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TimeWheelPicker } from "@/components/time-wheel-picker";
 import { Spacing } from "@/constants/theme";
+import { useGamesContext } from "@/context/games-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
@@ -24,6 +25,7 @@ function formatTime(secs: number) {
 export default function TimerScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { game } = useGame(id);
+	const { updateGame } = useGamesContext();
 	const theme = useTheme();
 
 	const defaultDuration = game?.extras?.timerDuration ?? 60;
@@ -38,7 +40,7 @@ export default function TimerScreen() {
 
 	const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const buzzRef = useRef<ReturnType<typeof setInterval> | null>(null);
-	const soundRef = useRef<Audio.Sound | null>(null);
+	const soundRef = useRef<AudioPlayer | null>(null);
 
 	// Refs so interval/async callbacks always read current toggle state
 	const buzzEnabledRef = useRef(buzzEnabled);
@@ -49,8 +51,8 @@ export default function TimerScreen() {
 	// Stop sound/buzz immediately when toggled off during an active alarm
 	useEffect(() => {
 		if (!soundEnabled && alarmActive) {
-			soundRef.current?.stopAsync().catch(() => {});
-			soundRef.current?.unloadAsync().catch(() => {});
+			soundRef.current?.pause();
+			soundRef.current?.remove();
 			soundRef.current = null;
 		}
 	}, [soundEnabled]);
@@ -63,7 +65,7 @@ export default function TimerScreen() {
 
 	// Configure audio session once
 	useEffect(() => {
-		Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: false });
+		setAudioModeAsync({ playsInSilentMode: true });
 		return () => {
 			clearAll();
 		};
@@ -78,8 +80,8 @@ export default function TimerScreen() {
 			clearInterval(buzzRef.current);
 			buzzRef.current = null;
 		}
-		soundRef.current?.stopAsync().catch(() => {});
-		soundRef.current?.unloadAsync().catch(() => {});
+		soundRef.current?.pause();
+		soundRef.current?.remove();
 		soundRef.current = null;
 	};
 
@@ -104,12 +106,11 @@ export default function TimerScreen() {
 		// Sound — loop until dismissed
 		if (soundEnabledRef.current) {
 			try {
-				const { sound } = await Audio.Sound.createAsync(
-					// Four levels up from src/app/game/[id]/ to reach project root assets/
-					require("../../../../assets/timer-done.mp3"),
-					{ shouldPlay: true, isLooping: true, volume: 1.0 },
-				);
-				soundRef.current = sound;
+				const player = createAudioPlayer(require("../../../../assets/timer-done.mp3"));
+				player.loop = true;
+				player.volume = 1.0;
+				player.play();
+				soundRef.current = player;
 			} catch (e) {
 				console.warn("Timer sound failed to load:", e);
 			}
@@ -165,8 +166,8 @@ export default function TimerScreen() {
 		setDuration(clamped);
 		setRemaining(clamped);
 		setShowPicker(false);
-		// Stop any active alarm when user edits
 		clearAll();
+		if (game) updateGame({ ...game, extras: { ...game.extras, timerDuration: clamped } });
 	};
 
 	const pct = duration > 0 ? remaining / duration : 0;

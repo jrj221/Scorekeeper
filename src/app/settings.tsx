@@ -6,6 +6,7 @@ import { HapticButton } from "@/components/haptic-button";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { COLOR_SCHEMES, ColorSchemeId } from "@/constants/color-schemes";
+import { DEV_TOOLS_ENABLED } from "@/constants/dev";
 import { Spacing } from "@/constants/theme";
 import { ColorMode, useColorSchemeContext } from "@/context/color-scheme-context";
 import { useGamesContext } from "@/context/games-context";
@@ -101,13 +102,17 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <ThemedText style={styles.label} themeColor="textSecondary">DATA</ThemedText>
             <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
-              <HapticButton
-                style={[styles.dataBtn, { backgroundColor: theme.backgroundSelected }]}
-                onPress={seedData}
-              >
-                <ThemedText type="small">Load Sample Data</ThemedText>
-              </HapticButton>
-              <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
+              {DEV_TOOLS_ENABLED && (
+                <>
+                  <HapticButton
+                    style={[styles.dataBtn, { backgroundColor: theme.backgroundSelected }]}
+                    onPress={seedData}
+                  >
+                    <ThemedText type="small">Load Sample Data</ThemedText>
+                  </HapticButton>
+                  <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
+                </>
+              )}
               <HapticButton
                 style={[styles.dataBtn, { backgroundColor: theme.backgroundSelected }]}
                 onPress={confirmReset}
