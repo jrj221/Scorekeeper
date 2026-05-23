@@ -45,7 +45,7 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 		? sameDay(game.createdAt, game.finishedAt!)
 			? `${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
 			: `${fmt(game.createdAt)} – ${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
-		: `${game.players.length} player${game.players.length !== 1 ? "s" : ""}  ·  Round ${game.rounds.length}`;
+		: `${game.players.length} player${game.players.length !== 1 ? "s" : ""}  ·  Round ${game.rounds.length + 1}`;
 
 	return (
 		<HapticButton

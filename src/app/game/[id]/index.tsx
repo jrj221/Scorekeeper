@@ -35,6 +35,47 @@ const RANK_ICONS = [
 	{ name: "medal", color: "#CD7F32" },
 ] as const;
 
+const RANK_LABEL_H = 34; // approx height of "1st" label + platform paddingTop
+
+function TieList({ players, platformHeight, textColor }: {
+	players: Player[];
+	platformHeight: number;
+	textColor: string;
+}) {
+	const maxH = platformHeight - RANK_LABEL_H;
+	const [showMore, setShowMore] = useState(false);
+	const listH = useRef(0);
+	const contentH = useRef(0);
+
+	const check = (offsetY = 0) => {
+		setShowMore(contentH.current > listH.current + offsetY + 2);
+	};
+
+	return (
+		<View style={{ maxHeight: maxH }}>
+			<ScrollView
+				onLayout={(e) => { listH.current = e.nativeEvent.layout.height; check(); }}
+				onContentSizeChange={(_, h) => { contentH.current = h; check(); }}
+				onScroll={(e) => check(e.nativeEvent.contentOffset.y)}
+				scrollEventThrottle={16}
+				showsVerticalScrollIndicator={false}
+				nestedScrollEnabled
+			>
+				{players.map((p) => (
+					<ThemedText key={p.id} style={[podiumStyles.tiePlayerName, { color: textColor }]} numberOfLines={1}>
+						{p.name}
+					</ThemedText>
+				))}
+			</ScrollView>
+			{showMore && (
+				<ThemedText style={[podiumStyles.tiePlayerName, { color: textColor, opacity: 0.5 }]}>
+					•••
+				</ThemedText>
+			)}
+		</View>
+	);
+}
+
 export default function GameScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
@@ -724,17 +765,17 @@ export default function GameScreen() {
 																	color={RANK_ICONS[rankIdx].color}
 																/>
 															</View>
-															<View style={podiumStyles.names}>
-																{tierPlayers.map((p: Player) => (
-																	<ThemedText
-																		key={p.id}
-																		style={podiumStyles.playerName}
-																		numberOfLines={1}
-																	>
-																		{p.name}
+															{tierPlayers.length > 1 ? (
+																<ThemedText style={podiumStyles.tieName}>
+																	{tierPlayers.length}-way tie
+																</ThemedText>
+															) : (
+																<View style={podiumStyles.names}>
+																	<ThemedText style={podiumStyles.playerName} numberOfLines={1}>
+																		{tierPlayers[0]?.name}
 																	</ThemedText>
-																))}
-															</View>
+																</View>
+															)}
 															<ThemedText
 																style={[
 																	podiumStyles.playerScore,
@@ -767,6 +808,13 @@ export default function GameScreen() {
 														>
 															{["1st", "2nd", "3rd"][rankIdx]}
 														</ThemedText>
+														{tierPlayers.length > 1 && (
+															<TieList
+																players={tierPlayers}
+																platformHeight={PLATFORM_H[rankIdx]}
+																textColor={rankIdx === 0 ? theme.accentText : theme.textSecondary}
+															/>
+														)}
 													</View>
 												</View>
 											);
@@ -1070,6 +1118,9 @@ const podiumStyles = StyleSheet.create({
 	playerInfo: { position: "absolute", left: 4, right: 4, alignItems: "center", gap: 2 },
 	medal: { fontSize: 28, lineHeight: 34 },
 	playerName: { fontSize: 13, fontWeight: "600", textAlign: "center" },
+	tieName: { fontSize: 11, fontWeight: "700", textAlign: "center", opacity: 0.6, letterSpacing: 0.3 },
+	tieScroll: { maxHeight: 48, width: "100%" },
+	tiePlayerName: { fontSize: 11, fontWeight: "600", textAlign: "center" },
 	playerScore: { fontSize: 20, fontWeight: "700" },
 	platform: {
 		position: "absolute",
