@@ -1,3 +1,4 @@
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
@@ -50,6 +51,13 @@ export default function TemplatesScreen() {
               style={[forms.card, { backgroundColor: theme.backgroundElement, flexDirection: 'row', alignItems: 'center' }]}
               onPress={() => router.push(`/template/${item.id}`)}
             >
+              <View style={[styles.iconContainer, { backgroundColor: theme.backgroundSelected }]}>
+                <FontAwesome5
+                  name={(item.icon ?? 'users') as any}
+                  size={20}
+                  color={theme.textSecondary}
+                />
+              </View>
               <View style={{ flex: 1, gap: 3 }}>
                 <ThemedText type="default">{item.name}</ThemedText>
                 <View style={styles.meta}>
@@ -95,4 +103,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.six },
   meta: {
     flexDirection: 'row',
-    alignItems: 'center' } });
+    alignItems: 'center' },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12 } });

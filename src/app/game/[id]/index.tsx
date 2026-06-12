@@ -2,9 +2,27 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Alert, Dimensions, ScrollView, StyleSheet, View } from "react-native";
-import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import {
+	Alert,
+	Dimensions,
+	Platform,
+	Animated as RNAnimated,
+	ScrollView,
+	StyleSheet,
+	UIManager,
+	View,
+} from "react-native";
+import Animated, {
+	useAnimatedScrollHandler,
+	useAnimatedStyle,
+	useSharedValue,
+	withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+if (Platform.OS === "android") {
+	UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
 
 import { CellEditModal } from "@/components/cell-edit-modal";
 import { HapticButton } from "@/components/haptic-button";
@@ -37,7 +55,11 @@ const RANK_ICONS = [
 
 const RANK_LABEL_H = 34; // approx height of "1st" label + platform paddingTop
 
-function TieList({ players, platformHeight, textColor }: {
+function TieList({
+	players,
+	platformHeight,
+	textColor,
+}: {
 	players: Player[];
 	platformHeight: number;
 	textColor: string;
@@ -54,8 +76,14 @@ function TieList({ players, platformHeight, textColor }: {
 	return (
 		<View style={{ maxHeight: maxH }}>
 			<ScrollView
-				onLayout={(e) => { listH.current = e.nativeEvent.layout.height; check(); }}
-				onContentSizeChange={(_, h) => { contentH.current = h; check(); }}
+				onLayout={(e) => {
+					listH.current = e.nativeEvent.layout.height;
+					check();
+				}}
+				onContentSizeChange={(_, h) => {
+					contentH.current = h;
+					check();
+				}}
 				onScroll={(e) => check(e.nativeEvent.contentOffset.y)}
 				scrollEventThrottle={16}
 				showsVerticalScrollIndicator={false}
@@ -68,9 +96,7 @@ function TieList({ players, platformHeight, textColor }: {
 				))}
 			</ScrollView>
 			{showMore && (
-				<ThemedText style={[podiumStyles.tiePlayerName, { color: textColor, opacity: 0.5 }]}>
-					•••
-				</ThemedText>
+				<ThemedText style={[podiumStyles.tiePlayerName, { color: textColor, opacity: 0.5 }]}>•••</ThemedText>
 			)}
 		</View>
 	);
@@ -87,6 +113,68 @@ export default function GameScreen() {
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
 	const finished = !!game?.finishedAt;
 	const [viewMode, setViewMode] = useState<"scores" | "turns" | "results">(game?.finishedAt ? "scores" : "turns");
+	const scorecardHScrollRef = useRef<ScrollView>(null);
+
+	// colW at component level so animation effects can reference it
+	const availableW = SCREEN_W - H_PAD - ROUND_LABEL_W;
+	const visibleCols = Math.min(sortedPlayers.length, 4);
+	const colW = visibleCols > 0 ? Math.floor(availableW / visibleCols) : availableW;
+
+	// Per-player animated translateX values for column reorder animation
+	const colXAnim = useRef<{ [id: string]: RNAnimated.Value }>({});
+	const getColAnim = (id: string): RNAnimated.Value => {
+		if (!colXAnim.current[id]) colXAnim.current[id] = new RNAnimated.Value(0);
+		return colXAnim.current[id];
+	};
+
+	// Scorecard column reorder animation
+	const [displayedScorecardPlayers, setDisplayedScorecardPlayers] = useState<Player[]>(sortedPlayers);
+	const prevScorecardOrderRef = useRef(sortedPlayers.map((p) => p.id));
+	const pendingScorecardAnim = useRef<{ oldOrder: string[]; newOrder: string[] } | null>(null);
+
+	useEffect(() => {
+		sortedPlayers.forEach((p) => getColAnim(p.id)); // ensure values exist
+		const newOrder = sortedPlayers.map((p) => p.id);
+		if (newOrder.some((id, i) => id !== prevScorecardOrderRef.current[i])) {
+			pendingScorecardAnim.current = { oldOrder: prevScorecardOrderRef.current, newOrder };
+			prevScorecardOrderRef.current = newOrder;
+		}
+		setDisplayedScorecardPlayers([...sortedPlayers]);
+	}, [sortedPlayers]);
+
+	// After new column order commits: snap each column to its old visual x, then animate to 0
+	useLayoutEffect(() => {
+		const pending = pendingScorecardAnim.current;
+		if (!pending || colW === 0) return;
+		pendingScorecardAnim.current = null;
+		const { oldOrder, newOrder } = pending;
+		newOrder.forEach((id, newIdx) => {
+			const oldIdx = oldOrder.indexOf(id);
+			if (oldIdx === newIdx) return;
+			getColAnim(id).setValue(-(newIdx - oldIdx) * colW); // snap to old visual pos
+		});
+		RNAnimated.parallel(
+			Object.values(colXAnim.current).map((anim) =>
+				RNAnimated.timing(anim, { toValue: 0, duration: 350, useNativeDriver: true }),
+			),
+		).start();
+	}, [displayedScorecardPlayers]);
+
+	// Cell border fade
+	const editBorderAnim = useRef(new RNAnimated.Value(0)).current;
+	const [displayedEditCell, setDisplayedEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
+	const openEditCell = (cell: { roundIndex: number; player: Player }) => {
+		setDisplayedEditCell(cell);
+		setEditCell(cell);
+		RNAnimated.timing(editBorderAnim, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+	};
+	const clearEditCell = () => {
+		setEditCell(null);
+		RNAnimated.timing(editBorderAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+			setDisplayedEditCell(null);
+		});
+	};
+
 	// Scorecard vertical sync — runs on UI thread, no JS-bridge lag
 	const scorecardScrollY = useSharedValue(0);
 	const scorecardScrollHandler = useAnimatedScrollHandler((e) => {
@@ -112,7 +200,9 @@ export default function GameScreen() {
 	const pendingOrderRef = useRef<string[]>([]);
 	const isAnimatingRef = useRef(false);
 
-	useEffect(() => { displayedOrderRef.current = displayedOrder; }, [displayedOrder]);
+	useEffect(() => {
+		displayedOrderRef.current = displayedOrder;
+	}, [displayedOrder]);
 
 	const turnListAnimatedStyle = useAnimatedStyle(() => ({
 		transform: [{ translateY: slideY.value }],
@@ -201,11 +291,6 @@ export default function GameScreen() {
 		game.totalRounds !== undefined
 			? `Round ${currentRoundIndex + 1} of ${game.totalRounds}`
 			: `Round ${currentRoundIndex + 1}`;
-
-	// Column width: fill evenly for ≤4 players, fixed for 5+
-	const availableW = SCREEN_W - H_PAD - ROUND_LABEL_W;
-	const visibleCols = Math.min(sortedPlayers.length, 4);
-	const colW = visibleCols > 0 ? Math.floor(availableW / visibleCols) : availableW;
 
 	const rowBg = (i: number) => (i % 2 === 0 ? theme.background : theme.backgroundElement + "55");
 
@@ -357,25 +442,64 @@ export default function GameScreen() {
 															{
 																height: ROW_H,
 																borderBottomColor: theme.backgroundSelected,
-																...(idx === 0 && { marginTop: -ghostIds.length * ROW_H }),
+																...(idx === 0 && {
+																	marginTop: -ghostIds.length * ROW_H,
+																}),
 															},
 														]}
 													>
 														<View style={styles.turnNameRow}>
-															<ThemedText style={styles.turnName} numberOfLines={1}>{gp.name}</ThemedText>
-															{hasScore && <ThemedText style={[styles.turnCheckmark, { color: CURRENT_TINT }]}>✓</ThemedText>}
+															<ThemedText style={styles.turnName} numberOfLines={1}>
+																{gp.name}
+															</ThemedText>
+															{hasScore && (
+																<ThemedText
+																	style={[
+																		styles.turnCheckmark,
+																		{ color: CURRENT_TINT },
+																	]}
+																>
+																	✓
+																</ThemedText>
+															)}
 															{isDealer && (
-																<View style={[styles.dealerBadge, { backgroundColor: CURRENT_TINT + "20" }]}>
-																	<ThemedText style={[styles.dealerLabel, { color: CURRENT_TINT }]}>DEALER</ThemedText>
+																<View
+																	style={[
+																		styles.dealerBadge,
+																		{ backgroundColor: CURRENT_TINT + "20" },
+																	]}
+																>
+																	<ThemedText
+																		style={[
+																			styles.dealerLabel,
+																			{ color: CURRENT_TINT },
+																		]}
+																	>
+																		DEALER
+																	</ThemedText>
 																</View>
 															)}
 														</View>
 														<View style={styles.turnScoreArea}>
 															<View style={styles.turnScoreRow}>
-																<ThemedText style={styles.turnScore}>{prevTotal}</ThemedText>
+																<ThemedText style={styles.turnScore}>
+																	{prevTotal}
+																</ThemedText>
 																{roundScore !== null && (
-																	<ThemedText style={[styles.turnScoreDelta, { color: roundScore < 0 ? theme.danger : theme.text }]}>
-																		{roundScore >= 0 ? ` +${roundScore}` : ` ${roundScore}`}
+																	<ThemedText
+																		style={[
+																			styles.turnScoreDelta,
+																			{
+																				color:
+																					roundScore < 0
+																						? theme.danger
+																						: theme.text,
+																			},
+																		]}
+																	>
+																		{roundScore >= 0
+																			? ` +${roundScore}`
+																			: ` ${roundScore}`}
 																	</ThemedText>
 																)}
 															</View>
@@ -509,6 +633,13 @@ export default function GameScreen() {
 					? (() => {
 							const MAX_VISIBLE_ROWS = 10;
 							const CURRENT_ROW_BG = CURRENT_TINT + "40";
+							const MEDAL_COLORS = ["#FFD700", "#888888", "#CD7F32"];
+							const RANK_LABELS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
+							const tiers = buildTiers(sortedPlayers, totals);
+							const rankMap = new Map(tiers.flatMap((tier, ti) => tier.map((p) => [p.id, ti])));
+							const rankLbl = (tier: number) =>
+								firstRoundComplete ? (RANK_LABELS[tier] ?? `${tier + 1}th`) : "";
+							const rankColor = (tier: number) => (tier < 3 ? MEDAL_COLORS[tier] : theme.textSecondary);
 							return (
 								<View style={{ flexDirection: "row", alignItems: "flex-start" }}>
 									{/* Fixed left: round number column */}
@@ -516,7 +647,7 @@ export default function GameScreen() {
 										<View
 											style={[
 												styles.labelCell,
-												{ height: ROW_H, backgroundColor: theme.backgroundSelected },
+												{ height: ROW_H * 2, backgroundColor: theme.backgroundSelected },
 											]}
 										/>
 										<View style={{ maxHeight: MAX_VISIBLE_ROWS * ROW_H, overflow: "hidden" }}>
@@ -566,6 +697,7 @@ export default function GameScreen() {
 
 									{/* Horizontally scrollable player columns */}
 									<ScrollView
+										ref={scorecardHScrollRef}
 										horizontal
 										scrollEnabled={sortedPlayers.length > 4}
 										directionalLockEnabled
@@ -573,58 +705,65 @@ export default function GameScreen() {
 										style={{ flex: 1 }}
 									>
 										<View style={{ alignItems: "flex-start" }}>
-											{/* Player names header */}
+											{/* Rank row */}
 											<View
 												style={[
 													styles.headerRow,
 													{ backgroundColor: theme.backgroundSelected },
 												]}
 											>
-												{(() => {
-													const rankMap = new Map(
-														buildTiers(sortedPlayers, totals).flatMap((tier, ti) =>
-															tier.map((p) => [p.id, ti]),
-														),
-													);
-													return sortedPlayers.map((p) => {
-														const ri = rankMap.get(p.id) ?? 99;
-														const medal =
-															firstRoundComplete && ri < MEDALS.length
-																? MEDALS[ri] + " "
-																: "";
-														return (
-															<View
-																key={p.id}
-																style={[
-																	styles.nameCell,
-																	{ width: colW, height: ROW_H },
-																]}
+												{displayedScorecardPlayers.map((p) => {
+													const tier = rankMap.get(p.id) ?? 99;
+													return (
+														<RNAnimated.View
+															key={p.id}
+															style={[
+																styles.nameCell,
+																{ width: colW, height: ROW_H },
+																{ transform: [{ translateX: getColAnim(p.id) }] },
+															]}
+														>
+															<ThemedText
+																style={[styles.rankLabel, { color: rankColor(tier) }]}
 															>
-																{finished ? (
-																	<HapticButton
-																		onPress={() => router.push(`/player/${p.id}`)}
-																	>
-																		<ThemedText
-																			style={styles.colHeader}
-																			numberOfLines={1}
-																		>
-																			{medal}
-																			{p.name}
-																		</ThemedText>
-																	</HapticButton>
-																) : (
-																	<ThemedText
-																		style={styles.colHeader}
-																		numberOfLines={1}
-																	>
-																		{medal}
-																		{p.name}
-																	</ThemedText>
-																)}
-															</View>
-														);
-													});
-												})()}
+																{rankLbl(tier)}
+															</ThemedText>
+														</RNAnimated.View>
+													);
+												})}
+											</View>
+
+											{/* Player names row */}
+											<View
+												style={[
+													styles.headerRow,
+													{ backgroundColor: theme.backgroundSelected },
+												]}
+											>
+												{displayedScorecardPlayers.map((p) => (
+													<RNAnimated.View
+														key={p.id}
+														style={[
+															styles.nameCell,
+															{ width: colW, height: ROW_H },
+															{ transform: [{ translateX: getColAnim(p.id) }] },
+														]}
+													>
+														{finished ? (
+															<HapticButton
+																onPress={() => router.push(`/player/${p.id}`)}
+															>
+																<ThemedText style={styles.colHeader} numberOfLines={1}>
+																	{p.name}
+																</ThemedText>
+															</HapticButton>
+														) : (
+															<ThemedText style={styles.colHeader} numberOfLines={1}>
+																{p.name}
+															</ThemedText>
+														)}
+													</RNAnimated.View>
+												))}
 											</View>
 
 											{/* Score rows */}
@@ -648,40 +787,67 @@ export default function GameScreen() {
 																isCurrent && { backgroundColor: CURRENT_ROW_BG },
 															]}
 														>
-															{sortedPlayers.map((p) => {
+															{displayedScorecardPlayers.map((p) => {
 																const s = getScore(ri, p.id);
 																const tappable = !finished && ri <= currentRoundIndex;
 																const Cell = tappable ? HapticButton : View;
 																return (
-																	<Cell
+																	<RNAnimated.View
 																		key={p.id}
-																		style={[
-																			styles.scoreCell,
-																			{ width: colW, height: ROW_H },
-																		]}
-																		{...(tappable
-																			? {
-																					onPress: () =>
-																						setEditCell({
-																							roundIndex: ri,
-																							player: p,
-																						}),
-																				}
-																			: {})}
+																		style={{
+																			transform: [
+																				{ translateX: getColAnim(p.id) },
+																			],
+																		}}
 																	>
-																		<ThemedText
-																			style={
-																				s === null
-																					? styles.emptyScore
-																					: styles.score
-																			}
-																			themeColor={
-																				s === null ? "textSecondary" : "text"
-																			}
+																		<Cell
+																			style={[
+																				styles.scoreCell,
+																				{ width: colW, height: ROW_H },
+																			]}
+																			{...(tappable
+																				? {
+																						onPress: () =>
+																							openEditCell({
+																								roundIndex: ri,
+																								player: p,
+																							}),
+																					}
+																				: {})}
 																		>
-																			{s !== null ? s : "–"}
-																		</ThemedText>
-																	</Cell>
+																			<ThemedText
+																				style={
+																					s === null
+																						? styles.emptyScore
+																						: styles.score
+																				}
+																				themeColor={
+																					s === null
+																						? "textSecondary"
+																						: "text"
+																				}
+																			>
+																				{s !== null ? s : "–"}
+																			</ThemedText>
+																			{displayedEditCell?.player.id === p.id &&
+																				displayedEditCell?.roundIndex ===
+																					ri && (
+																					<RNAnimated.View
+																						style={[
+																							StyleSheet.absoluteFill,
+																							{
+																								borderWidth: 2,
+																								borderColor:
+																									CURRENT_TINT,
+																								borderRadius: 4,
+																								opacity: editBorderAnim,
+																							},
+																						]}
+																						pointerEvents="none"
+																					/>
+																				)}
+																		</Cell>
+																	</RNAnimated.View>
 																);
 															})}
 														</View>
@@ -697,20 +863,24 @@ export default function GameScreen() {
 													finished && { backgroundColor: CURRENT_TINT + "10" },
 												]}
 											>
-												{sortedPlayers.map((p) => (
-													<View
+												{displayedScorecardPlayers.map((p) => (
+													<RNAnimated.View
 														key={p.id}
-														style={[styles.scoreCell, { width: colW, height: ROW_H }]}
+														style={{ transform: [{ translateX: getColAnim(p.id) }] }}
 													>
-														<ThemedText
-															style={[
-																styles.totalScore,
-																finished && { color: CURRENT_TINT },
-															]}
+														<View
+															style={[styles.scoreCell, { width: colW, height: ROW_H }]}
 														>
-															{totals[p.id] ?? 0}
-														</ThemedText>
-													</View>
+															<ThemedText
+																style={[
+																	styles.totalScore,
+																	finished && { color: CURRENT_TINT },
+																]}
+															>
+																{totals[p.id] ?? 0}
+															</ThemedText>
+														</View>
+													</RNAnimated.View>
 												))}
 											</View>
 										</View>
@@ -771,7 +941,10 @@ export default function GameScreen() {
 																</ThemedText>
 															) : (
 																<View style={podiumStyles.names}>
-																	<ThemedText style={podiumStyles.playerName} numberOfLines={1}>
+																	<ThemedText
+																		style={podiumStyles.playerName}
+																		numberOfLines={1}
+																	>
 																		{tierPlayers[0]?.name}
 																	</ThemedText>
 																</View>
@@ -812,7 +985,11 @@ export default function GameScreen() {
 															<TieList
 																players={tierPlayers}
 																platformHeight={PLATFORM_H[rankIdx]}
-																textColor={rankIdx === 0 ? theme.accentText : theme.textSecondary}
+																textColor={
+																	rankIdx === 0
+																		? theme.accentText
+																		: theme.textSecondary
+																}
 															/>
 														)}
 													</View>
@@ -895,9 +1072,9 @@ export default function GameScreen() {
 				initialValue={editCell ? getScore(editCell.roundIndex, editCell.player.id) : null}
 				onSave={(value) => {
 					if (editCell) updateScore(editCell.roundIndex, editCell.player.id, value);
-					setEditCell(null);
+					clearEditCell();
 				}}
-				onCancel={() => setEditCell(null)}
+				onCancel={() => clearEditCell()}
 			/>
 		</ThemedView>
 	);
@@ -1108,6 +1285,12 @@ const styles = StyleSheet.create({
 	turnHeaderRight: {
 		flex: 0,
 		textAlign: "right",
+	},
+	rankLabel: {
+		fontSize: 12,
+		fontWeight: "700",
+		textAlign: "center",
+		letterSpacing: 0.3,
 	},
 });
 
