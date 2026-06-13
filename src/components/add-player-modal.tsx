@@ -24,7 +24,7 @@ export function AddPlayerModal({ visible, playerName, onChangeName, onAdd, onCan
           <HapticButton activeOpacity={1}>
             <View style={[shared.modalSheet, { backgroundColor: theme.backgroundElement }]}>
               <ThemedText type="subtitle">Add Player</ThemedText>
-              <TextInput
+              <TextInput allowFontScaling={false}
                 style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
                 placeholder="Player name"
                 placeholderTextColor={theme.textSecondary}

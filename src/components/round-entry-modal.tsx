@@ -42,7 +42,7 @@ export function RoundEntryModal({
                       <ThemedText type="default" style={gameStyles.scorePlayerName}>
                         {player.name}
                       </ThemedText>
-                      <TextInput
+                      <TextInput allowFontScaling={false}
                         style={[
                           gameStyles.scoreInput,
                           { backgroundColor: theme.background, color: theme.text },

@@ -10,7 +10,7 @@ export type ThemeColors = {
   danger: string;      // destructive / error colour
 };
 
-export type ColorSchemeId = 'ocean' | 'midnight' | 'lavender' | 'ember' | 'rose' | 'slate' | 'monotone';
+export type ColorSchemeId = 'ocean' | 'midnight' | 'lavender' | 'ember' | 'rose' | 'lemon' | 'slate' | 'monotone';
 
 export type ColorSchemeDefinition = {
   id: ColorSchemeId;
@@ -93,6 +93,21 @@ export const COLOR_SCHEMES: ColorSchemeDefinition[] = [
       accent: '#C2185B',
       accentText: '#fff',
       negative: '#E91E8C',
+      danger: DANGER,
+    },
+  },
+  {
+    id: 'lemon',
+    name: 'Lemon',
+    colors: {
+      text: '#3D3000',
+      textSecondary: '#8A7320',
+      background: '#FFFDF0',
+      backgroundElement: '#FBF1BE',
+      backgroundSelected: '#F3E292',
+      accent: '#A88416',
+      accentText: '#fff',
+      negative: '#D4B83A',
       danger: DANGER,
     },
   },

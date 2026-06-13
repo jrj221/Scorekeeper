@@ -24,7 +24,7 @@ export function NewGameModal({ visible, gameName, onChangeName, onCreate, onCanc
           <HapticButton activeOpacity={1}>
             <View style={[shared.modalSheet, { backgroundColor: theme.backgroundElement }]}>
               <ThemedText type="subtitle">New Game</ThemedText>
-              <TextInput
+              <TextInput allowFontScaling={false}
                 style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
                 placeholder="Game name"
                 placeholderTextColor={theme.textSecondary}

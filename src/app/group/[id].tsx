@@ -72,7 +72,7 @@ export default function EditGroupScreen() {
             <View style={forms.section}>
               <ThemedText style={forms.label} themeColor="textSecondary">GROUP NAME</ThemedText>
               <View style={{ gap: 4 }}>
-                <TextInput
+                <TextInput allowFontScaling={false}
                   style={[shared.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
                   placeholder="Enter group name"
                   placeholderTextColor={theme.textSecondary}

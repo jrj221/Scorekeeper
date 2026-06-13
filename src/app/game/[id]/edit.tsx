@@ -158,7 +158,7 @@ export default function EditGameScreen() {
 							<ThemedText style={forms.label} themeColor="textSecondary">GAME NAME</ThemedText>
 							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
 						</View>
-						<TextInput
+						<TextInput allowFontScaling={false}
 							style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
 							placeholder="Untitled Game"
 							placeholderTextColor={theme.textSecondary}
@@ -199,7 +199,7 @@ export default function EditGameScreen() {
 							{activeDropdown === 'player' && (
 								<View style={[forms.dropdown, { backgroundColor: theme.backgroundSelected, borderColor: theme.background }]}>
 									<View style={{ gap: 4 }}>
-										<TextInput
+										<TextInput allowFontScaling={false}
 											ref={playerSearchRef}
 											style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
 											placeholder="Search or enter new name"

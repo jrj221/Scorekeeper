@@ -163,7 +163,7 @@ export default function PlayersScreen() {
 							ADD PLAYER
 						</ThemedText>
 						<View style={{ gap: 4 }}>
-							<TextInput
+							<TextInput allowFontScaling={false}
 								ref={inputRef}
 								style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
 								placeholder="Player name"

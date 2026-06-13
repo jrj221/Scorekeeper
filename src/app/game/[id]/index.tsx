@@ -30,6 +30,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { Player } from "@/context/games-context";
+import { useTextScale } from "@/context/text-scale-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
@@ -38,7 +39,7 @@ import { buildTiers, getTurnState } from "@/utils/game";
 const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
 const ROUND_LABEL_W = 48;
-const ROW_H = 44;
+const BASE_ROW_H = 44;
 const ROTATION_MS = 400;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -107,6 +108,11 @@ export default function GameScreen() {
 	const router = useRouter();
 	const theme = useTheme();
 	const CURRENT_TINT = theme.accent;
+	// In large-text mode, grow row heights to match the bigger text so scores/names
+	// aren't clipped. Reverts to the base height otherwise.
+	const textScale = useTextScale();
+	const largeText = textScale !== 1;
+	const ROW_H = largeText ? Math.round(BASE_ROW_H * textScale) : BASE_ROW_H;
 	const { game, endGame, updateScore, advanceRound, totals, sortedPlayers, visibleRoundCount, currentRoundIndex } =
 		useGame(id);
 
@@ -657,7 +663,10 @@ export default function GameScreen() {
 				{/* Scorecard: players as columns, rounds as rows */}
 				{viewMode === "scores"
 					? (() => {
-							const MAX_VISIBLE_ROWS = 10;
+							// Fewer rows fit on screen with larger text, so cap the visible window
+							// lower — the round list scrolls internally and the Next Round / End
+							// Game buttons below it stay reachable instead of being pushed off.
+							const MAX_VISIBLE_ROWS = largeText ? 5 : 10;
 							const CURRENT_ROW_BG = CURRENT_TINT + "40";
 							const MEDAL_COLORS = ["#FFD700", "#888888", "#CD7F32"];
 							// Fixed dark pill so the gold/silver/bronze numbers (and white for the

@@ -163,7 +163,7 @@ if (!player) {
           <View style={[styles.dialogCard, { backgroundColor: theme.backgroundElement }]}>
             <ThemedText style={styles.dialogTitle} themeColor="textSecondary">RENAME PLAYER</ThemedText>
             <View style={{ gap: 4 }}>
-              <TextInput
+              <TextInput allowFontScaling={false}
                 ref={renameInputRef}
                 style={[shared.input, { backgroundColor: theme.background, color: theme.text }]}
                 placeholder="Player name"

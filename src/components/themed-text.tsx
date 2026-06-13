@@ -1,6 +1,7 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
+import { useTextScale } from '@/context/text-scale-context';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -10,24 +11,36 @@ export type ThemedTextProps = TextProps & {
 
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const scale = useTextScale();
 
-  return (
-    <Text
-      style={[
-        { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'code' && styles.code,
-        style,
-      ]}
-      {...rest}
-    />
-  );
+  // Flatten so we can scale both the built-in type sizes and any custom fontSize
+  // passed in via `style`. iOS Dynamic Type is disabled (allowFontScaling=false);
+  // sizing is controlled entirely by our own `scale` instead.
+  const flattened = StyleSheet.flatten([
+    { color: theme[themeColor ?? 'text'] },
+    type === 'default' && styles.default,
+    type === 'title' && styles.title,
+    type === 'small' && styles.small,
+    type === 'smallBold' && styles.smallBold,
+    type === 'subtitle' && styles.subtitle,
+    type === 'link' && styles.link,
+    type === 'linkPrimary' && styles.linkPrimary,
+    type === 'code' && styles.code,
+    style,
+  ]) as TextStyle;
+
+  const resolved =
+    scale === 1
+      ? flattened
+      : {
+          ...flattened,
+          // Only scale when explicitly set; leave undefined so nested <Text> can
+          // still inherit its parent's (already-scaled) size.
+          ...(flattened.fontSize != null && { fontSize: flattened.fontSize * scale }),
+          ...(flattened.lineHeight != null && { lineHeight: flattened.lineHeight * scale }),
+        };
+
+  return <Text allowFontScaling={false} style={resolved} {...rest} />;
 }
 
 const styles = StyleSheet.create({

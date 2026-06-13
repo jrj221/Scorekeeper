@@ -199,7 +199,7 @@ export default function GameInfoScreen() {
 								>
 									<FontAwesome5 name={(draft.icon ?? "users") as any} size={20} color={theme.textSecondary} />
 								</HapticButton>
-								<TextInput
+								<TextInput allowFontScaling={false}
 									style={[shared.input, innerInput, { flex: 1 }]}
 									placeholder="Untitled Game"
 									placeholderTextColor={theme.textSecondary}
@@ -266,7 +266,7 @@ export default function GameInfoScreen() {
 									{activeDropdown === "player" && (
 										<View style={[forms.dropdown, { backgroundColor: theme.backgroundSelected, borderColor: theme.background }]}>
 											<View style={{ gap: 4 }}>
-												<TextInput
+												<TextInput allowFontScaling={false}
 													ref={playerSearchRef}
 													style={[shared.input, innerInput]}
 													placeholder="Search or enter new name"

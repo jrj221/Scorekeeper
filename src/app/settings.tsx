@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { HapticButton } from "@/components/haptic-button";
@@ -10,12 +10,16 @@ import { DEV_TOOLS_ENABLED } from "@/constants/dev";
 import { Spacing } from "@/constants/theme";
 import { useColorSchemeContext } from "@/context/color-scheme-context";
 import { useGamesContext } from "@/context/games-context";
+import { useTextScaleContext } from "@/context/text-scale-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 
 export default function SettingsScreen() {
   const theme = useTheme();
   const { schemeId, setSchemeId } = useColorSchemeContext();
+  const { largeText, setLargeText } = useTextScaleContext();
+  // With larger text the scheme names need more room, so drop from 4 to 2 per row.
+  const schemeCellStyle = largeText ? styles.schemeCellLarge : styles.schemeCell;
   const { seedData, resetData } = useGamesContext();
 
   const confirmReset = () =>
@@ -43,7 +47,7 @@ export default function SettingsScreen() {
                   <HapticButton
                     key={s.id}
                     style={[
-                      styles.schemeCell,
+                      schemeCellStyle,
                       { borderColor: active ? theme.accent : "transparent", borderWidth: 2 },
                     ]}
                     onPress={() => setSchemeId(s.id as ColorSchemeId)}
@@ -64,6 +68,24 @@ export default function SettingsScreen() {
                   </HapticButton>
                 );
               })}
+            </View>
+          </View>
+
+          {/* Text Size */}
+          <View style={styles.section}>
+            <ThemedText style={styles.label} themeColor="textSecondary">TEXT SIZE</ThemedText>
+            <View style={[styles.card, styles.toggleRow, { backgroundColor: theme.backgroundElement }]}>
+              <View style={styles.toggleText}>
+                <ThemedText type="small">Larger Text</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.toggleHint}>
+                  Increase the size of text throughout the app.
+                </ThemedText>
+              </View>
+              <Switch
+                value={largeText}
+                onValueChange={setLargeText}
+                trackColor={{ true: theme.accent }}
+              />
             </View>
           </View>
 
@@ -116,10 +138,28 @@ const styles = StyleSheet.create({
     minWidth: 80,
     flex: 1,
   },
+  // Larger text: wider basis so only two cells fit per row before wrapping.
+  schemeCellLarge: {
+    borderRadius: Spacing.one + 2,
+    padding: Spacing.two,
+    alignItems: "center",
+    gap: Spacing.one,
+    minWidth: "46%",
+    flex: 1,
+  },
   swatchRow: { flexDirection: "row", gap: 3 },
   swatch: { width: 18, height: 18, borderRadius: 4 },
   schemeName: { fontSize: 12, fontWeight: "600" },
   card: { borderRadius: Spacing.two, overflow: "hidden" },
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    gap: Spacing.three,
+  },
+  toggleText: { flex: 1, gap: 2 },
+  toggleHint: { fontSize: 12 },
   dataBtn: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from './themed-text';
 import { Spacing } from '@/constants/theme';
+import { useTextScale } from '@/context/text-scale-context';
 import { useTheme } from '@/hooks/use-theme';
 import { HapticButton } from "@/components/haptic-button";
 import { forms } from '@/styles/forms';
@@ -12,9 +13,10 @@ const SCREEN_W = Dimensions.get('window').width;
 const SCREEN_H = Dimensions.get('window').height;
 const SHEET_PAD = Spacing.three;
 const KEY_GAP = 8;
+const DISPLAY_H = 64;
 
 // Fixed non-key content: paddingTop + header + display + done + 3 gaps between sections + 3 inter-row gaps
-const FIXED_H = SHEET_PAD + 20 + 64 + 88 + Spacing.two * 3 + KEY_GAP * 3;
+const fixedNonKeyHeight = (displayH: number) => SHEET_PAD + 20 + displayH + 88 + Spacing.two * 3 + KEY_GAP * 3;
 
 // Max key width if filling the full sheet width with 3 columns
 const MAX_KEY_W = Math.floor((SCREEN_W - SHEET_PAD * 2 - KEY_GAP * 2) / 3);
@@ -46,13 +48,20 @@ export function CellEditModal({
   onCancel }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const textScale = useTextScale();
+  const largeText = textScale !== 1;
 
-  // Keys fill full width; height sized so sheet takes ~50% of screen
+  // Grow the display area so the large entered number isn't clipped, and let the
+  // sheet take more of the screen so the (taller) keys still fit. Reverts otherwise.
+  const displayH = largeText ? Math.ceil(DISPLAY_H * textScale) + 8 : DISPLAY_H;
+  const sheetFraction = largeText ? 0.62 : 0.5;
+
+  // Keys fill full width; height sized so sheet takes the target share of the screen
   const keySize = useMemo(() => {
     const bottomPad = insets.bottom + Spacing.two;
-    const availableForKeys = SCREEN_H * 0.5 - FIXED_H - bottomPad;
-    return Math.max(36, Math.floor(availableForKeys / 4));
-  }, [insets.bottom]);
+    const availableForKeys = SCREEN_H * sheetFraction - fixedNonKeyHeight(displayH) - bottomPad;
+    return Math.max(largeText ? 48 : 36, Math.floor(availableForKeys / 4));
+  }, [insets.bottom, sheetFraction, displayH, largeText]);
 
   const [numStr, setNumStr] = useState('');
   const [negative, setNegative] = useState(false);
@@ -129,7 +138,7 @@ export function CellEditModal({
 
           <ThemedText style={styles.header} themeColor="textSecondary">{title}</ThemedText>
 
-          <View style={styles.displayArea}>
+          <View style={[styles.displayArea, { height: displayH }]}>
             <ThemedText style={[styles.display, { color: displayColor }]}>{displayText}</ThemedText>
           </View>
 

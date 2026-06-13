@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ColorSchemeProvider } from "@/context/color-scheme-context";
 import { GamesProvider } from "@/context/games-context";
+import { TextScaleProvider } from "@/context/text-scale-context";
 import { useTheme } from "@/hooks/use-theme";
 
 const HEADER_H = 39;
@@ -25,12 +26,12 @@ function CustomHeader({ options, back, route }: { options: any; back?: { title: 
 		titleNode = options.headerTitle({
 			children: options.title ?? route.name,
 			tintColor: tint,
-			allowFontScaling: true,
+			allowFontScaling: false,
 			style: {},
 		});
 	} else {
 		titleNode = (
-			<Text style={[styles.title, { color: tint }]} numberOfLines={1}>
+			<Text style={[styles.title, { color: tint }]} numberOfLines={1} allowFontScaling={false}>
 				{(options.headerTitle as string | undefined) ?? options.title ?? route.name}
 			</Text>
 		);
@@ -56,7 +57,7 @@ function CustomHeader({ options, back, route }: { options: any; back?: { title: 
 								style={{ backgroundColor: "transparent" }}
 							/>
 							{options.headerBackTitle ? (
-								<Text style={[styles.backLabel, { color: tint }]} numberOfLines={1}>
+								<Text style={[styles.backLabel, { color: tint }]} numberOfLines={1} allowFontScaling={false}>
 									{options.headerBackTitle}
 								</Text>
 							) : null}
@@ -101,7 +102,9 @@ function AppShell() {
 export default function RootLayout() {
 	return (
 		<ColorSchemeProvider>
-			<AppShell />
+			<TextScaleProvider>
+				<AppShell />
+			</TextScaleProvider>
 		</ColorSchemeProvider>
 	);
 }

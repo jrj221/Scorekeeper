@@ -100,7 +100,7 @@ export default function TemplateScreen() {
 							>
 								<FontAwesome5 name={(draft.icon ?? "users") as any} size={22} color={theme.textSecondary} />
 							</HapticButton>
-							<TextInput
+							<TextInput allowFontScaling={false}
 								style={[shared.input, innerInput, { flex: 1 }]}
 								placeholder="Untitled Template"
 								placeholderTextColor={theme.textSecondary}
