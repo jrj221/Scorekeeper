@@ -31,12 +31,12 @@ import { useUnsavedChangesScroll } from "@/hooks/use-unsaved-changes-scroll";
 import { forms } from "@/styles/forms";
 import { shared } from "@/styles/shared";
 
-type ActiveDropdown = "player" | "fixedDealer" | "firstPlayer" | null;
+type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 type FirstPlayerMode = "random" | "left-of-dealer" | "rotation";
 
 export default function GameInfoScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
-	const { getGame, updateGame, globalPlayers } = useGamesContext();
+	const { getGame, updateGame, globalPlayers, groups } = useGamesContext();
 	const theme = useTheme();
 	const router = useRouter();
 	const game = getGame(id);
@@ -44,6 +44,13 @@ export default function GameInfoScreen() {
 	const { draft, patch, isDirty, save: saveDraft, reset: resetDraft } = useDraft(game, updateGame);
 	const scrollRef = useRef<ScrollView>(null);
 	const { highlightStyle, exitSafely } = useUnsavedChangesScroll(isDirty, scrollRef);
+
+	// Keep the player search field visually steady: when the player list grows or
+	// shrinks, scroll by the same amount so the field stays put. The add/remove
+	// handlers arm `pendingScrollAdjust`; the list's onLayout applies the delta.
+	const scrollYRef = useRef(0);
+	const pendingScrollAdjust = useRef(false);
+	const playerListHeightRef = useRef(0);
 
 	// Pick up icon selected in icon-picker screen
 	useFocusEffect(
@@ -106,7 +113,10 @@ export default function GameInfoScreen() {
 			{
 				text: "Remove",
 				style: "destructive",
-				onPress: () => patchPlayers(players.filter((pl) => pl.id !== p.id)),
+				onPress: () => {
+					pendingScrollAdjust.current = true;
+					patchPlayers(players.filter((pl) => pl.id !== p.id));
+				},
 			},
 		]);
 	};
@@ -119,7 +129,12 @@ export default function GameInfoScreen() {
 		filteredGlobalPlayers,
 		addById: addExistingPlayer,
 		submit: submitPlayerSearch,
+		addGroup,
 	} = usePlayerSearch(players, patchPlayers);
+
+	const availableGroups = groups.filter(
+		(g) => !g.playerIds.every((pid) => players.some((p) => p.id === pid)),
+	);
 
 	const dealerEnabled = !!draft.dealerEnabled;
 	const dealerMode = draft.dealerMode ?? "rotation";
@@ -162,6 +177,10 @@ export default function GameInfoScreen() {
 					contentContainerStyle={styles.scroll}
 					keyboardShouldPersistTaps="handled"
 					showsVerticalScrollIndicator={false}
+					scrollEventThrottle={16}
+					onScroll={(e) => {
+						scrollYRef.current = e.nativeEvent.contentOffset.y;
+					}}
 				>
 					{/* Game Name & Icon */}
 					<SetupCard>
@@ -212,7 +231,19 @@ export default function GameInfoScreen() {
 										<ThemedText style={forms.fieldError}>A game requires at least one player.</ThemedText>
 									)}
 									{players.length > 0 && (
-										<View style={forms.playerList}>
+										<View
+											style={forms.playerList}
+											onLayout={(e) => {
+												const h = e.nativeEvent.layout.height;
+												const delta = h - playerListHeightRef.current;
+												playerListHeightRef.current = h;
+												if (pendingScrollAdjust.current && delta !== 0) {
+													pendingScrollAdjust.current = false;
+													const target = Math.max(0, scrollYRef.current + delta);
+													scrollRef.current?.scrollTo({ y: target, animated: true });
+												}
+											}}
+										>
 											{players.map((p) => (
 												<PlayerRow
 													key={p.id}
@@ -227,10 +258,10 @@ export default function GameInfoScreen() {
 									)}
 									<AddPlayerGroupRow
 										playerOpen={activeDropdown === "player"}
-										groupOpen={false}
-										showGroup={false}
+										groupOpen={activeDropdown === "group"}
+										showGroup={groups.length > 0}
 										onTogglePlayer={() => setActiveDropdown((prev) => (prev === "player" ? null : "player"))}
-										onToggleGroup={() => {}}
+										onToggleGroup={() => setActiveDropdown((prev) => (prev === "group" ? null : "group"))}
 									/>
 									{activeDropdown === "player" && (
 										<View style={[forms.dropdown, { backgroundColor: theme.backgroundSelected, borderColor: theme.background }]}>
@@ -242,7 +273,10 @@ export default function GameInfoScreen() {
 													placeholderTextColor={theme.textSecondary}
 													value={playerSearch}
 													onChangeText={setPlayerSearch}
-													onSubmitEditing={submitPlayerSearch}
+													onSubmitEditing={() => {
+														pendingScrollAdjust.current = true;
+														submitPlayerSearch();
+													}}
 													maxLength={15}
 													returnKeyType="done"
 													submitBehavior="submit"
@@ -262,7 +296,10 @@ export default function GameInfoScreen() {
 																{ borderBottomColor: theme.background },
 																i === filteredGlobalPlayers.length - 1 && { borderBottomWidth: 0 },
 															]}
-															onPress={() => addExistingPlayer(gp.id, gp.name)}
+															onPress={() => {
+																pendingScrollAdjust.current = true;
+																addExistingPlayer(gp.id, gp.name);
+															}}
 														>
 															<ThemedText type="default">{gp.name}</ThemedText>
 															<ThemedText type="small" style={{ color: theme.accent }}>+ Add</ThemedText>
@@ -281,6 +318,46 @@ export default function GameInfoScreen() {
 												<ThemedText type="small" themeColor="textSecondary" style={forms.dropdownEmpty}>
 													Press return to add "{playerSearch}"
 												</ThemedText>
+											)}
+										</View>
+									)}
+									{activeDropdown === "group" && (
+										<View style={[forms.dropdown, { backgroundColor: theme.backgroundSelected, borderColor: theme.background }]}>
+											{availableGroups.length === 0 ? (
+												<ThemedText type="small" themeColor="textSecondary" style={forms.dropdownEmpty}>
+													All groups are already in this game
+												</ThemedText>
+											) : (
+												availableGroups.map((g, i) => {
+													const memberNames = g.playerIds
+														.map((pid) => globalPlayers.find((p) => p.id === pid)?.name)
+														.filter(Boolean)
+														.join(", ");
+													return (
+														<HapticButton
+															key={g.id}
+															style={[
+																forms.dropdownRow,
+																{ borderBottomColor: theme.background },
+																i === availableGroups.length - 1 && { borderBottomWidth: 0 },
+															]}
+															onPress={() => {
+																pendingScrollAdjust.current = true;
+																addGroup(g.id);
+															}}
+														>
+															<View style={{ flex: 1 }}>
+																<ThemedText type="default">{g.name}</ThemedText>
+																{memberNames ? (
+																	<ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+																		{memberNames}
+																	</ThemedText>
+																) : null}
+															</View>
+															<ThemedText type="small" style={{ color: theme.accent }}>+ Add</ThemedText>
+														</HapticButton>
+													);
+												})
 											)}
 										</View>
 									)}
