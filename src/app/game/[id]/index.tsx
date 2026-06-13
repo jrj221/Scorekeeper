@@ -184,6 +184,27 @@ export default function GameScreen() {
 		transform: [{ translateY: -scorecardScrollY.value }],
 	}));
 
+	// Rank row reveal: hidden until the first round is complete, then it grows in
+	// (height 0 → ROW_H) while its contents slide up into place.
+	const firstRoundDone =
+		!!game && game.players.length > 0 && game.players.every((p) => (game.rounds[0] ?? {})[p.id] !== undefined);
+	const rankReveal = useSharedValue(firstRoundDone ? 1 : 0);
+	useEffect(() => {
+		rankReveal.value = withTiming(firstRoundDone ? 1 : 0, { duration: 320 });
+	}, [firstRoundDone]);
+	const rankRowRevealStyle = useAnimatedStyle(() => ({
+		height: rankReveal.value * ROW_H,
+		opacity: rankReveal.value,
+	}));
+	const rankRowSlideStyle = useAnimatedStyle(() => ({
+		transform: [{ translateY: (1 - rankReveal.value) * ROW_H }],
+	}));
+	// Left corner block spans the rank row + names row; it shrinks to just the
+	// names row while the rank row is hidden so the grid stays aligned.
+	const rankCornerStyle = useAnimatedStyle(() => ({
+		height: ROW_H + rankReveal.value * ROW_H,
+	}));
+
 	// Turn order rotation animation.
 	// Ghost = the OLD first player appended below the list.
 	// We animate slideY: 0 → -ROW_H (slide up).
@@ -217,8 +238,13 @@ export default function GameScreen() {
 			return;
 		}
 		prevRoundRef.current = currentRoundIndex;
-		pendingOrderRef.current = newOrder;
 		const old = displayedOrderRef.current;
+		// Order unchanged (e.g. goes-first off) → no rotation animation
+		if (old.length === newOrder.length && old.every((v, i) => v === newOrder[i])) {
+			setDisplayedOrder(newOrder);
+			return;
+		}
+		pendingOrderRef.current = newOrder;
 		const j = old.indexOf(newOrder[0]);
 		// K = right-rotation distance: how far newOrder[0] is from the bottom
 		const K = j <= 0 ? 1 : old.length - j;
@@ -634,20 +660,24 @@ export default function GameScreen() {
 							const MAX_VISIBLE_ROWS = 10;
 							const CURRENT_ROW_BG = CURRENT_TINT + "40";
 							const MEDAL_COLORS = ["#FFD700", "#888888", "#CD7F32"];
+							// Fixed dark pill so the gold/silver/bronze numbers (and white for the
+							// rest) stay high-contrast in every color scheme, light or dark.
+							const RANK_PILL_BG = "#1C1C22";
 							const RANK_LABELS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
 							const tiers = buildTiers(sortedPlayers, totals);
 							const rankMap = new Map(tiers.flatMap((tier, ti) => tier.map((p) => [p.id, ti])));
 							const rankLbl = (tier: number) =>
 								firstRoundComplete ? (RANK_LABELS[tier] ?? `${tier + 1}th`) : "";
-							const rankColor = (tier: number) => (tier < 3 ? MEDAL_COLORS[tier] : theme.textSecondary);
+							const rankColor = (tier: number) => (tier < 3 ? MEDAL_COLORS[tier] : theme.accentText);
 							return (
 								<View style={{ flexDirection: "row", alignItems: "flex-start" }}>
 									{/* Fixed left: round number column */}
 									<View style={{ width: ROUND_LABEL_W }}>
-										<View
+										<Animated.View
 											style={[
 												styles.labelCell,
-												{ height: ROW_H * 2, backgroundColor: theme.backgroundSelected },
+												rankCornerStyle,
+												{ backgroundColor: theme.backgroundSelected },
 											]}
 										/>
 										<View style={{ maxHeight: MAX_VISIBLE_ROWS * ROW_H, overflow: "hidden" }}>
@@ -705,33 +735,48 @@ export default function GameScreen() {
 										style={{ flex: 1 }}
 									>
 										<View style={{ alignItems: "flex-start" }}>
-											{/* Rank row */}
-											<View
+											{/* Rank row — hidden until the first round completes, then slides up into place */}
+											<Animated.View
 												style={[
-													styles.headerRow,
-													{ backgroundColor: theme.backgroundSelected },
+													rankRowRevealStyle,
+													{ overflow: "hidden", backgroundColor: theme.backgroundSelected },
 												]}
 											>
-												{displayedScorecardPlayers.map((p) => {
-													const tier = rankMap.get(p.id) ?? 99;
-													return (
-														<RNAnimated.View
-															key={p.id}
-															style={[
-																styles.nameCell,
-																{ width: colW, height: ROW_H },
-																{ transform: [{ translateX: getColAnim(p.id) }] },
-															]}
-														>
-															<ThemedText
-																style={[styles.rankLabel, { color: rankColor(tier) }]}
+												<Animated.View style={[styles.headerRow, rankRowSlideStyle]}>
+													{displayedScorecardPlayers.map((p) => {
+														const tier = rankMap.get(p.id) ?? 99;
+														const lbl = rankLbl(tier);
+														return (
+															<RNAnimated.View
+																key={p.id}
+																style={[
+																	styles.nameCell,
+																	{ width: colW, height: ROW_H },
+																	{ transform: [{ translateX: getColAnim(p.id) }] },
+																]}
 															>
-																{rankLbl(tier)}
-															</ThemedText>
-														</RNAnimated.View>
-													);
-												})}
-											</View>
+																{lbl ? (
+																	<View
+																		style={[
+																			styles.rankPill,
+																			{ backgroundColor: RANK_PILL_BG },
+																		]}
+																	>
+																		<ThemedText
+																			style={[
+																				styles.rankLabel,
+																				{ color: rankColor(tier) },
+																			]}
+																		>
+																			{lbl}
+																		</ThemedText>
+																	</View>
+																) : null}
+															</RNAnimated.View>
+														);
+													})}
+												</Animated.View>
+											</Animated.View>
 
 											{/* Player names row */}
 											<View
@@ -1291,6 +1336,15 @@ const styles = StyleSheet.create({
 		fontWeight: "700",
 		textAlign: "center",
 		letterSpacing: 0.3,
+	},
+	rankPill: {
+		minWidth: 34,
+		width: 50,
+		paddingHorizontal: 8,
+		paddingVertical: 2,
+		borderRadius: 999,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 });
 

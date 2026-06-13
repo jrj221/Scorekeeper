@@ -121,6 +121,75 @@ export const forms = StyleSheet.create({
   },
   dropdownBtns: { flexDirection: 'row', gap: Spacing.two },
 
+  // ── Section header (group label above cards) ──────────────────────────────
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.one,
+  },
+
+  // ── Player rows (full-width, icon + name + remove) ────────────────────────
+  playerList: { gap: Spacing.two },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+  },
+  removeBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Split "Add player | Add group" row ────────────────────────────────────
+  splitRow: { flexDirection: 'row', borderRadius: Spacing.two, overflow: 'hidden' },
+  splitBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one + 2,
+    paddingVertical: Spacing.three,
+  },
+  splitDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch' },
+
+  // ── Option card (icon tile + title/subtitle + toggle) ─────────────────────
+  optionRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  iconTile: {
+    width: 40,
+    height: 40,
+    borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionTextWrap: { flex: 1, gap: 1 },
+  optionTitle: { fontSize: 16, fontWeight: '600', lineHeight: 20 },
+
+  // ── Pills (Random / Rotating / Fixed) ─────────────────────────────────────
+  pillsWrap: {
+    marginTop: Spacing.three,
+    paddingTop: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.two,
+  },
+  pillRow: { flexDirection: 'row', gap: Spacing.two },
+  pill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one + 2,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+
   // ── Scroll containers ─────────────────────────────────────────────────────
   formScroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
   section: { gap: Spacing.two },

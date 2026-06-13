@@ -51,11 +51,6 @@ export default function NewGameStartScreen() {
                           {t.rankByLowest ? 'Lowest wins' : 'Highest wins'}
                         </ThemedText>
                       </View>
-                      {t.description ? (
-                        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-                          {t.description}
-                        </ThemedText>
-                      ) : null}
                     </View>
                     <ThemedText type="small" style={{ color: theme.accent }}>→</ThemedText>
                   </HapticButton>

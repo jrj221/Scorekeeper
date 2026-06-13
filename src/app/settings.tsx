@@ -8,20 +8,14 @@ import { ThemedView } from "@/components/themed-view";
 import { COLOR_SCHEMES, ColorSchemeId } from "@/constants/color-schemes";
 import { DEV_TOOLS_ENABLED } from "@/constants/dev";
 import { Spacing } from "@/constants/theme";
-import { ColorMode, useColorSchemeContext } from "@/context/color-scheme-context";
+import { useColorSchemeContext } from "@/context/color-scheme-context";
 import { useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 
-const MODES: { id: ColorMode; label: string }[] = [
-  { id: 'system', label: 'System' },
-  { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
-];
-
 export default function SettingsScreen() {
   const theme = useTheme();
-  const { schemeId, setSchemeId, colorMode, setColorMode } = useColorSchemeContext();
+  const { schemeId, setSchemeId } = useColorSchemeContext();
   const { seedData, resetData } = useGamesContext();
 
   const confirmReset = () =>
@@ -38,38 +32,13 @@ export default function SettingsScreen() {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
-          {/* Appearance */}
-          <View style={styles.section}>
-            <ThemedText style={styles.label} themeColor="textSecondary">APPEARANCE</ThemedText>
-            <View style={[styles.modeRow, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
-              {MODES.map((m) => {
-                const active = m.id === colorMode;
-                return (
-                  <HapticButton
-                    key={m.id}
-                    style={[styles.modeBtn, active && { backgroundColor: theme.accent }]}
-                    onPress={() => setColorMode(m.id)}
-                    activeOpacity={0.7}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={{ color: active ? theme.accentText : theme.textSecondary, fontWeight: active ? '600' : '400' }}
-                    >
-                      {m.label}
-                    </ThemedText>
-                  </HapticButton>
-                );
-              })}
-            </View>
-          </View>
-
           {/* Color Scheme */}
           <View style={styles.section}>
             <ThemedText style={styles.label} themeColor="textSecondary">COLOR SCHEME</ThemedText>
             <View style={[styles.schemesGrid, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
               {COLOR_SCHEMES.map((s) => {
                 const active = s.id === schemeId;
-                const preview = s.light; // always show light preview swatch
+                const preview = s.colors;
                 return (
                   <HapticButton
                     key={s.id}
@@ -131,19 +100,6 @@ const styles = StyleSheet.create({
   scroll: { padding: Spacing.three, gap: Spacing.four, paddingBottom: Spacing.six },
   section: { gap: Spacing.two },
   label: { fontSize: 11, fontWeight: "600", letterSpacing: 0.8 },
-  modeRow: {
-    flexDirection: 'row',
-    borderRadius: Spacing.two,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 3,
-    gap: 3,
-  },
-  modeBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.one + 2,
-    borderRadius: Spacing.two - 2,
-  },
   schemesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

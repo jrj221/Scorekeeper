@@ -74,6 +74,31 @@ export function getTurnState(game: Game, roundIndex: number): {
   const n = order.length;
   if (n === 0) return { orderedIds: [], firstPlayerId: null, dealerId: null };
 
+  const turnsTracked = Array.isArray(game.turnOrder);
+
+  // Goes-first off: keep players in their natural order, no first player.
+  // Dealer is tracked independently and still rotates.
+  if (!turnsTracked) {
+    let dealerId: string | null = null;
+    if (game.dealerEnabled) {
+      switch (game.dealerMode) {
+        case 'fixed':
+          dealerId = game.fixedDealerId ?? null;
+          break;
+        case 'rotation': {
+          const startIdx = game.fixedDealerId ? order.indexOf(game.fixedDealerId) : 0;
+          dealerId = order[((startIdx >= 0 ? startIdx : 0) + roundIndex) % n];
+          break;
+        }
+        case 'random':
+        default:
+          dealerId = order[deterministicIdx(game.id, roundIndex, n)];
+          break;
+      }
+    }
+    return { orderedIds: game.players.map(p => p.id), firstPlayerId: null, dealerId };
+  }
+
   // Left-of-dealer: dealer is primary, first player derives from dealer
   if (game.firstPlayerMode === 'left-of-dealer' && game.dealerEnabled) {
     let dealerIdx = 0;

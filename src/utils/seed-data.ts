@@ -25,7 +25,6 @@ export function buildSeedData(): {
   const g1: Game = {
     id: id('game'),
     name: 'Catan Night',
-    description: 'Friday game night',
     players: [alice, bob, carol],
     rounds: [
       { [alice.id]: 4, [bob.id]: 3, [carol.id]: 5 },
@@ -88,7 +87,6 @@ export function buildSeedData(): {
     {
       id: id('tmpl'),
       name: 'Catan Night',
-      description: 'Friday game night',
       totalRounds: 5,
       rankByLowest: false,
       createdAt: daysAgo(7),
