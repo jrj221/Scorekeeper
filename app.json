@@ -35,7 +35,7 @@
 				"expo-splash-screen",
 				{
 					"backgroundColor": "#061A2E",
-					"image": "./assets/images/scorekeeper_splash.png",
+					"image": "./assets/images/scorekeeper_app_icon.png",
 					"imageWidth": 200,
 					"android": {
 						"image": "./assets/images/app-icon.png",
