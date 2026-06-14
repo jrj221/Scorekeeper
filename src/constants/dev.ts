@@ -1,1 +1,1 @@
-export const DEV_TOOLS_ENABLED = false;
+export const DEV_TOOLS_ENABLED = true;

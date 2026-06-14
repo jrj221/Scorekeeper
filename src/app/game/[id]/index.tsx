@@ -46,7 +46,7 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 // Podium constants (used in static results view for finished games)
 const PODIUM_H = 260;
-const PLATFORM_H = [150, 108, 76];
+const PLATFORM_H = [150, 130, 110];
 const COL_RANK = [1, 0, 2];
 const RANK_ICONS = [
 	{ name: "trophy", color: "#FFD700" },
@@ -54,18 +54,23 @@ const RANK_ICONS = [
 	{ name: "medal", color: "#CD7F32" },
 ] as const;
 
-const RANK_LABEL_H = 34; // approx height of "1st" label + platform paddingTop
+// Max tied names shown inside each platform before the list becomes scrollable
+const TIE_NAME_LIMIT = [4, 3, 2];
+const TIE_ROW_H = 22;
 
 function TieList({
 	players,
-	platformHeight,
+	maxVisible,
+	rowHeight,
 	textColor,
 }: {
 	players: Player[];
-	platformHeight: number;
+	maxVisible: number;
+	rowHeight: number;
 	textColor: string;
 }) {
-	const maxH = platformHeight - RANK_LABEL_H;
+	// Fixed-height rows so exactly `maxVisible` names fit regardless of font metrics.
+	const viewportH = maxVisible * rowHeight;
 	const [showMore, setShowMore] = useState(false);
 	const listH = useRef(0);
 	const contentH = useRef(0);
@@ -75,8 +80,9 @@ function TieList({
 	};
 
 	return (
-		<View style={{ maxHeight: maxH }}>
+		<View>
 			<ScrollView
+				style={{ maxHeight: viewportH }}
 				onLayout={(e) => {
 					listH.current = e.nativeEvent.layout.height;
 					check();
@@ -91,13 +97,15 @@ function TieList({
 				nestedScrollEnabled
 			>
 				{players.map((p) => (
-					<ThemedText key={p.id} style={[podiumStyles.tiePlayerName, { color: textColor }]} numberOfLines={1}>
-						{p.name}
-					</ThemedText>
+					<View key={p.id} style={[podiumStyles.tieRow, { height: rowHeight }]}>
+						<ThemedText style={[podiumStyles.tiePlayerName, { color: textColor }]} numberOfLines={1}>
+							{p.name}
+						</ThemedText>
+					</View>
 				))}
 			</ScrollView>
 			{showMore && (
-				<ThemedText style={[podiumStyles.tiePlayerName, { color: textColor, opacity: 0.5 }]}>•••</ThemedText>
+				<ThemedText style={[podiumStyles.tieMore, { color: textColor }]}>•••</ThemedText>
 			)}
 		</View>
 	);
@@ -951,6 +959,10 @@ export default function GameScreen() {
 						const tiers = buildTiers(sortedPlayers, totals);
 						const restTiers = tiers.slice(3);
 						const accentColors = [CURRENT_TINT, theme.backgroundSelected, theme.backgroundSelected];
+						// Larger text needs taller platforms (and a taller podium) so names/scores fit.
+						const podiumScale = largeText ? textScale : 1;
+						const podiumH = PODIUM_H * podiumScale;
+						const platformH = PLATFORM_H.map((h) => h * podiumScale);
 						return (
 							<ScrollView
 								contentContainerStyle={{ gap: Spacing.three, paddingBottom: Spacing.six }}
@@ -960,7 +972,7 @@ export default function GameScreen() {
 								<View
 									style={[podiumStyles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}
 								>
-									<View style={[podiumStyles.podiumRow, { height: PODIUM_H }]}>
+									<View style={[podiumStyles.podiumRow, { height: podiumH }]}>
 										{COL_RANK.map((rankIdx, colIdx) => {
 											const tierPlayers = tiers[rankIdx] ?? [];
 											const tierScore = tierPlayers[0] ? (totals[tierPlayers[0].id] ?? 0) : 0;
@@ -970,7 +982,7 @@ export default function GameScreen() {
 														<View
 															style={[
 																podiumStyles.playerInfo,
-																{ bottom: PLATFORM_H[rankIdx] + Spacing.two },
+																{ bottom: platformH[rankIdx] + Spacing.two },
 															]}
 														>
 															<View
@@ -1017,7 +1029,7 @@ export default function GameScreen() {
 														style={[
 															podiumStyles.platform,
 															{
-																height: PLATFORM_H[rankIdx],
+																height: platformH[rankIdx],
 																backgroundColor: accentColors[rankIdx],
 															},
 														]}
@@ -1038,7 +1050,8 @@ export default function GameScreen() {
 														{tierPlayers.length > 1 && (
 															<TieList
 																players={tierPlayers}
-																platformHeight={PLATFORM_H[rankIdx]}
+																maxVisible={TIE_NAME_LIMIT[rankIdx]}
+																rowHeight={TIE_ROW_H * podiumScale}
 																textColor={
 																	rankIdx === 0
 																		? theme.accentText
@@ -1366,7 +1379,10 @@ const podiumStyles = StyleSheet.create({
 	playerName: { fontSize: 13, fontWeight: "600", textAlign: "center" },
 	tieName: { fontSize: 11, fontWeight: "700", textAlign: "center", opacity: 0.6, letterSpacing: 0.3 },
 	tieScroll: { maxHeight: 48, width: "100%" },
-	tiePlayerName: { fontSize: 11, fontWeight: "600", textAlign: "center" },
+	tieRow: { justifyContent: "center", overflow: "hidden" },
+	tiePlayerName: { fontSize: 11, fontWeight: "600", textAlign: "center", includeFontPadding: false },
+	// Slim "more" hint below the list — must not occupy a full name row.
+	tieMore: { fontSize: 9, lineHeight: 10, height: 10, textAlign: "center", opacity: 0.5, includeFontPadding: false },
 	playerScore: { fontSize: 20, fontWeight: "700" },
 	platform: {
 		position: "absolute",

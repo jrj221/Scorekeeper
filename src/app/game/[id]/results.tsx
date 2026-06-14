@@ -7,16 +7,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { LARGE_TEXT_SCALE, useTextScaleContext } from "@/context/text-scale-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
 import { buildTiers } from "@/utils/game";
 
 const PODIUM_H = 260;
-const PLATFORM_H = [150, 108, 76];
+const PLATFORM_H = [150, 130, 110];
 // Column order: left=2nd(idx1), centre=1st(idx0), right=3rd(idx2)
 const COL_RANK = [1, 0, 2];
 const RISE_DELAYS = [500, 1000, 1500];
+// Max tied names shown inside each platform before the list becomes scrollable
+const TIE_NAME_LIMIT = [4, 3, 2];
+const TIE_LINE_H = 22;
 
 const RANK_ICONS = [
 	{ name: "trophy", color: "#FFD700" },
@@ -24,11 +28,16 @@ const RANK_ICONS = [
 	{ name: "medal", color: "#CD7F32" },
 ] as const;
 
-
 export default function ResultsScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { game, totals, sortedPlayers } = useGame(id);
 	const theme = useTheme();
+	const { largeText } = useTextScaleContext();
+	// Larger text needs taller platforms (and a taller podium) so names/scores fit.
+	const sizeScale = largeText ? LARGE_TEXT_SCALE : 1;
+	const podiumH = PODIUM_H * sizeScale;
+	const platformH = PLATFORM_H.map((h) => h * sizeScale);
+	const tieLineH = TIE_LINE_H * sizeScale;
 
 	const platforms = [
 		useRef(new Animated.Value(0)).current,
@@ -51,7 +60,7 @@ export default function ResultsScreen() {
 			const delay = RISE_DELAYS[i];
 			setTimeout(() => {
 				Animated.spring(platforms[rankIdx], {
-					toValue: PLATFORM_H[rankIdx],
+					toValue: platformH[rankIdx],
 					useNativeDriver: false,
 					damping: 12,
 					stiffness: 100,
@@ -67,14 +76,19 @@ export default function ResultsScreen() {
 						if (rankIdx === 0) {
 							Animated.parallel([
 								Animated.timing(restOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-								Animated.spring(restTranslateY, { toValue: 0, useNativeDriver: true, damping: 14, stiffness: 120 }),
+								Animated.spring(restTranslateY, {
+									toValue: 0,
+									useNativeDriver: true,
+									damping: 14,
+									stiffness: 120,
+								}),
 							]).start();
 						}
 					});
 				}, riseDuration * 0.8);
 			}, delay);
 		});
-	}, []);
+	}, [sizeScale]);
 
 	if (!game) return null;
 
@@ -88,18 +102,18 @@ export default function ResultsScreen() {
 				<ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 					{/* Podium */}
 					<View style={[styles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}>
-						<View style={styles.podiumRow}>
+						<View style={[styles.podiumRow, { height: podiumH }]}>
 							{COL_RANK.map((rankIdx, colIdx) => {
 								const tierPlayers = tiers[rankIdx] ?? [];
 								const tierScore = tierPlayers[0] ? (totals[tierPlayers[0].id] ?? 0) : 0;
 								return (
-									<View key={colIdx} style={styles.podiumCol}>
+									<View key={colIdx} style={[styles.podiumCol, { height: podiumH }]}>
 										{tierPlayers.length > 0 && (
 											<Animated.View
 												style={[
 													styles.playerInfo,
 													{
-														bottom: PLATFORM_H[rankIdx] + Spacing.two,
+														bottom: platformH[rankIdx] + Spacing.two,
 														opacity: nameOpacity[rankIdx],
 													},
 												]}
@@ -121,11 +135,15 @@ export default function ResultsScreen() {
 													/>
 												</View>
 												<View style={styles.names}>
-													{tierPlayers.map((p) => (
-														<ThemedText key={p.id} style={styles.playerName} numberOfLines={1}>
-															{p.name}
+													{tierPlayers.length > 1 ? (
+														<ThemedText style={styles.playerName} numberOfLines={1}>
+															{tierPlayers.length}-way tie
 														</ThemedText>
-													))}
+													) : (
+														<ThemedText style={styles.playerName} numberOfLines={1}>
+															{tierPlayers[0].name}
+														</ThemedText>
+													)}
 												</View>
 												<ThemedText style={[styles.playerScore, { color: theme.accent }]}>
 													{tierScore}
@@ -149,6 +167,33 @@ export default function ResultsScreen() {
 											>
 												{["1st", "2nd", "3rd"][rankIdx]}
 											</ThemedText>
+											{tierPlayers.length > 1 && (
+												<ScrollView
+													style={{ maxHeight: TIE_NAME_LIMIT[rankIdx] * tieLineH }}
+													contentContainerStyle={styles.tieNames}
+													showsVerticalScrollIndicator
+													nestedScrollEnabled
+												>
+													{tierPlayers.map((p) => (
+														<View key={p.id} style={[styles.tieRow, { height: tieLineH }]}>
+															<ThemedText
+																style={[
+																	styles.tieName,
+																	{
+																		color:
+																			rankIdx === 0
+																				? theme.accentText
+																				: theme.text,
+																	},
+																]}
+																numberOfLines={1}
+															>
+																{p.name}
+															</ThemedText>
+														</View>
+													))}
+												</ScrollView>
+											)}
 										</Animated.View>
 									</View>
 								);
@@ -181,7 +226,7 @@ export default function ResultsScreen() {
 											{totals[player.id] ?? 0}
 										</ThemedText>
 									</View>
-								))
+								)),
 							)}
 						</Animated.View>
 					)}
@@ -211,6 +256,10 @@ const styles = StyleSheet.create({
 		paddingTop: Spacing.one,
 	},
 	rankNum: { fontSize: 22, fontWeight: "700", opacity: 0.4 },
+	tieNames: { alignItems: "center", paddingHorizontal: Spacing.one },
+	// Fixed-height row so exactly N names fit the scroll viewport regardless of font metrics.
+	tieRow: { justifyContent: "center", overflow: "hidden" },
+	tieName: { fontSize: 12, fontWeight: "600", textAlign: "center", includeFontPadding: false },
 	rankIcon: {
 		width: 36,
 		height: 36,
