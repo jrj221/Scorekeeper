@@ -182,60 +182,48 @@ export default function GameInfoScreen() {
 						scrollYRef.current = e.nativeEvent.contentOffset.y;
 					}}
 				>
-					{/* Game Name & Icon */}
-					<SetupCard>
-						<View style={forms.labelRow}>
-							<ThemedText style={forms.label} themeColor="textSecondary">
-								GAME NAME
-							</ThemedText>
-							{!locked.has("name") && (
+					{/* Game Name & Icon — hidden entirely when locked (e.g. Phase 10), since showing
+					    it read-only still makes it look editable when it isn't. */}
+					{!locked.has("name") && (
+						<SetupCard>
+							<View style={forms.labelRow}>
+								<ThemedText style={forms.label} themeColor="textSecondary">
+									GAME NAME
+								</ThemedText>
 								<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
 									{" "}
 									(OPTIONAL)
 								</ThemedText>
+							</View>
+							{finished ? (
+								<ThemedText type="default">{draft.name || "Untitled Game"}</ThemedText>
+							) : (
+								<View style={forms.nameRow}>
+									<HapticButton
+										style={[forms.iconBtn, { backgroundColor: theme.background }]}
+										onPress={() => router.push("/icon-picker")}
+										activeOpacity={0.7}
+									>
+										<FontAwesome5
+											name={(draft.icon ?? "users") as any}
+											size={20}
+											color={theme.textSecondary}
+										/>
+									</HapticButton>
+									<TextInput
+										allowFontScaling={false}
+										style={[shared.input, innerInput, { flex: 1 }]}
+										placeholder="Untitled Game"
+										placeholderTextColor={theme.textSecondary}
+										value={draft.name ?? ""}
+										onChangeText={(v) => patch({ name: v })}
+										maxLength={30}
+										returnKeyType="done"
+									/>
+								</View>
 							)}
-						</View>
-						{finished ? (
-							<ThemedText type="default">{draft.name || "Untitled Game"}</ThemedText>
-						) : locked.has("name") ? (
-							<View style={forms.nameRow}>
-								<View style={[forms.iconBtn, { backgroundColor: theme.background }]}>
-									<FontAwesome5
-										name={(draft.icon ?? "users") as any}
-										size={20}
-										color={theme.textSecondary}
-									/>
-								</View>
-								<View style={[shared.input, innerInput, { flex: 1, justifyContent: "center" }]}>
-									<ThemedText type="default">{draft.name || "Untitled Game"}</ThemedText>
-								</View>
-							</View>
-						) : (
-							<View style={forms.nameRow}>
-								<HapticButton
-									style={[forms.iconBtn, { backgroundColor: theme.background }]}
-									onPress={() => router.push("/icon-picker")}
-									activeOpacity={0.7}
-								>
-									<FontAwesome5
-										name={(draft.icon ?? "users") as any}
-										size={20}
-										color={theme.textSecondary}
-									/>
-								</HapticButton>
-								<TextInput
-									allowFontScaling={false}
-									style={[shared.input, innerInput, { flex: 1 }]}
-									placeholder="Untitled Game"
-									placeholderTextColor={theme.textSecondary}
-									value={draft.name ?? ""}
-									onChangeText={(v) => patch({ name: v })}
-									maxLength={30}
-									returnKeyType="done"
-								/>
-							</View>
-						)}
-					</SetupCard>
+						</SetupCard>
+					)}
 
 					{/* Players */}
 					<View style={styles.group}>
