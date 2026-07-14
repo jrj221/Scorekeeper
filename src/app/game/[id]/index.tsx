@@ -34,7 +34,7 @@ import { useTextScale } from "@/context/text-scale-context";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
-import { buildTiers, getTurnState } from "@/utils/game";
+import { buildTiers, getCurrentPhase, getTurnState, isPhase10Won } from "@/utils/game";
 
 const SCREEN_W = Dimensions.get("window").width;
 const H_PAD = Spacing.three * 2;
@@ -43,6 +43,22 @@ const BASE_ROW_H = 44;
 const ROTATION_MS = 400;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+const PHASED_COLOR = "#22C55E";
+
+// Blends `fg` over `bg` at `amount` opacity, returning an opaque hex color. Used so the
+// Phase 10 cell tint reads as a flat, consistent color regardless of the alternating
+// row stripe underneath, instead of letting that stripe show through a transparent tint.
+function mixHex(fg: string, bg: string, amount: number): string {
+	const parse = (hex: string) => {
+		const h = hex.replace("#", "");
+		return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+	};
+	const [fr, fg2, fb] = parse(fg);
+	const [br, bgG, bb] = parse(bg);
+	const mix = (f: number, b: number) => Math.round(f * amount + b * (1 - amount));
+	const toHex = (n: number) => n.toString(16).padStart(2, "0");
+	return `#${toHex(mix(fr, br))}${toHex(mix(fg2, bgG))}${toHex(mix(fb, bb))}`;
+}
 
 // Podium constants (used in static results view for finished games)
 const PODIUM_H = 260;
@@ -116,13 +132,18 @@ export default function GameScreen() {
 	const router = useRouter();
 	const theme = useTheme();
 	const CURRENT_TINT = theme.accent;
+	const PHASED_BG = mixHex(PHASED_COLOR, theme.background, 0.25);
+	const DANGER_BG = mixHex(theme.danger, theme.background, 0.25);
 	// In large-text mode, grow row heights to match the bigger text so scores/names
 	// aren't clipped. Reverts to the base height otherwise.
 	const textScale = useTextScale();
 	const largeText = textScale !== 1;
 	const ROW_H = largeText ? Math.round(BASE_ROW_H * textScale) : BASE_ROW_H;
-	const { game, endGame, updateScore, advanceRound, totals, sortedPlayers, visibleRoundCount, currentRoundIndex } =
+	const { game, endGame, updateScore, advanceRound, updatePhased, totals, sortedPlayers, visibleRoundCount, currentRoundIndex } =
 		useGame(id);
+	const isPhase10 = game?.gameType === "phase10";
+	// The names row grows a bit taller for Phase 10 to fit the "(Phase X)" subtitle line.
+	const NAMES_ROW_H = isPhase10 ? ROW_H + 14 : ROW_H;
 
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
 	const finished = !!game?.finishedAt;
@@ -216,7 +237,7 @@ export default function GameScreen() {
 	// Left corner block spans the rank row + names row; it shrinks to just the
 	// names row while the rank row is hidden so the grid stays aligned.
 	const rankCornerStyle = useAnimatedStyle(() => ({
-		height: ROW_H + rankReveal.value * ROW_H,
+		height: NAMES_ROW_H + rankReveal.value * ROW_H,
 	}));
 
 	// Turn order rotation animation.
@@ -284,7 +305,9 @@ export default function GameScreen() {
 		if (ghostIds.length === 0) slideY.value = 0;
 	}, [ghostIds]);
 
-	const isFinalRound = game?.totalRounds !== undefined && currentRoundIndex >= game.totalRounds - 1;
+	const isFinalRound = isPhase10
+		? !!game && isPhase10Won(game, currentRoundIndex)
+		: game?.totalRounds !== undefined && currentRoundIndex >= game.totalRounds - 1;
 
 	const handleShowFinalScores = () => {
 		endGame();
@@ -462,6 +485,14 @@ export default function GameScreen() {
 										>
 											Points so far
 										</ThemedText>
+										{isPhase10 && (
+											<ThemedText
+												style={[styles.turnHeaderCell, styles.turnHeaderPhased]}
+												themeColor="textSecondary"
+											>
+												Phased?
+											</ThemedText>
+										)}
 									</View>
 									{/* Fixed-height clipped container so rows slide in/out cleanly */}
 									<View style={[styles.turnList, { height: displayedOrder.length * ROW_H }]}>
@@ -544,6 +575,24 @@ export default function GameScreen() {
 																)}
 															</View>
 														</View>
+														{isPhase10 && (
+															<View style={styles.turnPhasedCell}>
+																<View
+																	style={[
+																		styles.phaseCheckbox,
+																		{ borderColor: theme.textSecondary },
+																		game.phasedRounds?.[currentRoundIndex]?.[pid] && {
+																			backgroundColor: CURRENT_TINT,
+																			borderColor: CURRENT_TINT,
+																		},
+																	]}
+																>
+																	{game.phasedRounds?.[currentRoundIndex]?.[pid] && (
+																		<ThemedText style={styles.phaseCheckMark}>✓</ThemedText>
+																	)}
+																</View>
+															</View>
+														)}
 													</View>
 												);
 											})}
@@ -632,6 +681,34 @@ export default function GameScreen() {
 																);
 															})()}
 														</View>
+														{isPhase10 && (
+															<HapticButton
+																style={styles.turnPhasedCell}
+																onPress={() =>
+																	updatePhased(
+																		currentRoundIndex,
+																		pid,
+																		!game.phasedRounds?.[currentRoundIndex]?.[pid],
+																	)
+																}
+																hitSlop={8}
+															>
+																<View
+																	style={[
+																		styles.phaseCheckbox,
+																		{ borderColor: theme.textSecondary },
+																		game.phasedRounds?.[currentRoundIndex]?.[pid] && {
+																			backgroundColor: CURRENT_TINT,
+																			borderColor: CURRENT_TINT,
+																		},
+																	]}
+																>
+																	{game.phasedRounds?.[currentRoundIndex]?.[pid] && (
+																		<ThemedText style={styles.phaseCheckMark}>✓</ThemedText>
+																	)}
+																</View>
+															</HapticButton>
+														)}
 													</HapticButton>
 												);
 											})}
@@ -643,7 +720,7 @@ export default function GameScreen() {
 											onPress={isFinalRound ? handleShowFinalScores : advanceRound}
 										>
 											<ThemedText type="smallBold" style={{ color: "#fff" }}>
-												{isFinalRound ? "Show Final Scores" : "Next Round"}
+												{isFinalRound ? (isPhase10 ? "Finish Game" : "Show Final Scores") : "Next Round"}
 											</ThemedText>
 										</HapticButton>
 									)}
@@ -681,7 +758,7 @@ export default function GameScreen() {
 							// rest) stay high-contrast in every color scheme, light or dark.
 							const RANK_PILL_BG = "#1C1C22";
 							const RANK_LABELS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
-							const tiers = buildTiers(sortedPlayers, totals);
+							const tiers = buildTiers(sortedPlayers, totals, game);
 							const rankMap = new Map(tiers.flatMap((tier, ti) => tier.map((p) => [p.id, ti])));
 							const rankLbl = (tier: number) =>
 								firstRoundComplete ? (RANK_LABELS[tier] ?? `${tier + 1}th`) : "";
@@ -807,22 +884,35 @@ export default function GameScreen() {
 														key={p.id}
 														style={[
 															styles.nameCell,
-															{ width: colW, height: ROW_H },
+															{ width: colW, height: NAMES_ROW_H },
 															{ transform: [{ translateX: getColAnim(p.id) }] },
 														]}
 													>
 														{finished ? (
 															<HapticButton
 																onPress={() => router.push(`/player/${p.id}`)}
+																style={{ alignItems: "center" }}
 															>
 																<ThemedText style={styles.colHeader} numberOfLines={1}>
 																	{p.name}
 																</ThemedText>
+																{isPhase10 && (
+																	<ThemedText style={styles.colSubHeader} themeColor="textSecondary" numberOfLines={1}>
+																		(Phase {getCurrentPhase(game, p.id)})
+																	</ThemedText>
+																)}
 															</HapticButton>
 														) : (
-															<ThemedText style={styles.colHeader} numberOfLines={1}>
-																{p.name}
-															</ThemedText>
+															<View style={{ alignItems: "center" }}>
+																<ThemedText style={styles.colHeader} numberOfLines={1}>
+																	{p.name}
+																</ThemedText>
+																{isPhase10 && (
+																	<ThemedText style={styles.colSubHeader} themeColor="textSecondary" numberOfLines={1}>
+																		(Phase {getCurrentPhase(game, p.id)})
+																	</ThemedText>
+																)}
+															</View>
 														)}
 													</RNAnimated.View>
 												))}
@@ -853,6 +943,7 @@ export default function GameScreen() {
 																const s = getScore(ri, p.id);
 																const tappable = !finished && ri <= currentRoundIndex;
 																const Cell = tappable ? HapticButton : View;
+																const phased = game.phasedRounds?.[ri]?.[p.id];
 																return (
 																	<RNAnimated.View
 																		key={p.id}
@@ -866,6 +957,12 @@ export default function GameScreen() {
 																			style={[
 																				styles.scoreCell,
 																				{ width: colW, height: ROW_H },
+																				isPhase10 &&
+																					s !== null && {
+																						backgroundColor: phased
+																							? PHASED_BG
+																							: DANGER_BG,
+																					},
 																			]}
 																			{...(tappable
 																				? {
@@ -956,15 +1053,17 @@ export default function GameScreen() {
 				{viewMode === "results" &&
 					finished &&
 					(() => {
-						const tiers = buildTiers(sortedPlayers, totals);
+						const tiers = buildTiers(sortedPlayers, totals, game);
 						const restTiers = tiers.slice(3);
 						const accentColors = [CURRENT_TINT, theme.backgroundSelected, theme.backgroundSelected];
 						// Larger text needs taller platforms (and a taller podium) so names/scores fit.
+						// Phase 10 adds an extra "Phase X" line under the score, so it needs more room too.
 						const podiumScale = largeText ? textScale : 1;
-						const podiumH = PODIUM_H * podiumScale;
+						const podiumH = PODIUM_H * podiumScale + (isPhase10 ? 24 : 0);
 						const platformH = PLATFORM_H.map((h) => h * podiumScale);
 						return (
 							<ScrollView
+								style={{ flex: 1 }}
 								contentContainerStyle={{ gap: Spacing.three, paddingBottom: Spacing.six }}
 								showsVerticalScrollIndicator={false}
 							>
@@ -1023,6 +1122,11 @@ export default function GameScreen() {
 															>
 																{tierScore}
 															</ThemedText>
+															{isPhase10 && tierPlayers[0] && (
+																<ThemedText type="small" themeColor="textSecondary">
+																	Phase {getCurrentPhase(game, tierPlayers[0].id)}
+																</ThemedText>
+															)}
 														</View>
 													)}
 													<View
@@ -1086,6 +1190,11 @@ export default function GameScreen() {
 													<ThemedText style={podiumStyles.restName} numberOfLines={1}>
 														{player.name}
 													</ThemedText>
+													{isPhase10 && (
+														<ThemedText type="small" themeColor="textSecondary">
+															Phase {getCurrentPhase(game, player.id)}
+														</ThemedText>
+													)}
 													<ThemedText style={[podiumStyles.restScore, { color: theme.text }]}>
 														{totals[player.id] ?? 0}
 													</ThemedText>
@@ -1111,7 +1220,7 @@ export default function GameScreen() {
 								onPress={isFinalRound ? handleShowFinalScores : advanceRound}
 							>
 								<ThemedText type="smallBold" style={{ color: "#fff" }}>
-									{isFinalRound ? "Show Final Scores" : "Next Round"}
+									{isFinalRound ? (isPhase10 ? "Finish Game" : "Show Final Scores") : "Next Round"}
 								</ThemedText>
 							</HapticButton>
 						) : null;
@@ -1142,6 +1251,11 @@ export default function GameScreen() {
 					clearEditCell();
 				}}
 				onCancel={() => clearEditCell()}
+				showPhaseToggle={isPhase10 && editCell !== null}
+				phased={!!(editCell && game.phasedRounds?.[editCell.roundIndex]?.[editCell.player.id])}
+				onTogglePhased={(v) => {
+					if (editCell) updatePhased(editCell.roundIndex, editCell.player.id, v);
+				}}
 			/>
 		</ThemedView>
 	);
@@ -1220,6 +1334,11 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		fontWeight: "600",
 		textAlign: "center",
+	},
+	colSubHeader: {
+		fontSize: 10,
+		textAlign: "center",
+		marginTop: 1,
 	},
 	scoreRow: {
 		flexDirection: "row",
@@ -1352,6 +1471,29 @@ const styles = StyleSheet.create({
 	turnHeaderRight: {
 		flex: 0,
 		textAlign: "right",
+	},
+	turnHeaderPhased: {
+		flex: 0,
+		width: 60,
+		textAlign: "right",
+	},
+	turnPhasedCell: {
+		width: 60,
+		alignItems: "flex-end",
+		justifyContent: "center",
+	},
+	phaseCheckbox: {
+		width: 24,
+		height: 24,
+		borderRadius: 6,
+		borderWidth: 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	phaseCheckMark: {
+		fontSize: 14,
+		fontWeight: "700",
+		color: "#fff",
 	},
 	rankLabel: {
 		fontSize: 12,

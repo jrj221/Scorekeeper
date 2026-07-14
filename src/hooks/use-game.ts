@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { Round, useGamesContext } from '@/context/games-context';
+import { getCurrentRoundIndex, sortPlayers } from '@/utils/game';
 
 export function useGame(id: string) {
   const { getGame, updateGame } = useGamesContext();
@@ -13,11 +14,7 @@ export function useGame(id: string) {
     }
   }
 
-  const sortedPlayers = game
-    ? [...game.players].sort((a, b) =>
-        game.rankByLowest ? totals[a.id] - totals[b.id] : totals[b.id] - totals[a.id],
-      )
-    : [];
+  const sortedPlayers = game ? sortPlayers(game, game.players, totals) : [];
 
   // Highest round index that has at least one score entered. Used as the fallback
   // current round for games that haven't had an explicit Next Round press yet.
@@ -39,14 +36,7 @@ export function useGame(id: string) {
     }
   }
 
-  // game.currentRound is the authority once explicitly set. Clamp it to lastScoredRound + 1
-  // so stale stored values (e.g. from previous testing) can never skip past unscored data.
-  // Before any Next Round press, fall back to lastScoredRound so the active round stays on
-  // the last round that has scores and does NOT scan forward for the first empty row.
-  const storedRound = game?.currentRound;
-  const currentRoundIndex = storedRound !== undefined
-    ? Math.min(storedRound, Math.max(0, lastScoredRound + 1))
-    : Math.max(0, lastScoredRound);
+  const currentRoundIndex = game ? getCurrentRoundIndex(game) : 0;
 
   const endGame = useCallback(() => {
     if (!game || game.finishedAt) return;
@@ -77,11 +67,26 @@ export function useGame(id: string) {
     updateGame({ ...game, currentRound: next });
   }, [game, currentRoundIndex, updateGame]);
 
+  const updatePhased = useCallback(
+    (roundIndex: number, playerId: string, phased: boolean) => {
+      if (!game) return;
+      const len = Math.max(game.phasedRounds?.length ?? 0, roundIndex + 1);
+      const phasedRounds: Record<string, boolean>[] = Array.from(
+        { length: len },
+        (_, i) => ({ ...game.phasedRounds?.[i] }),
+      );
+      phasedRounds[roundIndex] = { ...phasedRounds[roundIndex], [playerId]: phased };
+      updateGame({ ...game, phasedRounds });
+    },
+    [game, updateGame],
+  );
+
   return {
     game,
     endGame,
     updateScore,
     advanceRound,
+    updatePhased,
     totals,
     sortedPlayers,
     visibleRoundCount,

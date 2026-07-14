@@ -1,4 +1,5 @@
 import { getDealerHintText, getTurnHintText } from "@/utils/game";
+import { getVisiblePhases } from "@/constants/classic-games";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -102,6 +103,7 @@ export default function GameInfoScreen() {
 
 	const finished = !!game.finishedAt;
 	const players = draft.players;
+	const locked = new Set(draft.lockedFields ?? []);
 
 	const handleRemovePlayer = (p: Player) => {
 		if (players.length <= 1) {
@@ -186,10 +188,21 @@ export default function GameInfoScreen() {
 					<SetupCard>
 						<View style={forms.labelRow}>
 							<ThemedText style={forms.label} themeColor="textSecondary">GAME NAME</ThemedText>
-							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							{!locked.has("name") && (
+								<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							)}
 						</View>
 						{finished ? (
 							<ThemedText type="default">{draft.name || "Untitled Game"}</ThemedText>
+						) : locked.has("name") ? (
+							<View style={forms.nameRow}>
+								<View style={[forms.iconBtn, { backgroundColor: theme.background }]}>
+									<FontAwesome5 name={(draft.icon ?? "users") as any} size={20} color={theme.textSecondary} />
+								</View>
+								<View style={[shared.input, innerInput, { flex: 1, justifyContent: "center" }]}>
+									<ThemedText type="default">{draft.name || "Untitled Game"}</ThemedText>
+								</View>
+							</View>
 						) : (
 							<View style={forms.nameRow}>
 								<HapticButton
@@ -366,10 +379,12 @@ export default function GameInfoScreen() {
 						</SetupCard>
 					</View>
 
+					{!(locked.has("rounds") && locked.has("rankByLowest")) && (
 					<View style={styles.group}>
 						<SectionHeader label="GAME CONDITIONS" />
 
 					{/* Rounds */}
+					{!locked.has("rounds") && (
 					<SetupCard>
 						<ThemedText style={forms.label} themeColor="textSecondary">ROUNDS</ThemedText>
 						{finished ? (
@@ -403,8 +418,10 @@ export default function GameInfoScreen() {
 							</>
 						)}
 					</SetupCard>
+					)}
 
 					{/* Winner */}
+					{!locked.has("rankByLowest") && (
 					<SetupCard>
 						<ThemedText style={forms.label} themeColor="textSecondary">WINNER</ThemedText>
 						{finished ? (
@@ -427,8 +444,28 @@ export default function GameInfoScreen() {
 							</View>
 						)}
 					</SetupCard>
+					)}
 
 					</View>
+					)}
+
+					{/* Phases (Phase 10 only) */}
+					{game.gameType === "phase10" && (
+						<View style={styles.group}>
+							<SectionHeader label="PHASES" />
+							<SetupCard>
+								<ThemedText style={forms.label} themeColor="textSecondary">
+									{game.phaseSubset ? `${game.phaseSubset === "odd" ? "Odd" : "Even"} phases only` : "All 10 phases"}
+								</ThemedText>
+								{getVisiblePhases(game.phaseSubset).map((p) => (
+									<View key={p.number} style={styles.phaseRow}>
+										<ThemedText type="smallBold" style={{ width: 24 }}>{p.number}.</ThemedText>
+										<ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>{p.description}</ThemedText>
+									</View>
+								))}
+							</SetupCard>
+						</View>
+					)}
 
 					{/* Options */}
 					<View style={styles.group}>
@@ -534,20 +571,24 @@ export default function GameInfoScreen() {
 						{/* Extras */}
 						{!finished && (
 							<>
-								<OptionCard
-									icon="dice"
-									title="Dice"
-									subtitle="Show dice roller in game"
-									value={!!draft.extras?.dice}
-									onToggle={() => patch({ extras: { ...draft.extras, dice: !draft.extras?.dice } })}
-								/>
-								<OptionCard
-									icon="stopwatch"
-									title="Timer"
-									subtitle="Show timer in game"
-									value={!!draft.extras?.timer}
-									onToggle={() => patch({ extras: { ...draft.extras, timer: !draft.extras?.timer } })}
-								/>
+								{!locked.has("extras.dice") && (
+									<OptionCard
+										icon="dice"
+										title="Dice"
+										subtitle="Show dice roller in game"
+										value={!!draft.extras?.dice}
+										onToggle={() => patch({ extras: { ...draft.extras, dice: !draft.extras?.dice } })}
+									/>
+								)}
+								{!locked.has("extras.timer") && (
+									<OptionCard
+										icon="stopwatch"
+										title="Timer"
+										subtitle="Show timer in game"
+										value={!!draft.extras?.timer}
+										onToggle={() => patch({ extras: { ...draft.extras, timer: !draft.extras?.timer } })}
+									/>
+								)}
 							</>
 						)}
 					</View>
@@ -592,6 +633,7 @@ export default function GameInfoScreen() {
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
 	group: { gap: Spacing.two },
+	phaseRow: { flexDirection: "row", gap: Spacing.two },
 	actionsContainer: {
 		gap: Spacing.two,
 		padding: Spacing.one,

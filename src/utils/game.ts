@@ -1,16 +1,95 @@
 import { DealerMode, Game, Player } from '@/context/games-context';
 
 /**
- * Groups a pre-sorted player array into tiers of equal score.
+ * The round currently being played, 0-indexed. `game.currentRound` is authoritative once
+ * an explicit "Next Round" press has set it (clamped so a stale value can never skip past
+ * unscored data). Before that first press, falls back to the last round with any score
+ * entered, so the active round doesn't jump ahead just because it's fully scored.
+ */
+export function getCurrentRoundIndex(game: Game): number {
+  let lastScoredRound = -1;
+  for (let i = 0; i < game.rounds.length; i++) {
+    if (Object.keys(game.rounds[i]).length > 0) lastScoredRound = i;
+  }
+  const storedRound = game.currentRound;
+  return storedRound !== undefined
+    ? Math.min(storedRound, Math.max(0, lastScoredRound + 1))
+    : Math.max(0, lastScoredRound);
+}
+
+/** The ordered phase numbers a game plays — all 10, or just the odd/even half for a shorter game. */
+export function getPhaseSequence(game: Game): number[] {
+  if (game.phaseSubset === 'odd') return [1, 3, 5, 7, 9];
+  if (game.phaseSubset === 'even') return [2, 4, 6, 8, 10];
+  return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+}
+
+/** Phase the player was attempting during `roundIndex` (before that round's result applied). */
+export function getPhaseAtRound(game: Game, playerId: string, roundIndex: number): number {
+  const seq = getPhaseSequence(game);
+  let idx = 0;
+  for (let i = 0; i < roundIndex; i++) {
+    if (game.phasedRounds?.[i]?.[playerId]) idx = Math.min(seq.length - 1, idx + 1);
+  }
+  return seq[idx];
+}
+
+/**
+ * The phase a player is currently on/attempting. Only rounds before `currentRound`
+ * count — marking a round "phased" doesn't advance the phase display until the
+ * player actually presses "Next Round," matching the real Phase 10 flow. Finished
+ * games count every recorded round, since there's no "in progress" round left.
+ */
+export function getCurrentPhase(game: Game, playerId: string): number {
+  const cutoff = game.finishedAt ? (game.phasedRounds?.length ?? 0) : getCurrentRoundIndex(game);
+  return getPhaseAtRound(game, playerId, cutoff);
+}
+
+/** True if any player completed the final phase during `roundIndex` — the game is won. */
+export function isPhase10Won(game: Game, roundIndex: number): boolean {
+  const lastPhase = getPhaseSequence(game).slice(-1)[0];
+  return game.players.some(
+    p => getPhaseAtRound(game, p.id, roundIndex) === lastPhase && game.phasedRounds?.[roundIndex]?.[p.id],
+  );
+}
+
+/**
+ * Sorts players by the game's win condition. Phase 10 ranks by phase reached
+ * (highest first), breaking ties by lowest score. Regular games rank by total
+ * score per `rankByLowest`.
+ */
+export function sortPlayers(game: Game, players: Player[], totals: Record<string, number>): Player[] {
+  if (game.gameType === 'phase10') {
+    return [...players].sort((a, b) => {
+      const phaseDiff = getCurrentPhase(game, b.id) - getCurrentPhase(game, a.id);
+      if (phaseDiff !== 0) return phaseDiff;
+      return (totals[a.id] ?? 0) - (totals[b.id] ?? 0);
+    });
+  }
+  return [...players].sort((a, b) =>
+    game.rankByLowest ? (totals[a.id] ?? 0) - (totals[b.id] ?? 0) : (totals[b.id] ?? 0) - (totals[a.id] ?? 0),
+  );
+}
+
+/** Composite tie-key for a player under the game's win condition. */
+function tierKey(game: Game, playerId: string, totals: Record<string, number>): string {
+  const total = totals[playerId] ?? 0;
+  if (game.gameType === 'phase10') return `${getCurrentPhase(game, playerId)}:${total}`;
+  return `${total}`;
+}
+
+/**
+ * Groups a pre-sorted player array into tiers of equal standing.
  * Tier 0 = 1st place, tier 1 = 2nd place, etc. (dense ranking).
  * Used by both the podium and the rest-list displays.
  */
-export function buildTiers(sortedPlayers: Player[], totals: Record<string, number>): Player[][] {
+export function buildTiers(sortedPlayers: Player[], totals: Record<string, number>, game?: Game): Player[][] {
   const tiers: Player[][] = [];
   for (const p of sortedPlayers) {
-    const score = totals[p.id] ?? 0;
+    const key = game ? tierKey(game, p.id, totals) : `${totals[p.id] ?? 0}`;
     const last = tiers[tiers.length - 1];
-    if (last && (totals[last[0].id] ?? 0) === score) last.push(p);
+    const lastKey = last && (game ? tierKey(game, last[0].id, totals) : `${totals[last[0].id] ?? 0}`);
+    if (last && lastKey === key) last.push(p);
     else tiers.push([p]);
   }
   return tiers;
@@ -27,14 +106,11 @@ export function getGameTotals(game: Game): Record<string, number> {
 export function getGameWinnerLabel(game: Game): string {
   if (!game.finishedAt || game.players.length === 0) return '';
   const totals = getGameTotals(game);
-  const scores = game.players.map(p => ({ ...p, total: totals[p.id] ?? 0 }));
-  const best = game.rankByLowest
-    ? Math.min(...scores.map(s => s.total))
-    : Math.max(...scores.map(s => s.total));
-  const winners = scores.filter(s => s.total === best);
-  if (winners.length === 1) return `🏆 ${winners[0].name}`;
-  if (winners.length === 2) return '🤝 2-way Tie';
-  return `🤝 ${winners.length}-way Tie`;
+  const sorted = sortPlayers(game, game.players, totals);
+  const topTier = buildTiers(sorted, totals, game)[0] ?? [];
+  if (topTier.length === 1) return `🏆 ${topTier[0].name}`;
+  if (topTier.length === 2) return '🤝 2-way Tie';
+  return `🤝 ${topTier.length}-way Tie`;
 }
 
 export function getPlayerWinRate(playerId: string, games: Game[]): string {
@@ -45,11 +121,9 @@ export function getPlayerWinRate(playerId: string, games: Game[]): string {
   let wins = 0;
   for (const game of finished) {
     const totals = getGameTotals(game);
-    const scores = game.players.map(p => ({ ...p, total: totals[p.id] ?? 0 }));
-    const best = game.rankByLowest
-      ? Math.min(...scores.map(s => s.total))
-      : Math.max(...scores.map(s => s.total));
-    if (scores.filter(s => s.total === best).some(s => s.id === playerId)) wins++;
+    const sorted = sortPlayers(game, game.players, totals);
+    const topTier = buildTiers(sorted, totals, game)[0] ?? [];
+    if (topTier.some(p => p.id === playerId)) wins++;
   }
   return `${Math.round((wins / finished.length) * 100)}%`;
 }

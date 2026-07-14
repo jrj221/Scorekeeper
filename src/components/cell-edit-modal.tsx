@@ -36,6 +36,9 @@ type Props = {
   minValue?: number;
   onSave: (value: number | null) => void;
   onCancel: () => void;
+  showPhaseToggle?: boolean;
+  phased?: boolean;
+  onTogglePhased?: (value: boolean) => void;
 };
 
 export function CellEditModal({
@@ -45,7 +48,10 @@ export function CellEditModal({
   allowNegative = true,
   minValue,
   onSave,
-  onCancel }: Props) {
+  onCancel,
+  showPhaseToggle = false,
+  phased = false,
+  onTogglePhased }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const textScale = useTextScale();
@@ -137,6 +143,18 @@ export function CellEditModal({
         <View style={[styles.sheet, { backgroundColor: theme.backgroundElement, paddingBottom: insets.bottom + Spacing.two }]}>
 
           <ThemedText style={styles.header} themeColor="textSecondary">{title}</ThemedText>
+
+          {showPhaseToggle && (
+            <HapticButton
+              style={[forms.toggleRow, { backgroundColor: theme.background }]}
+              onPress={() => onTogglePhased?.(!phased)}
+            >
+              <ThemedText type="default">Phased this round</ThemedText>
+              <View style={[forms.toggle, { backgroundColor: phased ? theme.accent : theme.backgroundElement }]}>
+                <View style={[forms.toggleThumb, phased && forms.toggleThumbOn]} />
+              </View>
+            </HapticButton>
+          )}
 
           <View style={[styles.displayArea, { height: displayH }]}>
             <ThemedText style={[styles.display, { color: displayColor }]}>{displayText}</ThemedText>

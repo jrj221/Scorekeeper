@@ -10,6 +10,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { shared } from '@/styles/shared';
 import { HapticButton } from "@/components/haptic-button";
 import { forms } from '@/styles/forms';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { CLASSIC_GAMES } from '@/constants/classic-games';
 
 export default function NewGameStartScreen() {
   const theme = useTheme();
@@ -58,6 +60,27 @@ export default function NewGameStartScreen() {
               </View>
             </View>
           )}
+          <View style={forms.section}>
+            <ThemedText style={forms.label} themeColor="textSecondary">CLASSICS</ThemedText>
+            <View style={styles.list}>
+              {CLASSIC_GAMES.map(c => (
+                <HapticButton
+                  key={c.id}
+                  style={[styles.templateCard, { backgroundColor: theme.backgroundElement }]}
+                  onPress={() => router.replace(`/new-game?classicId=${c.id}`)}
+                >
+                  <View style={[styles.classicIcon, { backgroundColor: theme.backgroundSelected }]}>
+                    <FontAwesome5 name={(c.icon ?? 'star') as any} size={16} color={theme.textSecondary} />
+                  </View>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <ThemedText type="default">{c.name}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">Fixed rules</ThemedText>
+                  </View>
+                  <ThemedText type="small" style={{ color: theme.accent }}>→</ThemedText>
+                </HapticButton>
+              ))}
+            </View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -83,4 +106,10 @@ const styles = StyleSheet.create({
     gap: Spacing.two },
   meta: {
     flexDirection: 'row',
-    alignItems: 'center' } });
+    alignItems: 'center' },
+  classicIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center' } });

@@ -103,7 +103,39 @@ export function buildSeedData(): {
     createdAt: daysAgo(0),
   };
 
-  const games: Game[] = [gRummy, gCatan, gScrabble, gFiveCrown, gYahtzee];
+  // In-progress game — Phase 10 (classic). Monica is close to winning, on phase 9.
+  const gPhase10: Game = {
+    id: id('game'),
+    name: 'Phase 10',
+    icon: 'users',
+    gameType: 'phase10',
+    players: [phoebe, monica, chandler, ross],
+    rounds: [
+      { [phoebe.id]: 15, [monica.id]: 0, [chandler.id]: 20, [ross.id]: 25 },
+      { [phoebe.id]: 0, [monica.id]: 0, [chandler.id]: 10, [ross.id]: 0 },
+      { [phoebe.id]: 20, [monica.id]: 0, [chandler.id]: 0, [ross.id]: 15 },
+      { [phoebe.id]: 0, [monica.id]: 0, [chandler.id]: 25, [ross.id]: 0 },
+      { [phoebe.id]: 10, [monica.id]: 0, [chandler.id]: 0, [ross.id]: 30 },
+      { [phoebe.id]: 25, [monica.id]: 0, [chandler.id]: 15, [ross.id]: 0 },
+      { [phoebe.id]: 0, [monica.id]: 0, [chandler.id]: 0, [ross.id]: 20 },
+      { [phoebe.id]: 30, [monica.id]: 0, [chandler.id]: 20, [ross.id]: 10 },
+    ],
+    phasedRounds: [
+      { [phoebe.id]: true, [monica.id]: true, [chandler.id]: true, [ross.id]: false },
+      { [phoebe.id]: true, [monica.id]: true, [chandler.id]: false, [ross.id]: true },
+      { [phoebe.id]: false, [monica.id]: true, [chandler.id]: true, [ross.id]: false },
+      { [phoebe.id]: true, [monica.id]: true, [chandler.id]: false, [ross.id]: true },
+      { [phoebe.id]: false, [monica.id]: true, [chandler.id]: true, [ross.id]: false },
+      { [phoebe.id]: true, [monica.id]: true, [chandler.id]: false, [ross.id]: true },
+      { [phoebe.id]: false, [monica.id]: true, [chandler.id]: false, [ross.id]: false },
+      { [phoebe.id]: false, [monica.id]: true, [chandler.id]: false, [ross.id]: false },
+    ],
+    rankByLowest: true,
+    lockedFields: ['rounds', 'rankByLowest', 'extras.dice', 'extras.timer', 'icon', 'name'],
+    createdAt: daysAgo(3),
+  };
+
+  const games: Game[] = [gRummy, gCatan, gScrabble, gFiveCrown, gYahtzee, gPhase10];
 
   const templates: GameTemplate[] = [
     {

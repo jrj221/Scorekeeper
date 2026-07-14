@@ -5,7 +5,7 @@ import { StyleSheet, View } from "react-native";
 import { Game } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
 import { homeStyles } from "@/styles/home";
-import { getGameTotals } from "@/utils/game";
+import { getCurrentRoundIndex, getGameWinnerLabel } from "@/utils/game";
 import { ThemedText } from "./themed-text";
 import { HapticButton } from "@/components/haptic-button";
 
@@ -26,14 +26,10 @@ const sameDay = (a: number, b: number) => {
 
 function winnerInfo(game: Game): { icon: string; label: string } | null {
 	if (!game.finishedAt || game.players.length === 0) return null;
-	const totals = getGameTotals(game);
-	const scores = game.players.map(p => ({ ...p, total: totals[p.id] ?? 0 }));
-	const best = game.rankByLowest
-		? Math.min(...scores.map(s => s.total))
-		: Math.max(...scores.map(s => s.total));
-	const winners = scores.filter(s => s.total === best);
-	if (winners.length === 1) return { icon: "trophy", label: winners[0].name };
-	return { icon: "handshake", label: `${winners.length}-way Tie` };
+	const label = getGameWinnerLabel(game);
+	if (!label) return null;
+	const isTie = label.startsWith("🤝");
+	return { icon: isTie ? "handshake" : "trophy", label: label.replace(/^(🏆|🤝)\s*/, "") };
 }
 
 export function GameCard({ game, onPress, onDelete }: Props) {
@@ -45,7 +41,7 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 		? sameDay(game.createdAt, game.finishedAt!)
 			? `${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
 			: `${fmt(game.createdAt)} – ${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
-		: `${game.players.length} player${game.players.length !== 1 ? "s" : ""}  ·  Round ${game.rounds.length + 1}`;
+		: `${game.players.length} player${game.players.length !== 1 ? "s" : ""}  ·  Round ${getCurrentRoundIndex(game) + 1}`;
 
 	return (
 		<HapticButton

@@ -11,7 +11,7 @@ import { LARGE_TEXT_SCALE, useTextScaleContext } from "@/context/text-scale-cont
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
-import { buildTiers } from "@/utils/game";
+import { buildTiers, getCurrentPhase } from "@/utils/game";
 
 const PODIUM_H = 260;
 const PLATFORM_H = [150, 130, 110];
@@ -33,9 +33,11 @@ export default function ResultsScreen() {
 	const { game, totals, sortedPlayers } = useGame(id);
 	const theme = useTheme();
 	const { largeText } = useTextScaleContext();
+	const isPhase10 = game?.gameType === "phase10";
 	// Larger text needs taller platforms (and a taller podium) so names/scores fit.
+	// Phase 10 adds an extra "Phase X" line under the score, so it needs more room too.
 	const sizeScale = largeText ? LARGE_TEXT_SCALE : 1;
-	const podiumH = PODIUM_H * sizeScale;
+	const podiumH = PODIUM_H * sizeScale + (isPhase10 ? 24 : 0);
 	const platformH = PLATFORM_H.map((h) => h * sizeScale);
 	const tieLineH = TIE_LINE_H * sizeScale;
 
@@ -52,7 +54,7 @@ export default function ResultsScreen() {
 	const restOpacity = useRef(new Animated.Value(0)).current;
 	const restTranslateY = useRef(new Animated.Value(20)).current;
 
-	const tiers = buildTiers(sortedPlayers, totals);
+	const tiers = buildTiers(sortedPlayers, totals, game);
 
 	useEffect(() => {
 		const ranksToAnimate = [2, 1, 0].filter((rankIdx) => (tiers[rankIdx]?.length ?? 0) > 0);
@@ -99,7 +101,7 @@ export default function ResultsScreen() {
 		<ThemedView style={shared.screen}>
 			<Stack.Screen options={{ title: "Final Scores", headerBackTitle: "Home" }} />
 			<SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
-				<ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+				<ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 					{/* Podium */}
 					<View style={[styles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}>
 						<View style={[styles.podiumRow, { height: podiumH }]}>
@@ -148,6 +150,11 @@ export default function ResultsScreen() {
 												<ThemedText style={[styles.playerScore, { color: theme.accent }]}>
 													{tierScore}
 												</ThemedText>
+												{game?.gameType === "phase10" && tierPlayers[0] && (
+													<ThemedText type="small" themeColor="textSecondary">
+														Phase {getCurrentPhase(game, tierPlayers[0].id)}
+													</ThemedText>
+												)}
 											</Animated.View>
 										)}
 										<Animated.View
@@ -222,6 +229,11 @@ export default function ResultsScreen() {
 										<ThemedText style={styles.restName} numberOfLines={1}>
 											{player.name}
 										</ThemedText>
+										{game?.gameType === "phase10" && (
+											<ThemedText type="small" themeColor="textSecondary">
+												Phase {getCurrentPhase(game, player.id)}
+											</ThemedText>
+										)}
 										<ThemedText style={[styles.restScore, { color: theme.text }]}>
 											{totals[player.id] ?? 0}
 										</ThemedText>

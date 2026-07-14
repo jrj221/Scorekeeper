@@ -13,6 +13,9 @@ export type GameExtras = {
   timerDuration?: number; // seconds, default 60
 };
 
+// Identifies a built-in "Classic" game with its own rules/mechanics.
+export type GameType = 'phase10';
+
 export type Game = {
   id: string;
   name: string;
@@ -31,6 +34,17 @@ export type Game = {
   turnOrder?: string[];
   currentRound?: number;
   extras?: GameExtras;
+  gameType?: GameType;
+  // Field names (e.g. 'rounds', 'rankByLowest', 'extras.dice') that cannot be
+  // edited by the player because the game type's rules dictate them.
+  lockedFields?: string[];
+  // Parallel array to `rounds`: phasedRounds[i][playerId] === true means that
+  // player completed ("phased") their assigned phase during round i. Only used
+  // by gameType 'phase10'.
+  phasedRounds?: Record<string, boolean>[];
+  // Restricts a 'phase10' game to only the odd- or even-numbered phases (a
+  // shorter 5-phase game). Undefined plays the full 10 phases.
+  phaseSubset?: 'odd' | 'even';
 };
 
 export type GlobalPlayer = { id: string; name: string };
@@ -47,6 +61,8 @@ export type GameTemplate = {
   turnOrderEnabled?: boolean;
   firstPlayerSetting?: 'random' | 'left-of-dealer' | 'rotation';
   extras?: GameExtras;
+  gameType?: GameType;
+  lockedFields?: string[];
 };
 
 export type PlayerGroup = {
@@ -70,6 +86,9 @@ export type CreateGameOpts = {
   firstPlayerMode?: 'left-of-dealer';
   turnOrder?: string[];
   extras?: GameExtras;
+  gameType?: GameType;
+  lockedFields?: string[];
+  phaseSubset?: 'odd' | 'even';
 };
 
 type GamesContextValue = {
@@ -146,6 +165,9 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
       firstPlayerMode: opts.firstPlayerMode,
       turnOrder: opts.turnOrder,
       extras: opts.extras,
+      gameType: opts.gameType,
+      lockedFields: opts.lockedFields,
+      phaseSubset: opts.phaseSubset,
     }, ...prev]);
     return id;
   }, []);

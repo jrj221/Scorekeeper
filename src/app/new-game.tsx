@@ -36,6 +36,15 @@ import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { HapticButton } from "@/components/haptic-button";
 import { forms } from "@/styles/forms";
 import { getDealerHintText, getTurnHintText } from "@/utils/game";
+import { getClassicGame, getVisiblePhases } from "@/constants/classic-games";
+import { GameType } from "@/context/games-context";
+
+type PhaseSubsetChoice = "all" | "odd" | "even";
+const PHASE_SUBSET_PILLS: PillOption<PhaseSubsetChoice>[] = [
+	{ key: "all", label: "All 10 Phases", icon: "layer-group" },
+	{ key: "odd", label: "Odd Phases", icon: "sort-numeric-up" },
+	{ key: "even", label: "Even Phases", icon: "sort-numeric-down" },
+];
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 type FirstPlayerMode = "random" | "left-of-dealer" | "rotation";
@@ -43,7 +52,7 @@ type FirstPlayerMode = "random" | "left-of-dealer" | "rotation";
 export default function NewGameScreen() {
 	const theme = useTheme();
 	const router = useRouter();
-	const { templateId } = useLocalSearchParams<{ templateId?: string }>();
+	const { templateId, classicId } = useLocalSearchParams<{ templateId?: string; classicId?: string }>();
 	const { createGame, globalPlayers, getTemplate, groups, registerGlobalPlayer } = useGamesContext();
 
 	const [name, setName] = useState("");
@@ -76,6 +85,12 @@ export default function NewGameScreen() {
 	const [extraDice, setExtraDice] = useState(false);
 	const [extraTimer, setExtraTimer] = useState(false);
 
+	// Classic games (optional) — locked rule fields, e.g. Phase 10
+	const [gameType, setGameType] = useState<GameType | undefined>(undefined);
+	const [lockedFields, setLockedFields] = useState<string[]>([]);
+	const [phaseSubsetChoice, setPhaseSubsetChoice] = useState<PhaseSubsetChoice>("all");
+	const locked = new Set(lockedFields);
+
 	useEffect(() => {
 		if (!templateId) return;
 		const tmpl = getTemplate(templateId);
@@ -94,6 +109,20 @@ export default function NewGameScreen() {
 			setExtraTimer(!!tmpl.extras.timer);
 		}
 	}, [templateId]);
+
+	useEffect(() => {
+		if (!classicId) return;
+		const classic = getClassicGame(classicId);
+		if (!classic) return;
+		setName(classic.name);
+		setSelectedIcon(classic.icon ?? null);
+		setRankByLowest(classic.rankByLowest);
+		setIsIndefinite(classic.totalRounds === undefined);
+		setGameType(classic.gameType);
+		setLockedFields(classic.lockedFields ?? []);
+		if (classic.lockedFields?.includes("extras.dice")) setExtraDice(false);
+		if (classic.lockedFields?.includes("extras.timer")) setExtraTimer(false);
+	}, [classicId]);
 
 	const toggleDropdown = (d: ActiveDropdown) => setActiveDropdown((prev) => (prev === d ? null : d));
 
@@ -120,7 +149,9 @@ export default function NewGameScreen() {
 			return;
 		}
 		for (const p of players) registerGlobalPlayer(p);
-		const totalRounds = !isIndefinite ? Math.max(1, parseInt(roundCountStr, 10) || 1) : undefined;
+		const totalRounds = locked.has("rounds")
+			? undefined
+			: !isIndefinite ? Math.max(1, parseInt(roundCountStr, 10) || 1) : undefined;
 
 		let resolvedFirstPlayerId: string | undefined;
 		let resolvedFirstPlayerMode: "left-of-dealer" | undefined;
@@ -148,6 +179,9 @@ export default function NewGameScreen() {
 			dealerMode: dealerEnabled ? dealerMode : undefined,
 			fixedDealerId: dealerEnabled && dealerMode === "fixed" ? (fixedDealerId ?? undefined) : undefined,
 			extras: (extraDice || extraTimer) ? { dice: extraDice || undefined, timer: extraTimer || undefined } : undefined,
+			gameType,
+			lockedFields: lockedFields.length > 0 ? lockedFields : undefined,
+			phaseSubset: gameType === "phase10" && phaseSubsetChoice !== "all" ? phaseSubsetChoice : undefined,
 		});
 		router.replace(`/game/${id}`);
 	}, [
@@ -156,6 +190,9 @@ export default function NewGameScreen() {
 		isIndefinite,
 		roundCountStr,
 		rankByLowest,
+		gameType,
+		lockedFields,
+		phaseSubsetChoice,
 		turnOrderEnabled,
 		firstPlayerMode,
 		firstPlayerSpecificId,
@@ -200,25 +237,39 @@ export default function NewGameScreen() {
 					<SetupCard>
 						<View style={forms.labelRow}>
 							<ThemedText style={forms.label} themeColor="textSecondary">GAME NAME</ThemedText>
-							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							{!locked.has("name") && (
+								<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							)}
 						</View>
 						<View style={forms.nameRow}>
-							<HapticButton
-								style={[forms.iconBtn, { backgroundColor: theme.background }]}
-								onPress={() => router.push("/icon-picker")}
-								activeOpacity={0.7}
-							>
-								<FontAwesome5 name={(selectedIcon ?? "users") as any} size={20} color={theme.textSecondary} />
-							</HapticButton>
-							<TextInput allowFontScaling={false}
-								style={[shared.input, innerInput, { flex: 1 }]}
-								placeholder="Untitled Game"
-								placeholderTextColor={theme.textSecondary}
-								value={name}
-								onChangeText={setName}
-								maxLength={30}
-								returnKeyType="next"
-							/>
+							{locked.has("icon") ? (
+								<View style={[forms.iconBtn, { backgroundColor: theme.background }]}>
+									<FontAwesome5 name={(selectedIcon ?? "users") as any} size={20} color={theme.textSecondary} />
+								</View>
+							) : (
+								<HapticButton
+									style={[forms.iconBtn, { backgroundColor: theme.background }]}
+									onPress={() => router.push("/icon-picker")}
+									activeOpacity={0.7}
+								>
+									<FontAwesome5 name={(selectedIcon ?? "users") as any} size={20} color={theme.textSecondary} />
+								</HapticButton>
+							)}
+							{locked.has("name") ? (
+								<View style={[shared.input, innerInput, { flex: 1, justifyContent: "center" }]}>
+									<ThemedText type="default">{name}</ThemedText>
+								</View>
+							) : (
+								<TextInput allowFontScaling={false}
+									style={[shared.input, innerInput, { flex: 1 }]}
+									placeholder="Untitled Game"
+									placeholderTextColor={theme.textSecondary}
+									value={name}
+									onChangeText={setName}
+									maxLength={30}
+									returnKeyType="next"
+								/>
+							)}
 						</View>
 					</SetupCard>
 
@@ -357,57 +408,87 @@ export default function NewGameScreen() {
 						</SetupCard>
 					</View>
 
+					{!(locked.has("rounds") && locked.has("rankByLowest")) && (
 					<View style={styles.group}>
 						<SectionHeader label="GAME CONDITIONS" />
 
 					{/* Rounds */}
-					<SetupCard>
-						<ThemedText style={forms.label} themeColor="textSecondary">ROUNDS</ThemedText>
-						{!isIndefinite && (
-							<View style={forms.roundsRow}>
-								<HapticButton
-									style={[forms.roundsInput, { backgroundColor: theme.backgroundSelected }]}
-									onPress={() => setShowRoundNumpad(true)}
-								>
-									<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
-										{roundCountStr || "—"}
-									</ThemedText>
-								</HapticButton>
-								<ThemedText type="default">rounds</ThemedText>
-							</View>
-						)}
-						<HapticButton
-							style={[forms.toggleRow, { backgroundColor: theme.backgroundSelected }]}
-							onPress={() => setIsIndefinite((v) => !v)}
-						>
-							<ThemedText type="default">Endless Mode</ThemedText>
-							<View style={[forms.toggle, { backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement }]}>
-								<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
-							</View>
-						</HapticButton>
-					</SetupCard>
+					{!locked.has("rounds") && (
+						<SetupCard>
+							<ThemedText style={forms.label} themeColor="textSecondary">ROUNDS</ThemedText>
+							{!isIndefinite && (
+								<View style={forms.roundsRow}>
+									<HapticButton
+										style={[forms.roundsInput, { backgroundColor: theme.backgroundSelected }]}
+										onPress={() => setShowRoundNumpad(true)}
+									>
+										<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
+											{roundCountStr || "—"}
+										</ThemedText>
+									</HapticButton>
+									<ThemedText type="default">rounds</ThemedText>
+								</View>
+							)}
+							<HapticButton
+								style={[forms.toggleRow, { backgroundColor: theme.backgroundSelected }]}
+								onPress={() => setIsIndefinite((v) => !v)}
+							>
+								<ThemedText type="default">Endless Mode</ThemedText>
+								<View style={[forms.toggle, { backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement }]}>
+									<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
+								</View>
+							</HapticButton>
+						</SetupCard>
+					)}
 
 					{/* Winner */}
-					<SetupCard>
-						<ThemedText style={forms.label} themeColor="textSecondary">WINNER</ThemedText>
-						<View style={forms.segmentRow}>
-							<HapticButton
-								style={[forms.segLeft, { backgroundColor: !rankByLowest ? theme.accent : theme.backgroundSelected }]}
-								onPress={() => setRankByLowest(false)}
-							>
-								<ThemedText type="small" style={{ color: !rankByLowest ? theme.accentText : theme.text }}>Highest score</ThemedText>
-							</HapticButton>
-							<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
-							<HapticButton
-								style={[forms.segRight, { backgroundColor: rankByLowest ? theme.accent : theme.backgroundSelected }]}
-								onPress={() => setRankByLowest(true)}
-							>
-								<ThemedText type="small" style={{ color: rankByLowest ? theme.accentText : theme.text }}>Lowest score</ThemedText>
-							</HapticButton>
-						</View>
-					</SetupCard>
+					{!locked.has("rankByLowest") && (
+						<SetupCard>
+							<ThemedText style={forms.label} themeColor="textSecondary">WINNER</ThemedText>
+							<View style={forms.segmentRow}>
+								<HapticButton
+									style={[forms.segLeft, { backgroundColor: !rankByLowest ? theme.accent : theme.backgroundSelected }]}
+									onPress={() => setRankByLowest(false)}
+								>
+									<ThemedText type="small" style={{ color: !rankByLowest ? theme.accentText : theme.text }}>Highest score</ThemedText>
+								</HapticButton>
+								<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
+								<HapticButton
+									style={[forms.segRight, { backgroundColor: rankByLowest ? theme.accent : theme.backgroundSelected }]}
+									onPress={() => setRankByLowest(true)}
+								>
+									<ThemedText type="small" style={{ color: rankByLowest ? theme.accentText : theme.text }}>Lowest score</ThemedText>
+								</HapticButton>
+							</View>
+						</SetupCard>
+					)}
 
 					</View>
+					)}
+
+					{/* Phases (Phase 10 only) */}
+					{gameType === "phase10" && (
+						<View style={styles.group}>
+							<SectionHeader label="PHASES" />
+							<SetupCard>
+								<ThemedText style={forms.label} themeColor="textSecondary">HOW MANY PHASES</ThemedText>
+								<Pills options={PHASE_SUBSET_PILLS} value={phaseSubsetChoice} onChange={setPhaseSubsetChoice} />
+								<ThemedText style={forms.hint}>
+									{phaseSubsetChoice === "all"
+										? "Play all 10 phases."
+										: `Play a shorter game with just the ${phaseSubsetChoice} phases.`}
+								</ThemedText>
+							</SetupCard>
+							<SetupCard>
+								{getVisiblePhases(phaseSubsetChoice === "all" ? undefined : phaseSubsetChoice).map((p) => (
+									<View key={p.number} style={styles.phaseRow}>
+										<ThemedText type="smallBold" style={{ width: 24 }}>{p.number}.</ThemedText>
+										<ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>{p.description}</ThemedText>
+									</View>
+								))}
+							</SetupCard>
+						</View>
+					)}
 
 					{/* Options */}
 					<View style={styles.group}>
@@ -480,22 +561,26 @@ export default function NewGameScreen() {
 						</OptionCard>
 
 						{/* Dice */}
-						<OptionCard
-							icon="dice"
-							title="Dice"
-							subtitle="Show dice roller in game"
-							value={extraDice}
-							onToggle={() => setExtraDice((v) => !v)}
-						/>
+						{!locked.has("extras.dice") && (
+							<OptionCard
+								icon="dice"
+								title="Dice"
+								subtitle="Show dice roller in game"
+								value={extraDice}
+								onToggle={() => setExtraDice((v) => !v)}
+							/>
+						)}
 
 						{/* Timer */}
-						<OptionCard
-							icon="stopwatch"
-							title="Timer"
-							subtitle="Show timer in game"
-							value={extraTimer}
-							onToggle={() => setExtraTimer((v) => !v)}
-						/>
+						{!locked.has("extras.timer") && (
+							<OptionCard
+								icon="stopwatch"
+								title="Timer"
+								subtitle="Show timer in game"
+								value={extraTimer}
+								onToggle={() => setExtraTimer((v) => !v)}
+							/>
+						)}
 					</View>
 
 					{/* Create */}
@@ -533,4 +618,5 @@ export default function NewGameScreen() {
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
 	group: { gap: Spacing.two },
+	phaseRow: { flexDirection: "row", gap: Spacing.two },
 });
