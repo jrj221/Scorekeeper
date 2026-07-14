@@ -1,21 +1,12 @@
 import { FontAwesome5 } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	StyleSheet,
-	TextInput,
-	View,
-} from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
 import { HapticButton } from "@/components/haptic-button";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import {
 	DEALER_PILLS_NO_FIXED,
 	OptionCard,
@@ -24,13 +15,15 @@ import {
 	SectionHeader,
 	SetupCard,
 } from "@/components/setup-form";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { DealerMode, useGamesContext } from "@/context/games-context";
 import { useTheme } from "@/hooks/use-theme";
-import { shared } from "@/styles/shared";
-import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { forms } from "@/styles/forms";
+import { shared } from "@/styles/shared";
 import { getDealerHintText, getTurnHintText } from "@/utils/game";
+import { consumePendingIcon } from "@/utils/icon-picker-state";
 
 type FirstPlayerSetting = "random" | "left-of-dealer" | "rotation";
 
@@ -58,10 +51,12 @@ export default function NewTemplateScreen() {
 	const [extraDice, setExtraDice] = useState(false);
 	const [extraTimer, setExtraTimer] = useState(false);
 
-	useFocusEffect(useCallback(() => {
-		const icon = consumePendingIcon();
-		if (icon !== undefined) setSelectedIcon(icon);
-	}, []));
+	useFocusEffect(
+		useCallback(() => {
+			const icon = consumePendingIcon();
+			if (icon !== undefined) setSelectedIcon(icon);
+		}, []),
+	);
 
 	const handleCreate = useCallback(() => {
 		const totalRounds = !isIndefinite ? Math.max(1, parseInt(roundCountStr, 10) || 1) : undefined;
@@ -74,10 +69,25 @@ export default function NewTemplateScreen() {
 			dealerMode: dealerEnabled ? dealerMode : undefined,
 			turnOrderEnabled: turnOrderEnabled || undefined,
 			firstPlayerSetting: turnOrderEnabled ? firstPlayerSetting : undefined,
-			extras: (extraDice || extraTimer) ? { dice: extraDice || undefined, timer: extraTimer || undefined } : undefined,
+			extras:
+				extraDice || extraTimer ? { dice: extraDice || undefined, timer: extraTimer || undefined } : undefined,
 		});
 		router.replace("/(tabs)/templates");
-	}, [name, selectedIcon, isIndefinite, roundCountStr, rankByLowest, dealerEnabled, dealerMode, turnOrderEnabled, firstPlayerSetting, extraDice, extraTimer, createTemplate, router]);
+	}, [
+		name,
+		selectedIcon,
+		isIndefinite,
+		roundCountStr,
+		rankByLowest,
+		dealerEnabled,
+		dealerMode,
+		turnOrderEnabled,
+		firstPlayerSetting,
+		extraDice,
+		extraTimer,
+		createTemplate,
+		router,
+	]);
 
 	const dealerHint = getDealerHintText(dealerEnabled, dealerMode);
 	const turnHint = getTurnHintText(turnOrderEnabled, firstPlayerSetting);
@@ -86,14 +96,14 @@ export default function NewTemplateScreen() {
 
 	const firstPlayerPills: PillOption<FirstPlayerSetting>[] = dealerEnabled
 		? [
-			{ key: "left-of-dealer", label: "Left of Dealer", icon: "angle-left" },
-			{ key: "rotation", label: "Rotating", icon: "sync-alt" },
-			{ key: "random", label: "Random", icon: "random" },
-		]
+				{ key: "left-of-dealer", label: "Left of Dealer", icon: "" },
+				{ key: "rotation", label: "Rotating", icon: "sync-alt" },
+				{ key: "random", label: "Random", icon: "random" },
+			]
 		: [
-			{ key: "rotation", label: "Rotating", icon: "sync-alt" },
-			{ key: "random", label: "Random", icon: "random" },
-		];
+				{ key: "rotation", label: "Rotating", icon: "sync-alt" },
+				{ key: "random", label: "Random", icon: "random" },
+			];
 
 	return (
 		<ThemedView style={shared.screen}>
@@ -107,8 +117,13 @@ export default function NewTemplateScreen() {
 					{/* Name & Icon */}
 					<SetupCard>
 						<View style={forms.labelRow}>
-							<ThemedText style={forms.label} themeColor="textSecondary">TEMPLATE NAME</ThemedText>
-							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary"> (OPTIONAL)</ThemedText>
+							<ThemedText style={forms.label} themeColor="textSecondary">
+								TEMPLATE NAME
+							</ThemedText>
+							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
+								{" "}
+								(OPTIONAL)
+							</ThemedText>
 						</View>
 						<View style={forms.nameRow}>
 							<HapticButton
@@ -116,9 +131,14 @@ export default function NewTemplateScreen() {
 								onPress={() => router.push("/icon-picker")}
 								activeOpacity={0.7}
 							>
-								<FontAwesome5 name={(selectedIcon ?? "users") as any} size={20} color={theme.textSecondary} />
+								<FontAwesome5
+									name={(selectedIcon ?? "users") as any}
+									size={20}
+									color={theme.textSecondary}
+								/>
 							</HapticButton>
-							<TextInput allowFontScaling={false}
+							<TextInput
+								allowFontScaling={false}
 								style={[shared.input, innerInput, { flex: 1 }]}
 								placeholder="Untitled Template"
 								placeholderTextColor={theme.textSecondary}
@@ -133,53 +153,77 @@ export default function NewTemplateScreen() {
 					<View style={styles.group}>
 						<SectionHeader label="GAME CONDITIONS" />
 
-					{/* Rounds */}
-					<SetupCard>
-						<ThemedText style={forms.label} themeColor="textSecondary">ROUNDS</ThemedText>
-						{!isIndefinite && (
-							<View style={forms.roundsRow}>
-								<HapticButton
-									style={[forms.roundsInput, { backgroundColor: theme.backgroundSelected }]}
-									onPress={() => setShowRoundNumpad(true)}
+						{/* Rounds */}
+						<SetupCard>
+							<ThemedText style={forms.label} themeColor="textSecondary">
+								ROUNDS
+							</ThemedText>
+							{!isIndefinite && (
+								<View style={forms.roundsRow}>
+									<HapticButton
+										style={[forms.roundsInput, { backgroundColor: theme.backgroundSelected }]}
+										onPress={() => setShowRoundNumpad(true)}
+									>
+										<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
+											{roundCountStr || "—"}
+										</ThemedText>
+									</HapticButton>
+									<ThemedText type="default">rounds</ThemedText>
+								</View>
+							)}
+							<HapticButton
+								style={[forms.toggleRow, { backgroundColor: theme.backgroundSelected }]}
+								onPress={() => setIsIndefinite((v) => !v)}
+							>
+								<ThemedText type="default">Endless Mode</ThemedText>
+								<View
+									style={[
+										forms.toggle,
+										{ backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement },
+									]}
 								>
-									<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
-										{roundCountStr || "—"}
+									<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
+								</View>
+							</HapticButton>
+						</SetupCard>
+
+						{/* Winner */}
+						<SetupCard>
+							<ThemedText style={forms.label} themeColor="textSecondary">
+								WINNER
+							</ThemedText>
+							<View style={forms.segmentRow}>
+								<HapticButton
+									style={[
+										forms.segLeft,
+										{ backgroundColor: !rankByLowest ? theme.accent : theme.backgroundSelected },
+									]}
+									onPress={() => setRankByLowest(false)}
+								>
+									<ThemedText
+										type="small"
+										style={{ color: !rankByLowest ? theme.accentText : theme.text }}
+									>
+										Highest score
 									</ThemedText>
 								</HapticButton>
-								<ThemedText type="default">rounds</ThemedText>
+								<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
+								<HapticButton
+									style={[
+										forms.segRight,
+										{ backgroundColor: rankByLowest ? theme.accent : theme.backgroundSelected },
+									]}
+									onPress={() => setRankByLowest(true)}
+								>
+									<ThemedText
+										type="small"
+										style={{ color: rankByLowest ? theme.accentText : theme.text }}
+									>
+										Lowest score
+									</ThemedText>
+								</HapticButton>
 							</View>
-						)}
-						<HapticButton
-							style={[forms.toggleRow, { backgroundColor: theme.backgroundSelected }]}
-							onPress={() => setIsIndefinite((v) => !v)}
-						>
-							<ThemedText type="default">Endless Mode</ThemedText>
-							<View style={[forms.toggle, { backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement }]}>
-								<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
-							</View>
-						</HapticButton>
-					</SetupCard>
-
-					{/* Winner */}
-					<SetupCard>
-						<ThemedText style={forms.label} themeColor="textSecondary">WINNER</ThemedText>
-						<View style={forms.segmentRow}>
-							<HapticButton
-								style={[forms.segLeft, { backgroundColor: !rankByLowest ? theme.accent : theme.backgroundSelected }]}
-								onPress={() => setRankByLowest(false)}
-							>
-								<ThemedText type="small" style={{ color: !rankByLowest ? theme.accentText : theme.text }}>Highest score</ThemedText>
-							</HapticButton>
-							<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
-							<HapticButton
-								style={[forms.segRight, { backgroundColor: rankByLowest ? theme.accent : theme.backgroundSelected }]}
-								onPress={() => setRankByLowest(true)}
-							>
-								<ThemedText type="small" style={{ color: rankByLowest ? theme.accentText : theme.text }}>Lowest score</ThemedText>
-							</HapticButton>
-						</View>
-					</SetupCard>
-
+						</SetupCard>
 					</View>
 
 					{/* Options */}
@@ -194,11 +238,7 @@ export default function NewTemplateScreen() {
 							value={dealerEnabled}
 							onToggle={() => setDealerEnabled((v) => !v)}
 						>
-							<Pills
-								options={DEALER_PILLS_NO_FIXED}
-								value={dealerMode}
-								onChange={setDealerMode}
-							/>
+							<Pills options={DEALER_PILLS_NO_FIXED} value={dealerMode} onChange={setDealerMode} />
 							{dealerHint && <ThemedText style={forms.hint}>{dealerHint}</ThemedText>}
 						</OptionCard>
 
@@ -242,7 +282,9 @@ export default function NewTemplateScreen() {
 						style={[shared.button, forms.createBtn, { backgroundColor: theme.accent }]}
 						onPress={handleCreate}
 					>
-						<ThemedText type="smallBold" style={{ color: theme.accentText }}>Create Template</ThemedText>
+						<ThemedText type="smallBold" style={{ color: theme.accentText }}>
+							Create Template
+						</ThemedText>
 					</HapticButton>
 				</ScrollView>
 				<SafeAreaView edges={["bottom"]} />
@@ -254,7 +296,7 @@ export default function NewTemplateScreen() {
 				initialValue={parseInt(roundCountStr) || null}
 				allowNegative={false}
 				minValue={1}
-				onSave={v => {
+				onSave={(v) => {
 					setRoundCountStr(v && v > 0 ? v.toString() : "10");
 					setShowRoundNumpad(false);
 				}}

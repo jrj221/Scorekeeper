@@ -144,6 +144,10 @@ export default function GameScreen() {
 	const isPhase10 = game?.gameType === "phase10";
 	// The names row grows a bit taller for Phase 10 to fit the "(Phase X)" subtitle line.
 	const NAMES_ROW_H = isPhase10 ? ROW_H + 14 : ROW_H;
+	// Large-text mode scales up the "Phased?" label and checkmark (ThemedText auto-scales
+	// custom fontSizes), so the column and checkbox need more room to avoid wrapping/clipping.
+	const PHASED_COL_W = largeText ? 84 : 60;
+	const PHASE_CHECKBOX_SIZE = largeText ? 30 : 24;
 
 	const [editCell, setEditCell] = useState<{ roundIndex: number; player: Player } | null>(null);
 	const finished = !!game?.finishedAt;
@@ -487,8 +491,10 @@ export default function GameScreen() {
 										</ThemedText>
 										{isPhase10 && (
 											<ThemedText
-												style={[styles.turnHeaderCell, styles.turnHeaderPhased]}
+												style={[styles.turnHeaderCell, styles.turnHeaderPhased, { width: PHASED_COL_W }]}
 												themeColor="textSecondary"
+												numberOfLines={1}
+												adjustsFontSizeToFit
 											>
 												Phased?
 											</ThemedText>
@@ -520,7 +526,10 @@ export default function GameScreen() {
 														]}
 													>
 														<View style={styles.turnNameRow}>
-															<ThemedText style={styles.turnName} numberOfLines={1}>
+															<ThemedText
+															style={[styles.turnName, isPhase10 && largeText && { fontSize: 13 }]}
+															numberOfLines={1}
+														>
 																{gp.name}
 															</ThemedText>
 															{hasScore && (
@@ -553,7 +562,7 @@ export default function GameScreen() {
 														</View>
 														<View style={styles.turnScoreArea}>
 															<View style={styles.turnScoreRow}>
-																<ThemedText style={styles.turnScore}>
+																<ThemedText style={[styles.turnScore, isPhase10 && largeText && { fontSize: 16, minWidth: 36 }]}>
 																	{prevTotal}
 																</ThemedText>
 																{roundScore !== null && (
@@ -576,11 +585,15 @@ export default function GameScreen() {
 															</View>
 														</View>
 														{isPhase10 && (
-															<View style={styles.turnPhasedCell}>
+															<View style={[styles.turnPhasedCell, { width: PHASED_COL_W }]}>
 																<View
 																	style={[
 																		styles.phaseCheckbox,
-																		{ borderColor: theme.textSecondary },
+																		{
+																			width: PHASE_CHECKBOX_SIZE,
+																			height: PHASE_CHECKBOX_SIZE,
+																			borderColor: theme.textSecondary,
+																		},
 																		game.phasedRounds?.[currentRoundIndex]?.[pid] && {
 																			backgroundColor: CURRENT_TINT,
 																			borderColor: CURRENT_TINT,
@@ -619,7 +632,10 @@ export default function GameScreen() {
 														activeOpacity={0.7}
 													>
 														<View style={styles.turnNameRow}>
-															<ThemedText style={styles.turnName} numberOfLines={1}>
+															<ThemedText
+															style={[styles.turnName, isPhase10 && largeText && { fontSize: 13 }]}
+															numberOfLines={1}
+														>
 																{p.name}
 															</ThemedText>
 															{hasScore && (
@@ -657,7 +673,7 @@ export default function GameScreen() {
 																	(totals[pid] ?? 0) - (roundScore ?? 0);
 																return (
 																	<View style={styles.turnScoreRow}>
-																		<ThemedText style={styles.turnScore}>
+																		<ThemedText style={[styles.turnScore, isPhase10 && largeText && { fontSize: 16, minWidth: 36 }]}>
 																			{prevTotal}
 																		</ThemedText>
 																		{roundScore !== null && (
@@ -683,7 +699,7 @@ export default function GameScreen() {
 														</View>
 														{isPhase10 && (
 															<HapticButton
-																style={styles.turnPhasedCell}
+																style={[styles.turnPhasedCell, { width: PHASED_COL_W }]}
 																onPress={() =>
 																	updatePhased(
 																		currentRoundIndex,
@@ -696,7 +712,11 @@ export default function GameScreen() {
 																<View
 																	style={[
 																		styles.phaseCheckbox,
-																		{ borderColor: theme.textSecondary },
+																		{
+																			width: PHASE_CHECKBOX_SIZE,
+																			height: PHASE_CHECKBOX_SIZE,
+																			borderColor: theme.textSecondary,
+																		},
 																		game.phasedRounds?.[currentRoundIndex]?.[pid] && {
 																			backgroundColor: CURRENT_TINT,
 																			borderColor: CURRENT_TINT,
