@@ -33,9 +33,9 @@ import { consumePendingIcon } from "@/utils/icon-picker-state";
 
 type PhaseSubsetChoice = "all" | "odd" | "even";
 const PHASE_SUBSET_PILLS: PillOption<PhaseSubsetChoice>[] = [
-	{ key: "all", label: "All 10 Phases", icon: "layer-group" },
-	{ key: "odd", label: "Odd Phases", icon: "sort-numeric-up" },
-	{ key: "even", label: "Even Phases", icon: "sort-numeric-down" },
+	{ key: "all", label: "All 10 Phases" },
+	{ key: "odd", label: "Odd Phases" },
+	{ key: "even", label: "Even Phases" },
 ];
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
@@ -589,10 +589,13 @@ export default function NewGameScreen() {
 								</ThemedText>
 							</SetupCard>
 							<SetupCard>
+								<ThemedText style={forms.label} themeColor="textSecondary">
+									RULES
+								</ThemedText>
 								{getVisiblePhases(phaseSubsetChoice === "all" ? undefined : phaseSubsetChoice).map(
 									(p) => (
 										<View key={p.number} style={styles.phaseRow}>
-											<ThemedText type="smallBold" style={{ width: 24 }}>
+											<ThemedText type="smallBold" style={{ width: 30 }}>
 												{p.number}.
 											</ThemedText>
 											<ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>

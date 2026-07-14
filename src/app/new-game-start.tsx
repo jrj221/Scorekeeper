@@ -12,11 +12,13 @@ import { HapticButton } from "@/components/haptic-button";
 import { forms } from '@/styles/forms';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { CLASSIC_GAMES } from '@/constants/classic-games';
+import { useTextScale } from '@/context/text-scale-context';
 
 export default function NewGameStartScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { templates } = useGamesContext();
+  const largeText = useTextScale() !== 1;
 
   return (
     <ThemedView style={shared.screen}>
@@ -66,7 +68,11 @@ export default function NewGameStartScreen() {
               {CLASSIC_GAMES.map(c => (
                 <HapticButton
                   key={c.id}
-                  style={[styles.templateCard, { backgroundColor: theme.backgroundElement }]}
+                  style={[
+                    styles.templateCard,
+                    { backgroundColor: theme.backgroundElement },
+                    largeText && { gap: Spacing.four },
+                  ]}
                   onPress={() => router.replace(`/new-game?classicId=${c.id}`)}
                 >
                   <View style={[styles.classicIcon, { backgroundColor: theme.backgroundSelected }]}>

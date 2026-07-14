@@ -590,9 +590,15 @@ export default function GameInfoScreen() {
 										? `${game.phaseSubset === "odd" ? "Odd" : "Even"} phases only`
 										: "All 10 phases"}
 								</ThemedText>
+								<ThemedText
+									style={[forms.label, { marginTop: Spacing.one }]}
+									themeColor="textSecondary"
+								>
+									RULES
+								</ThemedText>
 								{getVisiblePhases(game.phaseSubset).map((p) => (
 									<View key={p.number} style={styles.phaseRow}>
-										<ThemedText type="smallBold" style={{ width: 24 }}>
+										<ThemedText type="smallBold" style={{ width: 30 }}>
 											{p.number}.
 										</ThemedText>
 										<ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>

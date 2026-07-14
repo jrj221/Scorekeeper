@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 
 import { HapticButton } from "@/components/haptic-button";
 import { ThemedText } from "@/components/themed-text";
+import { useTextScale } from "@/context/text-scale-context";
 import { useTheme } from "@/hooks/use-theme";
 import { forms } from "@/styles/forms";
 
@@ -92,9 +93,9 @@ export function OptionCard({
 	);
 }
 
-export type PillOption<T extends string> = { key: T; label: string; icon: string };
+export type PillOption<T extends string> = { key: T; label: string; icon?: string };
 
-/** Row of segmented "pill" buttons, each with an icon. */
+/** Row of segmented "pill" buttons, each with an optional icon. */
 export function Pills<T extends string>({
 	options,
 	value,
@@ -105,8 +106,9 @@ export function Pills<T extends string>({
 	onChange: (v: T) => void;
 }) {
 	const theme = useTheme();
+	const largeText = useTextScale() !== 1;
 	return (
-		<View style={forms.pillRow}>
+		<View style={[forms.pillRow, largeText && forms.pillColumn]}>
 			{options.map((opt) => {
 				const active = opt.key === value;
 				return (
@@ -114,6 +116,7 @@ export function Pills<T extends string>({
 						key={opt.key}
 						style={[
 							forms.pill,
+							largeText && forms.pillFullWidth,
 							{
 								backgroundColor: active ? theme.accent : theme.backgroundSelected,
 								borderColor: active ? theme.accent : theme.background,
@@ -121,12 +124,14 @@ export function Pills<T extends string>({
 						]}
 						onPress={() => onChange(opt.key)}
 					>
-						<FontAwesome5
-							name={opt.icon as any}
-							size={12}
-							color={active ? theme.accentText : theme.textSecondary}
-							solid
-						/>
+						{opt.icon && (
+							<FontAwesome5
+								name={opt.icon as any}
+								size={12}
+								color={active ? theme.accentText : theme.textSecondary}
+								solid
+							/>
+						)}
 						<ThemedText type="small" style={{ color: active ? theme.accentText : theme.text }}>
 							{opt.label}
 						</ThemedText>

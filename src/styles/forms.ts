@@ -179,6 +179,9 @@ export const forms = StyleSheet.create({
     gap: Spacing.two,
   },
   pillRow: { flexDirection: 'row', gap: Spacing.two },
+  // Large-text mode: pill labels no longer fit side by side, so stack them in a
+  // full-width column instead of splitting the row into equal thirds.
+  pillColumn: { flexDirection: 'column' },
   pill: {
     flex: 1,
     flexDirection: 'row',
@@ -188,6 +191,11 @@ export const forms = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: Spacing.two,
     borderWidth: StyleSheet.hairlineWidth,
+  },
+  pillFullWidth: {
+    flex: 0,
+    alignSelf: 'stretch',
+    paddingHorizontal: Spacing.three,
   },
 
   // ── Scroll containers ─────────────────────────────────────────────────────
