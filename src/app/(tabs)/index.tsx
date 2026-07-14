@@ -7,7 +7,7 @@ import { HapticButton } from "@/components/haptic-button";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
-import { Game, useGamesContext } from "@/context/games-context";
+import { Game } from "@/context/games-context";
 import { useGames } from "@/hooks/use-games";
 import { useTheme } from "@/hooks/use-theme";
 import { homeStyles } from "@/styles/home";
@@ -15,7 +15,6 @@ import { shared } from "@/styles/shared";
 
 export default function HomeScreen() {
 	const { games, handleOpen, deleteGame } = useGames();
-	const { templates } = useGamesContext();
 	const theme = useTheme();
 	const router = useRouter();
 
@@ -27,11 +26,7 @@ export default function HomeScreen() {
 	};
 
 	const handleFabPress = () => {
-		if (templates.length === 0) {
-			router.push("/new-game");
-		} else {
-			router.push("/new-game-start");
-		}
+		router.push("/new-game-start");
 	};
 
 	const active = games.filter((g) => !g.finishedAt);

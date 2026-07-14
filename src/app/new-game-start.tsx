@@ -34,9 +34,9 @@ export default function NewGameStartScreen() {
             <ThemedText type="small" style={{ color: 'rgba(255,255,255,0.7)' }}>Create a new game from scratch</ThemedText>
           </HapticButton>
 
-          {templates.length > 0 && (
-            <View style={forms.section}>
-              <ThemedText style={forms.label} themeColor="textSecondary">FROM A TEMPLATE</ThemedText>
+          <View style={forms.section}>
+            <ThemedText style={forms.label} themeColor="textSecondary">FROM A TEMPLATE</ThemedText>
+            {templates.length > 0 ? (
               <View style={styles.list}>
                 {templates.map(t => (
                   <HapticButton
@@ -60,8 +60,12 @@ export default function NewGameStartScreen() {
                   </HapticButton>
                 ))}
               </View>
-            </View>
-          )}
+            ) : (
+              <ThemedText style={forms.hint}>
+                You have no templates. Make one to easily start a game you've played before.
+              </ThemedText>
+            )}
+          </View>
           <View style={forms.section}>
             <ThemedText style={forms.label} themeColor="textSecondary">CLASSICS</ThemedText>
             <View style={styles.list}>
