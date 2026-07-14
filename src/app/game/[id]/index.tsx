@@ -344,6 +344,9 @@ export default function GameScreen() {
 		return v !== undefined ? v : null;
 	};
 
+	const allScored =
+		game.players.length > 0 && game.players.every((p) => getScore(currentRoundIndex, p.id) !== null);
+
 	// Build round rows (all visible rounds in order)
 	const rounds = Array.from({ length: visibleRoundCount }, (_, i) => i);
 
@@ -456,9 +459,6 @@ export default function GameScreen() {
 					? (() => {
 							const { firstPlayerId, dealerId } = getTurnState(game, currentRoundIndex);
 							const playerMap = Object.fromEntries(game.players.map((p) => [p.id, p]));
-							const allScored =
-								game.players.length > 0 &&
-								game.players.every((p) => getScore(currentRoundIndex, p.id) !== null);
 							const firstPlayer = firstPlayerId ? playerMap[firstPlayerId] : null;
 							return (
 								<View style={{ flex: 1 }}>
@@ -714,13 +714,20 @@ export default function GameScreen() {
 											})}
 										</Animated.View>
 									</View>
-									{allScored && (
+									{!isFinalRound && (
 										<HapticButton
-											style={[styles.nextRoundBtn, { backgroundColor: CURRENT_TINT }]}
-											onPress={isFinalRound ? handleShowFinalScores : advanceRound}
+											style={[
+												styles.nextRoundBtn,
+												{ backgroundColor: allScored ? CURRENT_TINT : theme.backgroundElement },
+											]}
+											onPress={advanceRound}
+											disabled={!allScored}
 										>
-											<ThemedText type="smallBold" style={{ color: "#fff" }}>
-												{isFinalRound ? (isPhase10 ? "Finish Game" : "Show Final Scores") : "Next Round"}
+											<ThemedText
+												type="smallBold"
+												style={{ color: allScored ? "#fff" : theme.textSecondary }}
+											>
+												Next Round
 											</ThemedText>
 										</HapticButton>
 									)}
@@ -751,7 +758,9 @@ export default function GameScreen() {
 							// Fewer rows fit on screen with larger text, so cap the visible window
 							// lower — the round list scrolls internally and the Next Round / End
 							// Game buttons below it stay reachable instead of being pushed off.
-							const MAX_VISIBLE_ROWS = largeText ? 5 : 10;
+							// Next Round is now always rendered (not just once scored), so the
+							// window is capped a bit lower to leave room for both buttons.
+							const MAX_VISIBLE_ROWS = largeText ? 4 : 8;
 							const CURRENT_ROW_BG = CURRENT_TINT + "40";
 							const MEDAL_COLORS = ["#FFD700", "#888888", "#CD7F32"];
 							// Fixed dark pill so the gold/silver/bronze numbers (and white for the
@@ -1208,35 +1217,33 @@ export default function GameScreen() {
 					})()}
 
 				{/* Next Round (scorecard view) */}
-				{viewMode === "scores" &&
-					!finished &&
-					(() => {
-						const allScored =
-							game.players.length > 0 &&
-							game.players.every((p) => getScore(currentRoundIndex, p.id) !== null);
-						return allScored ? (
-							<HapticButton
-								style={[styles.nextRoundBtn, { backgroundColor: CURRENT_TINT }]}
-								onPress={isFinalRound ? handleShowFinalScores : advanceRound}
-							>
-								<ThemedText type="smallBold" style={{ color: "#fff" }}>
-									{isFinalRound ? (isPhase10 ? "Finish Game" : "Show Final Scores") : "Next Round"}
-								</ThemedText>
-							</HapticButton>
-						) : null;
-					})()}
+				{viewMode === "scores" && !finished && !isFinalRound && (
+					<HapticButton
+						style={[
+							styles.nextRoundBtn,
+							{ backgroundColor: allScored ? CURRENT_TINT : theme.backgroundElement },
+						]}
+						onPress={advanceRound}
+						disabled={!allScored}
+					>
+						<ThemedText type="smallBold" style={{ color: allScored ? "#fff" : theme.textSecondary }}>
+							Next Round
+						</ThemedText>
+					</HapticButton>
+				)}
 
-				{/* End Game */}
+				{/* End Game / Finish Game — always visible, static; becomes "Finish Game" once the
+				    final round is fully scored, since at that point it does the same thing. */}
 				{!finished && (
 					<HapticButton
 						style={[
 							styles.endGameBtn,
 							{ borderColor: theme.backgroundElement, backgroundColor: theme.backgroundSelected },
 						]}
-						onPress={confirmEndGame}
+						onPress={isFinalRound && allScored ? handleShowFinalScores : confirmEndGame}
 					>
 						<ThemedText type="small" style={styles.endGameText}>
-							End Game
+							{isFinalRound && allScored ? (isPhase10 ? "Finish Game" : "Show Final Scores") : "End Game"}
 						</ThemedText>
 					</HapticButton>
 				)}
