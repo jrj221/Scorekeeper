@@ -1,20 +1,13 @@
-import { FontAwesome5 } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CellEditModal } from "@/components/cell-edit-modal";
 import { HapticButton } from "@/components/haptic-button";
-import {
-	DEALER_PILLS_NO_FIXED,
-	OptionCard,
-	PillOption,
-	Pills,
-	SectionHeader,
-	SetupCard,
-} from "@/components/setup-form";
+import { DEALER_PILLS_NO_FIXED, SectionHeader } from "@/components/setup-form";
+import { DealerOptionCard, ExtrasOptionCards, FirstPlayerOptionCard, GameConditionsSection, GameNameCard } from "@/components/setup";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
@@ -92,19 +85,6 @@ export default function NewTemplateScreen() {
 	const dealerHint = getDealerHintText(dealerEnabled, dealerMode);
 	const turnHint = getTurnHintText(turnOrderEnabled, firstPlayerSetting);
 
-	const innerInput = { backgroundColor: theme.background, color: theme.text } as const;
-
-	const firstPlayerPills: PillOption<FirstPlayerSetting>[] = dealerEnabled
-		? [
-				{ key: "left-of-dealer", label: "Left of Dealer", icon: "" },
-				{ key: "rotation", label: "Rotating", icon: "sync-alt" },
-				{ key: "random", label: "Random", icon: "random" },
-			]
-		: [
-				{ key: "rotation", label: "Rotating", icon: "sync-alt" },
-				{ key: "random", label: "Random", icon: "random" },
-			];
-
 	return (
 		<ThemedView style={shared.screen}>
 			<Stack.Screen options={{ title: "New Template" }} />
@@ -114,166 +94,54 @@ export default function NewTemplateScreen() {
 					keyboardShouldPersistTaps="handled"
 					showsVerticalScrollIndicator={false}
 				>
-					{/* Name & Icon */}
-					<SetupCard>
-						<View style={forms.labelRow}>
-							<ThemedText style={forms.label} themeColor="textSecondary">
-								TEMPLATE NAME
-							</ThemedText>
-							<ThemedText style={[forms.label, { opacity: 0.5 }]} themeColor="textSecondary">
-								{" "}
-								(OPTIONAL)
-							</ThemedText>
-						</View>
-						<View style={forms.nameRow}>
-							<HapticButton
-								style={[forms.iconBtn, { backgroundColor: theme.background }]}
-								onPress={() => router.push("/icon-picker")}
-								activeOpacity={0.7}
-							>
-								<FontAwesome5
-									name={(selectedIcon ?? "users") as any}
-									size={20}
-									color={theme.textSecondary}
-								/>
-							</HapticButton>
-							<TextInput
-								allowFontScaling={false}
-								style={[shared.input, innerInput, { flex: 1 }]}
-								placeholder="Untitled Template"
-								placeholderTextColor={theme.textSecondary}
-								value={name}
-								onChangeText={setName}
-								maxLength={30}
-								returnKeyType="next"
-							/>
-						</View>
-					</SetupCard>
+					<GameNameCard
+						label="TEMPLATE NAME"
+						icon={selectedIcon}
+						onPressIcon={() => router.push("/icon-picker")}
+						name={name}
+						onChangeName={setName}
+						placeholder="Untitled Template"
+					/>
 
-					<View style={styles.group}>
-						<SectionHeader label="GAME CONDITIONS" />
-
-						{/* Rounds */}
-						<SetupCard>
-							<ThemedText style={forms.label} themeColor="textSecondary">
-								ROUNDS
-							</ThemedText>
-							{!isIndefinite && (
-								<View style={forms.roundsRow}>
-									<HapticButton
-										style={[forms.roundsInput, { backgroundColor: theme.backgroundSelected }]}
-										onPress={() => setShowRoundNumpad(true)}
-									>
-										<ThemedText style={{ color: theme.text, fontSize: 16, textAlign: "center" }}>
-											{roundCountStr || "—"}
-										</ThemedText>
-									</HapticButton>
-									<ThemedText type="default">rounds</ThemedText>
-								</View>
-							)}
-							<HapticButton
-								style={[forms.toggleRow, { backgroundColor: theme.backgroundSelected }]}
-								onPress={() => setIsIndefinite((v) => !v)}
-							>
-								<ThemedText type="default">Endless Mode</ThemedText>
-								<View
-									style={[
-										forms.toggle,
-										{ backgroundColor: isIndefinite ? theme.accent : theme.backgroundElement },
-									]}
-								>
-									<View style={[forms.toggleThumb, isIndefinite && forms.toggleThumbOn]} />
-								</View>
-							</HapticButton>
-						</SetupCard>
-
-						{/* Winner */}
-						<SetupCard>
-							<ThemedText style={forms.label} themeColor="textSecondary">
-								WINNER
-							</ThemedText>
-							<View style={forms.segmentRow}>
-								<HapticButton
-									style={[
-										forms.segLeft,
-										{ backgroundColor: !rankByLowest ? theme.accent : theme.backgroundSelected },
-									]}
-									onPress={() => setRankByLowest(false)}
-								>
-									<ThemedText
-										type="small"
-										style={{ color: !rankByLowest ? theme.accentText : theme.text }}
-									>
-										Highest score
-									</ThemedText>
-								</HapticButton>
-								<View style={[forms.segDivider, { backgroundColor: theme.background }]} />
-								<HapticButton
-									style={[
-										forms.segRight,
-										{ backgroundColor: rankByLowest ? theme.accent : theme.backgroundSelected },
-									]}
-									onPress={() => setRankByLowest(true)}
-								>
-									<ThemedText
-										type="small"
-										style={{ color: rankByLowest ? theme.accentText : theme.text }}
-									>
-										Lowest score
-									</ThemedText>
-								</HapticButton>
-							</View>
-						</SetupCard>
-					</View>
+					<GameConditionsSection
+						totalRounds={isIndefinite ? undefined : parseInt(roundCountStr, 10) || undefined}
+						onPressRounds={() => setShowRoundNumpad(true)}
+						onToggleIndefinite={() => setIsIndefinite((v) => !v)}
+						rankByLowest={rankByLowest}
+						onChangeRankByLowest={setRankByLowest}
+					/>
 
 					{/* Options */}
 					<View style={styles.group}>
 						<SectionHeader label="OPTIONS" />
 
-						{/* Dealer */}
-						<OptionCard
-							icon="crown"
-							title="Dealer"
-							subtitle="Track who deals each round"
-							value={dealerEnabled}
-							onToggle={() => setDealerEnabled((v) => !v)}
-						>
-							<Pills options={DEALER_PILLS_NO_FIXED} value={dealerMode} onChange={setDealerMode} />
-							{dealerHint && <ThemedText style={forms.hint}>{dealerHint}</ThemedText>}
-						</OptionCard>
-
-						{/* Goes first */}
-						<OptionCard
-							icon="long-arrow-alt-right"
-							title="Goes first"
-							subtitle="Track who starts each round"
-							value={turnOrderEnabled}
-							onToggle={() => setTurnOrderEnabled((v) => !v)}
-						>
-							<Pills
-								options={firstPlayerPills}
-								value={firstPlayerSetting}
-								onChange={setFirstPlayerSetting}
-							/>
-							{turnHint && <ThemedText style={forms.hint}>{turnHint}</ThemedText>}
-						</OptionCard>
-
-						{/* Dice */}
-						<OptionCard
-							icon="dice"
-							title="Dice"
-							subtitle="Show dice roller in game"
-							value={extraDice}
-							onToggle={() => setExtraDice((v) => !v)}
+						<DealerOptionCard
+							enabled={dealerEnabled}
+							onToggleEnabled={() => setDealerEnabled((v) => !v)}
+							mode={dealerMode}
+							onChangeMode={(m) => setDealerMode(m as Exclude<DealerMode, "fixed">)}
+							pillOptions={DEALER_PILLS_NO_FIXED}
+							players={[]}
+							showPersonPicker={false}
+							hint={dealerHint}
 						/>
 
-						{/* Timer */}
-						<OptionCard
-							icon="stopwatch"
-							title="Timer"
-							subtitle="Show timer in game"
-							value={extraTimer}
-							onToggle={() => setExtraTimer((v) => !v)}
+						<FirstPlayerOptionCard
+							enabled={turnOrderEnabled}
+							onToggleEnabled={() => setTurnOrderEnabled((v) => !v)}
+							mode={firstPlayerSetting}
+							onChangeMode={setFirstPlayerSetting}
+							dealerEnabled={dealerEnabled}
+							players={[]}
+							showPersonPicker={false}
+							hint={turnHint}
+						/>
+
+						<ExtrasOptionCards
+							dice={extraDice}
+							onToggleDice={() => setExtraDice((v) => !v)}
+							timer={extraTimer}
+							onToggleTimer={() => setExtraTimer((v) => !v)}
 						/>
 					</View>
 

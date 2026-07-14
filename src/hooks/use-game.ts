@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 
-import { Round, useGamesContext } from '@/context/games-context';
-import { getCurrentRoundIndex, sortPlayers } from '@/utils/game';
+import { Game, Round, useGamesContext } from '@/context/games-context';
+import { getGameType } from '@/game-types/registry';
+import { getCurrentRoundIndex } from '@/utils/game';
 
 export function useGame(id: string) {
   const { getGame, updateGame } = useGamesContext();
@@ -14,7 +15,7 @@ export function useGame(id: string) {
     }
   }
 
-  const sortedPlayers = game ? sortPlayers(game, game.players, totals) : [];
+  const sortedPlayers = game ? getGameType(game).sortPlayers(game, game.players, totals) : [];
 
   // Highest round index that has at least one score entered. Used as the fallback
   // current round for games that haven't had an explicit Next Round press yet.
@@ -67,6 +68,14 @@ export function useGame(id: string) {
     updateGame({ ...game, currentRound: next });
   }, [game, currentRoundIndex, updateGame]);
 
+  const updateGamePartial = useCallback(
+    (patch: Partial<Game>) => {
+      if (!game) return;
+      updateGame({ ...game, ...patch });
+    },
+    [game, updateGame],
+  );
+
   const updatePhased = useCallback(
     (roundIndex: number, playerId: string, phased: boolean) => {
       if (!game) return;
@@ -87,6 +96,7 @@ export function useGame(id: string) {
     updateScore,
     advanceRound,
     updatePhased,
+    updateGamePartial,
     totals,
     sortedPlayers,
     visibleRoundCount,

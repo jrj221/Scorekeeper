@@ -1,247 +1,58 @@
-import { FontAwesome5 } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef } from "react";
-import { Animated, ScrollView, StyleSheet, View } from "react-native";
+import { useState } from "react";
+import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemedText } from "@/components/themed-text";
+import { Podium } from "@/components/standings/Podium";
+import { RankedList } from "@/components/standings/RankedList";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
-import { LARGE_TEXT_SCALE, useTextScaleContext } from "@/context/text-scale-context";
+import { useTextScaleContext } from "@/context/text-scale-context";
+import { getGameType } from "@/game-types/registry";
 import { useGame } from "@/hooks/use-game";
 import { useTheme } from "@/hooks/use-theme";
 import { shared } from "@/styles/shared";
-import { buildTiers, getCurrentPhase } from "@/utils/game";
-
-const PODIUM_H = 260;
-const PLATFORM_H = [150, 130, 110];
-// Column order: left=2nd(idx1), centre=1st(idx0), right=3rd(idx2)
-const COL_RANK = [1, 0, 2];
-const RISE_DELAYS = [500, 1000, 1500];
-// Max tied names shown inside each platform before the list becomes scrollable
-const TIE_NAME_LIMIT = [4, 3, 2];
-const TIE_LINE_H = 22;
-
-const RANK_ICONS = [
-	{ name: "trophy", color: "#FFD700" },
-	{ name: "medal", color: "#888888" },
-	{ name: "medal", color: "#CD7F32" },
-] as const;
+import { buildTiers } from "@/utils/game";
 
 export default function ResultsScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { game, totals, sortedPlayers } = useGame(id);
 	const theme = useTheme();
 	const { largeText } = useTextScaleContext();
-	const isPhase10 = game?.gameType === "phase10";
-	// Larger text needs taller platforms (and a taller podium) so names/scores fit.
-	// Phase 10 adds an extra "Phase X" line under the score, so it needs more room too.
-	const sizeScale = largeText ? LARGE_TEXT_SCALE : 1;
-	const podiumH = PODIUM_H * sizeScale + (isPhase10 ? 24 : 0);
-	const platformH = PLATFORM_H.map((h) => h * sizeScale);
-	const tieLineH = TIE_LINE_H * sizeScale;
-
-	const platforms = [
-		useRef(new Animated.Value(0)).current,
-		useRef(new Animated.Value(0)).current,
-		useRef(new Animated.Value(0)).current,
-	];
-	const nameOpacity = [
-		useRef(new Animated.Value(0)).current,
-		useRef(new Animated.Value(0)).current,
-		useRef(new Animated.Value(0)).current,
-	];
-	const restOpacity = useRef(new Animated.Value(0)).current;
-	const restTranslateY = useRef(new Animated.Value(20)).current;
+	const [restRevealed, setRestRevealed] = useState(false);
 
 	const tiers = buildTiers(sortedPlayers, totals, game);
-
-	useEffect(() => {
-		const ranksToAnimate = [2, 1, 0].filter((rankIdx) => (tiers[rankIdx]?.length ?? 0) > 0);
-		ranksToAnimate.forEach((rankIdx, i) => {
-			const delay = RISE_DELAYS[i];
-			setTimeout(() => {
-				Animated.spring(platforms[rankIdx], {
-					toValue: platformH[rankIdx],
-					useNativeDriver: false,
-					damping: 12,
-					stiffness: 100,
-					mass: 0.8,
-				}).start();
-				const riseDuration = (PLATFORM_H[rankIdx] / 150) * 500;
-				setTimeout(() => {
-					Animated.timing(nameOpacity[rankIdx], {
-						toValue: 1,
-						duration: 300,
-						useNativeDriver: true,
-					}).start(() => {
-						if (rankIdx === 0) {
-							Animated.parallel([
-								Animated.timing(restOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-								Animated.spring(restTranslateY, {
-									toValue: 0,
-									useNativeDriver: true,
-									damping: 14,
-									stiffness: 120,
-								}),
-							]).start();
-						}
-					});
-				}, riseDuration * 0.8);
-			}, delay);
-		});
-	}, [sizeScale]);
 
 	if (!game) return null;
 
 	const restTiers = tiers.slice(3);
-	const accentColors = [theme.accent, theme.backgroundSelected, theme.backgroundSelected];
+	const gameType = getGameType(game);
+	const secondaryStat = gameType.secondaryStat
+		? (playerId: string) => gameType.secondaryStat!(game, playerId)
+		: undefined;
 
 	return (
 		<ThemedView style={shared.screen}>
 			<Stack.Screen options={{ title: "Final Scores", headerBackTitle: "Home" }} />
 			<SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
 				<ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-					{/* Podium */}
-					<View style={[styles.podiumWrapper, { backgroundColor: theme.backgroundElement }]}>
-						<View style={[styles.podiumRow, { height: podiumH }]}>
-							{COL_RANK.map((rankIdx, colIdx) => {
-								const tierPlayers = tiers[rankIdx] ?? [];
-								const tierScore = tierPlayers[0] ? (totals[tierPlayers[0].id] ?? 0) : 0;
-								return (
-									<View key={colIdx} style={[styles.podiumCol, { height: podiumH }]}>
-										{tierPlayers.length > 0 && (
-											<Animated.View
-												style={[
-													styles.playerInfo,
-													{
-														bottom: platformH[rankIdx] + Spacing.two,
-														opacity: nameOpacity[rankIdx],
-													},
-												]}
-											>
-												<View
-													style={[
-														styles.rankIcon,
-														{
-															borderColor: theme.accent + "55",
-															shadowColor: theme.accent,
-															backgroundColor: theme.accent + "18",
-														},
-													]}
-												>
-													<FontAwesome5
-														name={RANK_ICONS[rankIdx].name as any}
-														size={18}
-														color={RANK_ICONS[rankIdx].color}
-													/>
-												</View>
-												<View style={styles.names}>
-													{tierPlayers.length > 1 ? (
-														<ThemedText style={styles.playerName} numberOfLines={1}>
-															{tierPlayers.length}-way tie
-														</ThemedText>
-													) : (
-														<ThemedText style={styles.playerName} numberOfLines={1}>
-															{tierPlayers[0].name}
-														</ThemedText>
-													)}
-												</View>
-												<ThemedText style={[styles.playerScore, { color: theme.accent }]}>
-													{tierScore}
-												</ThemedText>
-												{game?.gameType === "phase10" && tierPlayers[0] && (
-													<ThemedText type="small" themeColor="textSecondary">
-														Phase {getCurrentPhase(game, tierPlayers[0].id)}
-													</ThemedText>
-												)}
-											</Animated.View>
-										)}
-										<Animated.View
-											style={[
-												styles.platform,
-												{
-													height: platforms[rankIdx],
-													backgroundColor: accentColors[rankIdx],
-												},
-											]}
-										>
-											<ThemedText
-												style={[
-													styles.rankNum,
-													{ color: rankIdx === 0 ? theme.accentText : theme.textSecondary },
-												]}
-											>
-												{["1st", "2nd", "3rd"][rankIdx]}
-											</ThemedText>
-											{tierPlayers.length > 1 && (
-												<ScrollView
-													style={{ maxHeight: TIE_NAME_LIMIT[rankIdx] * tieLineH }}
-													contentContainerStyle={styles.tieNames}
-													showsVerticalScrollIndicator
-													nestedScrollEnabled
-												>
-													{tierPlayers.map((p) => (
-														<View key={p.id} style={[styles.tieRow, { height: tieLineH }]}>
-															<ThemedText
-																style={[
-																	styles.tieName,
-																	{
-																		color:
-																			rankIdx === 0
-																				? theme.accentText
-																				: theme.text,
-																	},
-																]}
-																numberOfLines={1}
-															>
-																{p.name}
-															</ThemedText>
-														</View>
-													))}
-												</ScrollView>
-											)}
-										</Animated.View>
-									</View>
-								);
-							})}
-						</View>
-					</View>
-
-					{/* 4th place and below — dense ranked, fade in after podium */}
-					{restTiers.length > 0 && (
-						<Animated.View
-							style={[
-								styles.restList,
-								{ backgroundColor: theme.backgroundElement },
-								{ opacity: restOpacity, transform: [{ translateY: restTranslateY }] },
-							]}
-						>
-							{restTiers.map((tierPlayers, tierIdx) =>
-								tierPlayers.map((player) => (
-									<View
-										key={player.id}
-										style={[styles.restRow, { borderBottomColor: theme.backgroundSelected }]}
-									>
-										<ThemedText style={[styles.restRank, { color: theme.textSecondary }]}>
-											#{tierIdx + 4}
-										</ThemedText>
-										<ThemedText style={styles.restName} numberOfLines={1}>
-											{player.name}
-										</ThemedText>
-										{game?.gameType === "phase10" && (
-											<ThemedText type="small" themeColor="textSecondary">
-												Phase {getCurrentPhase(game, player.id)}
-											</ThemedText>
-										)}
-										<ThemedText style={[styles.restScore, { color: theme.text }]}>
-											{totals[player.id] ?? 0}
-										</ThemedText>
-									</View>
-								)),
-							)}
-						</Animated.View>
-					)}
+					<Podium
+						tiers={tiers}
+						totals={totals}
+						theme={theme}
+						largeText={largeText}
+						animated
+						secondaryStat={secondaryStat}
+						onTopRevealed={() => setRestRevealed(true)}
+					/>
+					<RankedList
+						tiers={restTiers}
+						totals={totals}
+						theme={theme}
+						secondaryStat={secondaryStat}
+						animated
+						revealed={restRevealed}
+					/>
 				</ScrollView>
 			</SafeAreaView>
 		</ThemedView>
@@ -250,51 +61,4 @@ export default function ResultsScreen() {
 
 const styles = StyleSheet.create({
 	scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
-	podiumWrapper: { borderRadius: Spacing.two, overflow: "hidden" },
-	podiumRow: { flexDirection: "row", height: PODIUM_H, alignItems: "flex-end" },
-	podiumCol: { flex: 1, height: PODIUM_H, position: "relative", alignItems: "center" },
-	playerInfo: { position: "absolute", left: 4, right: 4, alignItems: "center", gap: 2 },
-	playerName: { fontSize: 12, fontWeight: "600", textAlign: "center" },
-	playerScore: { fontSize: 20, fontWeight: "700" },
-	platform: {
-		position: "absolute",
-		bottom: 0,
-		left: 2,
-		right: 2,
-		borderTopLeftRadius: 6,
-		borderTopRightRadius: 6,
-		alignItems: "center",
-		justifyContent: "flex-start",
-		paddingTop: Spacing.one,
-	},
-	rankNum: { fontSize: 22, fontWeight: "700", opacity: 0.4 },
-	tieNames: { alignItems: "center", paddingHorizontal: Spacing.one },
-	// Fixed-height row so exactly N names fit the scroll viewport regardless of font metrics.
-	tieRow: { justifyContent: "center", overflow: "hidden" },
-	tieName: { fontSize: 12, fontWeight: "600", textAlign: "center", includeFontPadding: false },
-	rankIcon: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		borderWidth: 1.5,
-		alignItems: "center",
-		justifyContent: "center",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.5,
-		shadowRadius: 4,
-		elevation: 4,
-	},
-	names: { gap: 0, alignItems: "center" },
-	restList: { borderRadius: Spacing.two, overflow: "hidden" },
-	restRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: Spacing.three,
-		paddingVertical: Spacing.two + 2,
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: Spacing.two,
-	},
-	restRank: { fontSize: 13, fontWeight: "600", width: 32 },
-	restName: { flex: 1, fontSize: 16 },
-	restScore: { fontSize: 18, fontWeight: "600" },
 });
