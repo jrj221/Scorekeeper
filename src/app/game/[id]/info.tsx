@@ -26,6 +26,7 @@ import { usePlayerSearch } from "@/hooks/use-player-search";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnsavedChangesScroll } from "@/hooks/use-unsaved-changes-scroll";
 import { shared } from "@/styles/shared";
+import { getCurrentRoundIndex } from "@/utils/game";
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 type FirstPlayerMode = "random" | "left-of-dealer" | "rotation";
@@ -99,6 +100,7 @@ export default function GameInfoScreen() {
 	const finished = !!game.finishedAt;
 	const players = draft.players;
 	const locked = new Set(draft.lockedFields ?? []);
+	const currentRoundIndex = getCurrentRoundIndex(game);
 
 	const handleRemovePlayer = (p: Player) => {
 		if (players.length <= 1) {
@@ -252,14 +254,22 @@ export default function GameInfoScreen() {
 							mode={dealerMode}
 							onChangeMode={(m) => {
 								if (m === "random") patch({ dealerMode: "random" });
-								else patch({ dealerMode: m, fixedDealerId: fixedDealerId ?? players[0]?.id });
+								else
+									patch({
+										dealerMode: m,
+										fixedDealerId: fixedDealerId ?? players[0]?.id,
+										...(m === "rotation" ? { dealerRotationAnchorRound: currentRoundIndex } : {}),
+									});
 								setActiveDropdown(null);
 							}}
 							pillOptions={DEALER_PILLS}
 							players={players}
 							fixedDealerId={fixedDealerId}
 							onSelectFixedDealer={(pid) => {
-								patch({ fixedDealerId: pid });
+								patch({
+									fixedDealerId: pid,
+									...(dealerMode === "rotation" ? { dealerRotationAnchorRound: currentRoundIndex } : {}),
+								});
 								setActiveDropdown(null);
 							}}
 							dropdownOpen={activeDropdown === "fixedDealer"}
@@ -280,7 +290,11 @@ export default function GameInfoScreen() {
 							onChangeMode={(m) => {
 								if (m === "left-of-dealer") patch({ firstPlayerMode: "left-of-dealer", firstPlayerId: undefined });
 								else if (m === "rotation")
-									patch({ firstPlayerMode: undefined, firstPlayerId: firstPlayerId ?? players[0]?.id });
+									patch({
+										firstPlayerMode: undefined,
+										firstPlayerId: firstPlayerId ?? players[0]?.id,
+										firstPlayerRotationAnchorRound: currentRoundIndex,
+									});
 								else patch({ firstPlayerMode: undefined, firstPlayerId: undefined });
 								setActiveDropdown(null);
 							}}
@@ -288,7 +302,11 @@ export default function GameInfoScreen() {
 							players={players}
 							selectedPlayerId={firstPlayerId}
 							onSelectPlayer={(pid) => {
-								patch({ firstPlayerMode: undefined, firstPlayerId: pid });
+								patch({
+									firstPlayerMode: undefined,
+									firstPlayerId: pid,
+									firstPlayerRotationAnchorRound: currentRoundIndex,
+								});
 								setActiveDropdown(null);
 							}}
 							dropdownOpen={activeDropdown === "firstPlayer"}

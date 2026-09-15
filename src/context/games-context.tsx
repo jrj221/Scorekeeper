@@ -43,6 +43,13 @@ export type Game = {
   // rounds[i]; undefined/missing entries fall back to a live computation.
   dealerHistory?: (string | null)[];
   firstPlayerHistory?: (string | null)[];
+  // Round index from which dealer/first-player rotation should restart fresh at
+  // fixedDealerId/firstPlayerId, instead of advancing one seat from the previous
+  // round's holder. Set whenever the user explicitly picks a rotation starting
+  // player (or switches a mode into rotation) — that choice always applies from
+  // the current round forward, never retroactively.
+  dealerRotationAnchorRound?: number;
+  firstPlayerRotationAnchorRound?: number;
   extras?: GameExtras;
   gameType?: GameType;
   // Field names (e.g. 'rounds', 'rankByLowest', 'extras.dice') that cannot be

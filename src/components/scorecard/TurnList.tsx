@@ -210,11 +210,7 @@ export function TurnList({
 										borderColor: CURRENT_TINT,
 									},
 								]}
-							>
-								{extraCol.isChecked(game, currentRoundIndex, pid) && (
-									<ThemedText style={styles.phaseCheckMark}>✓</ThemedText>
-								)}
-							</View>
+							/>
 						</View>
 					) : (
 						<HapticButton
@@ -235,11 +231,7 @@ export function TurnList({
 										borderColor: CURRENT_TINT,
 									},
 								]}
-							>
-								{extraCol.isChecked(game, currentRoundIndex, pid) && (
-									<ThemedText style={styles.phaseCheckMark}>✓</ThemedText>
-								)}
-							</View>
+							/>
 						</HapticButton>
 					))}
 			</RowComp>
@@ -263,7 +255,7 @@ export function TurnList({
 					Player
 				</ThemedText>
 				<ThemedText style={[styles.turnHeaderCell, styles.turnHeaderRight]} themeColor="textSecondary">
-					Points so far
+					Points
 				</ThemedText>
 				{extraCol && (
 					<ThemedText
@@ -418,12 +410,5 @@ const styles = StyleSheet.create({
 		height: 24,
 		borderRadius: 6,
 		borderWidth: 2,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	phaseCheckMark: {
-		fontSize: 14,
-		fontWeight: "700",
-		color: "#fff",
 	},
 });

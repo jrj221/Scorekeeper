@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { Game, Round, useGamesContext } from '@/context/games-context';
 import { getGameType } from '@/game-types/registry';
@@ -38,6 +38,17 @@ export function useGame(id: string) {
   }
 
   const currentRoundIndex = game ? getCurrentRoundIndex(game) : 0;
+
+  // Freeze the current round's dealer/first-player the moment it becomes current
+  // (including round 0 on first load), not just when advancing past it — so
+  // reordering players or changing dealer settings can never retroactively shift
+  // who's dealing a round that's already begun.
+  useEffect(() => {
+    if (!game) return;
+    const patch = resolveTurnStateForRound(game, currentRoundIndex);
+    if (patch) updateGame({ ...game, ...patch });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id, currentRoundIndex]);
 
   const endGame = useCallback(() => {
     if (!game || game.finishedAt) return;
