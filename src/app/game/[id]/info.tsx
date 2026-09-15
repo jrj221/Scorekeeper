@@ -1,6 +1,6 @@
 import { getDealerHintText, getTurnHintText } from "@/utils/game";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/core";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
