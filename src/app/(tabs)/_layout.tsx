@@ -1,12 +1,20 @@
 import * as Haptics from "expo-haptics";
 import { Stack, Tabs, useRouter } from "expo-router";
+import { type BottomTabNavigationOptions } from "expo-router/build/react-navigation/bottom-tabs";
 import { SymbolView } from "expo-symbols";
-import { type BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import { Pressable, TouchableOpacity } from "react-native";
 
 import { useTheme } from "@/hooks/use-theme";
 
-function HapticTabButton({ onPress, children, style, accessibilityState }: BottomTabBarButtonProps) {
+// Typed via expo-router's own copy of BottomTabNavigationOptions (the one its
+// Tabs component actually uses) rather than @react-navigation/bottom-tabs
+// directly — the two packages' copies of this type can drift out of sync.
+const HapticTabButton: NonNullable<BottomTabNavigationOptions["tabBarButton"]> = ({
+	onPress,
+	children,
+	style,
+	accessibilityState,
+}) => {
 	return (
 		<Pressable
 			onPress={(e) => {
