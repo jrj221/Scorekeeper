@@ -31,6 +31,10 @@ export type Game = {
   fixedDealerId?: string;
   firstPlayerId?: string;
   firstPlayerMode?: 'left-of-dealer';
+  // Whether "goes first" tracking is on. Independent of `turnOrder`, which is
+  // always-maintained player-order data (editable via the turn-order screen
+  // regardless of this flag, e.g. to influence dealer rotation).
+  turnOrderEnabled?: boolean;
   turnOrder?: string[];
   currentRound?: number;
   extras?: GameExtras;
@@ -84,6 +88,7 @@ export type CreateGameOpts = {
   fixedDealerId?: string;
   firstPlayerId?: string;
   firstPlayerMode?: 'left-of-dealer';
+  turnOrderEnabled?: boolean;
   turnOrder?: string[];
   extras?: GameExtras;
   gameType?: GameType;
@@ -163,6 +168,7 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
       fixedDealerId: opts.fixedDealerId,
       firstPlayerId: opts.firstPlayerId,
       firstPlayerMode: opts.firstPlayerMode,
+      turnOrderEnabled: opts.turnOrderEnabled,
       turnOrder: opts.turnOrder,
       extras: opts.extras,
       gameType: opts.gameType,
@@ -258,7 +264,7 @@ export function GamesProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
       dealerEnabled: game.dealerEnabled,
       dealerMode: game.dealerMode,
-      turnOrderEnabled: game.turnOrder !== undefined,
+      turnOrderEnabled: !!game.turnOrderEnabled,
       firstPlayerSetting,
     }, ...prev]);
     return id;

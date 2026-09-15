@@ -133,7 +133,7 @@ export default function GameInfoScreen() {
 	const dealerEnabled = !!draft.dealerEnabled;
 	const dealerMode = draft.dealerMode ?? "rotation";
 	const fixedDealerId = draft.fixedDealerId ?? null;
-	const turnsEnabled = Array.isArray(draft.turnOrder);
+	const turnsEnabled = !!draft.turnOrderEnabled;
 	const leftOfDealer = draft.firstPlayerMode === "left-of-dealer";
 	const firstPlayerId = draft.firstPlayerId ?? null;
 	const firstPlayerMode: FirstPlayerMode = leftOfDealer ? "left-of-dealer" : firstPlayerId ? "rotation" : "random";
@@ -274,7 +274,7 @@ export default function GameInfoScreen() {
 							finished={finished}
 							enabled={turnsEnabled}
 							onToggleEnabled={() => {
-								patch({ turnOrder: turnsEnabled ? undefined : players.map((p) => p.id) });
+								patch({ turnOrderEnabled: !turnsEnabled });
 								setActiveDropdown(null);
 							}}
 							mode={firstPlayerMode}
