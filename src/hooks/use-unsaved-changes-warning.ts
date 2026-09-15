@@ -1,4 +1,4 @@
-import { useNavigation } from "@react-navigation/core";
+import { useNavigation } from "expo-router";
 import { useEffect } from "react";
 import { Alert } from "react-native";
 

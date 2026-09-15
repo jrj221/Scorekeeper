@@ -1,5 +1,4 @@
-import { useNavigation } from "@react-navigation/core";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Animated, Pressable, StyleSheet } from "react-native";

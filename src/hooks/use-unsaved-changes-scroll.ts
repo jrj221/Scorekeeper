@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/core';
+import { useNavigation } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
 
 export function useUnsavedChangesScroll(
