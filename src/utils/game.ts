@@ -55,12 +55,44 @@ function deterministicIdx(gameId: string, roundIndex: number, n: number): number
   return Math.abs(h) % n;
 }
 
-/** Returns the effective turn order, first player, and dealer for a given round. */
-export function getTurnState(game: Game, roundIndex: number): {
+type TurnState = {
   orderedIds: string[];
   firstPlayerId: string | null;
   dealerId: string | null;
-} {
+};
+
+/**
+ * Returns the turn order, first player, and dealer for a round.
+ *
+ * A round's turn state is resolved once — the first time it's reached, via
+ * `resolveTurnStateForRound` — and then locked into `game.dealerHistory`/
+ * `firstPlayerHistory` (with `orderedIds` re-derived from the frozen first player)
+ * so that later edits to turn order or dealer settings only ever affect rounds
+ * that haven't started yet. A round with no frozen entry (the in-progress round,
+ * before "Next Round" is pressed) falls back to a live computation from the
+ * game's current settings.
+ */
+export function getTurnState(game: Game, roundIndex: number): TurnState {
+  const frozenDealer = game.dealerHistory?.[roundIndex];
+  const frozenFirstPlayer = game.firstPlayerHistory?.[roundIndex];
+  if (frozenDealer !== undefined && frozenFirstPlayer !== undefined) {
+    const order = game.turnOrder?.length ? game.turnOrder : game.players.map(p => p.id);
+    const orderedIds = orderFrom(order, frozenFirstPlayer);
+    return { orderedIds, firstPlayerId: frozenFirstPlayer, dealerId: frozenDealer };
+  }
+  return computeTurnState(game, roundIndex);
+}
+
+/** Rotates `order` to start at `firstPlayerId` (or leaves it as-is if null/not found). */
+function orderFrom(order: string[], firstPlayerId: string | null): string[] {
+  if (firstPlayerId === null) return order;
+  const idx = order.indexOf(firstPlayerId);
+  if (idx <= 0) return order;
+  return [...order.slice(idx), ...order.slice(0, idx)];
+}
+
+/** Live computation of turn state from the game's current settings and turn order. */
+function computeTurnState(game: Game, roundIndex: number): TurnState {
   const order = game.turnOrder?.length ? game.turnOrder : game.players.map(p => p.id);
   const n = order.length;
   if (n === 0) return { orderedIds: [], firstPlayerId: null, dealerId: null };
@@ -144,6 +176,28 @@ export function getTurnState(game: Game, roundIndex: number): {
   }
 
   return { orderedIds, firstPlayerId, dealerId };
+}
+
+/**
+ * Freezes the turn state for every round up to and including `roundIndex` that
+ * isn't already frozen, computing each from the game's settings as of this call.
+ * Returns a patch to merge into the game (or `null` if nothing needed freezing).
+ * Call this whenever a round is newly reached — on "Next Round", and once on
+ * initial load for round 0 — so later edits to turn order/dealer settings can
+ * only ever affect rounds not yet frozen.
+ */
+export function resolveTurnStateForRound(game: Game, roundIndex: number): Partial<Game> | null {
+  const dealerHistory = [...(game.dealerHistory ?? [])];
+  const firstPlayerHistory = [...(game.firstPlayerHistory ?? [])];
+  let changed = false;
+  for (let i = 0; i <= roundIndex; i++) {
+    if (dealerHistory[i] !== undefined && firstPlayerHistory[i] !== undefined) continue;
+    const { dealerId, firstPlayerId } = computeTurnState(game, i);
+    dealerHistory[i] = dealerId;
+    firstPlayerHistory[i] = firstPlayerId;
+    changed = true;
+  }
+  return changed ? { dealerHistory, firstPlayerHistory } : null;
 }
 
 export function getDealerHintText(

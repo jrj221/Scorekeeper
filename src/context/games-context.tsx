@@ -37,6 +37,12 @@ export type Game = {
   turnOrderEnabled?: boolean;
   turnOrder?: string[];
   currentRound?: number;
+  // Dealer/first-player resolved for each round the first time it's reached (via
+  // "Next Round" or on initial load for round 0), so later edits to turn order or
+  // dealer settings only affect rounds not yet assigned. Index i corresponds to
+  // rounds[i]; undefined/missing entries fall back to a live computation.
+  dealerHistory?: (string | null)[];
+  firstPlayerHistory?: (string | null)[];
   extras?: GameExtras;
   gameType?: GameType;
   // Field names (e.g. 'rounds', 'rankByLowest', 'extras.dice') that cannot be

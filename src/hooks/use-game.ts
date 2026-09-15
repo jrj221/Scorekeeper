@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 
 import { Game, Round, useGamesContext } from '@/context/games-context';
 import { getGameType } from '@/game-types/registry';
-import { getCurrentRoundIndex } from '@/utils/game';
+import { getCurrentRoundIndex, resolveTurnStateForRound } from '@/utils/game';
 
 export function useGame(id: string) {
   const { getGame, updateGame } = useGamesContext();
@@ -65,7 +65,8 @@ export function useGame(id: string) {
     if (!game) return;
     const next = (game.currentRound ?? currentRoundIndex) + 1;
     if (game.totalRounds !== undefined && next >= game.totalRounds) return;
-    updateGame({ ...game, currentRound: next });
+    const turnStatePatch = resolveTurnStateForRound(game, next);
+    updateGame({ ...game, ...turnStatePatch, currentRound: next });
   }, [game, currentRoundIndex, updateGame]);
 
   const updateGamePartial = useCallback(
