@@ -1,4 +1,3 @@
-import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Animated as RNAnimated, Dimensions, ScrollView, StyleSheet, View } from "react-native";
@@ -328,20 +327,15 @@ export function Scorecard({
 														? { onPress: () => openEditCell({ roundIndex: ri, player: p }) }
 														: {})}
 												>
-													{status && (
-														<FontAwesome5
-															name="bookmark"
-															size={10}
-															color={status.color}
-															style={styles.statusBookmark}
-														/>
-													)}
 													<ThemedText
 														style={s === null ? styles.emptyScore : styles.score}
 														themeColor={s === null ? "textSecondary" : "text"}
 													>
 														{s !== null ? s : "–"}
 													</ThemedText>
+													{status && (
+														<View style={[styles.statusPill, { backgroundColor: status.color }]} />
+													)}
 													{editCell?.player.id === p.id && editCell?.roundIndex === ri && (
 														<RNAnimated.View
 															style={[
@@ -423,11 +417,12 @@ const styles = StyleSheet.create({
 	scoreCell: {
 		alignItems: "center",
 		justifyContent: "center",
-		position: "relative",
+		gap: 3,
 	},
-	statusBookmark: {
-		position: "absolute",
-		top: 3,
+	statusPill: {
+		width: 16,
+		height: 4,
+		borderRadius: 2,
 	},
 	score: {
 		fontSize: 13,
