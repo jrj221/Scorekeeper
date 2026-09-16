@@ -38,7 +38,7 @@ export interface ScorecardProps {
 /**
  * The main scoring grid: round rows down the left, player columns across the top,
  * with column-reorder drag animation, vertical scroll sync between the round labels
- * and score rows, and per-cell tinting from `gameType.cellBackground`.
+ * and score rows, and per-cell status styling from `gameType.cellStatus`.
  */
 export function Scorecard({
 	game,
@@ -315,7 +315,7 @@ export function Scorecard({
 										const s = getScore(ri, p.id);
 										const tappable = !finished && ri <= currentRoundIndex;
 										const Cell = tappable ? HapticButton : View;
-										const cellBg = gameType.cellBackground?.(game, ri, p.id, theme, s !== null);
+										const status = gameType.cellStatus?.(game, ri, p.id, theme, s !== null);
 										return (
 											<RNAnimated.View
 												key={p.id}
@@ -325,12 +325,19 @@ export function Scorecard({
 													style={[
 														styles.scoreCell,
 														{ width: colW, height: ROW_H },
-														cellBg && { backgroundColor: cellBg },
+														status && {
+															backgroundColor: status.background,
+															borderLeftWidth: 3,
+															borderLeftColor: status.color,
+														},
 													]}
 													{...(tappable
 														? { onPress: () => openEditCell({ roundIndex: ri, player: p }) }
 														: {})}
 												>
+													{status && (
+														<View style={[styles.statusDot, { backgroundColor: status.color }]} />
+													)}
 													<ThemedText
 														style={s === null ? styles.emptyScore : styles.score}
 														themeColor={s === null ? "textSecondary" : "text"}
@@ -418,6 +425,15 @@ const styles = StyleSheet.create({
 	scoreCell: {
 		alignItems: "center",
 		justifyContent: "center",
+		position: "relative",
+	},
+	statusDot: {
+		position: "absolute",
+		top: 4,
+		right: 4,
+		width: 6,
+		height: 6,
+		borderRadius: 3,
 	},
 	score: {
 		fontSize: 13,

@@ -95,12 +95,11 @@ export const phase10: GameTypeDefinition = {
 
   lockedFields: ['rounds', 'rankByLowest', 'extras.dice', 'extras.timer', 'icon', 'name', 'phaseSubset'],
 
-  cellBackground(game, roundIndex, playerId, theme: ThemeColors, hasScore) {
+  cellStatus(game, roundIndex, playerId, theme: ThemeColors, hasScore) {
     if (!hasScore) return undefined;
     const phased = game.phasedRounds?.[roundIndex]?.[playerId];
-    return phased
-      ? mixHex(PHASED_COLOR, theme.background, 0.25)
-      : mixHex(theme.danger, theme.background, 0.25);
+    const color = phased ? PHASED_COLOR : theme.danger;
+    return { color, background: mixHex(color, theme.background, 0.12) };
   },
 
   extraTurnColumn: {

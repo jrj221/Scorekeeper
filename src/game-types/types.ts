@@ -43,17 +43,18 @@ export interface GameTypeDefinition {
   secondaryStat?(game: Game, playerId: string): { short: string; long: string } | null;
 
   /**
-   * Optional background tint for a scorecard cell (e.g. Phase 10's phased green/red).
-   * Only called for cells that already have a score (`hasScore` true); return undefined
-   * for no tint.
+   * Optional visual status for a scorecard cell (e.g. Phase 10's phased/not-phased
+   * green/red). Only called for cells that already have a score (`hasScore` true);
+   * return undefined for no special styling. `color` drives a left-edge accent bar
+   * and a small state dot; `background` is a full-bleed tint behind the score.
    */
-  cellBackground?(
+  cellStatus?(
     game: Game,
     roundIndex: number,
     playerId: string,
     theme: ThemeColors,
     hasScore: boolean,
-  ): string | undefined;
+  ): { color: string; background: string } | undefined;
 
   /** Optional extra column in the turn-order view (e.g. Phase 10's "Phased?" checkbox). */
   extraTurnColumn?: {
