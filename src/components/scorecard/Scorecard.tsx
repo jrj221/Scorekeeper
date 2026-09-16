@@ -325,19 +325,12 @@ export function Scorecard({
 													style={[
 														styles.scoreCell,
 														{ width: colW, height: ROW_H },
-														status && {
-															backgroundColor: status.background,
-															borderLeftWidth: 3,
-															borderLeftColor: status.color,
-														},
+														status && { backgroundColor: status.background },
 													]}
 													{...(tappable
 														? { onPress: () => openEditCell({ roundIndex: ri, player: p }) }
 														: {})}
 												>
-													{status && (
-														<View style={[styles.statusDot, { backgroundColor: status.color }]} />
-													)}
 													<ThemedText
 														style={s === null ? styles.emptyScore : styles.score}
 														themeColor={s === null ? "textSecondary" : "text"}
@@ -425,15 +418,6 @@ const styles = StyleSheet.create({
 	scoreCell: {
 		alignItems: "center",
 		justifyContent: "center",
-		position: "relative",
-	},
-	statusDot: {
-		position: "absolute",
-		top: 4,
-		right: 4,
-		width: 6,
-		height: 6,
-		borderRadius: 3,
 	},
 	score: {
 		fontSize: 13,

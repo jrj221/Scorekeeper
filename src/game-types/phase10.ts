@@ -99,7 +99,7 @@ export const phase10: GameTypeDefinition = {
     if (!hasScore) return undefined;
     const phased = game.phasedRounds?.[roundIndex]?.[playerId];
     const color = phased ? PHASED_COLOR : theme.danger;
-    return { color, background: mixHex(color, theme.background, 0.12) };
+    return { background: mixHex(color, theme.background, 0.32) };
   },
 
   extraTurnColumn: {
