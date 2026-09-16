@@ -207,6 +207,38 @@ export function resolveTurnStateForRound(game: Game, roundIndex: number): Partia
   return changed ? { dealerHistory, firstPlayerHistory } : null;
 }
 
+/**
+ * Un-freezes `roundIndex`'s dealer and/or first-player so it recomputes live
+ * from current settings on the next `getTurnState` call. Call this when the
+ * user flips the dealer-tracking or goes-first toggle for the round currently
+ * in progress — otherwise a round frozen while a feature was off (locking in
+ * `null`) would stay locked at `null` forever even after the feature is turned
+ * on, since a frozen non-undefined entry (including `null`) is normally never
+ * recomputed.
+ */
+export function unfreezeTurnStateForRound(
+  game: Game,
+  roundIndex: number,
+  fields: { dealer?: boolean; firstPlayer?: boolean },
+): Partial<Game> | null {
+  const dealerHistory = game.dealerHistory ? [...game.dealerHistory] : undefined;
+  const firstPlayerHistory = game.firstPlayerHistory ? [...game.firstPlayerHistory] : undefined;
+  let changed = false;
+  if (fields.dealer && dealerHistory && dealerHistory[roundIndex] !== undefined) {
+    dealerHistory[roundIndex] = undefined as unknown as string | null;
+    changed = true;
+  }
+  if (fields.firstPlayer && firstPlayerHistory && firstPlayerHistory[roundIndex] !== undefined) {
+    firstPlayerHistory[roundIndex] = undefined as unknown as string | null;
+    changed = true;
+  }
+  if (!changed) return null;
+  return {
+    ...(dealerHistory ? { dealerHistory } : {}),
+    ...(firstPlayerHistory ? { firstPlayerHistory } : {}),
+  };
+}
+
 export function getDealerHintText(
   dealerEnabled: boolean,
   dealerMode: DealerMode,

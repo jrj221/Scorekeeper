@@ -180,7 +180,7 @@ export function TurnList({
 						</View>
 					)}
 				</View>
-				<View style={styles.turnScoreArea}>
+				<View style={[styles.turnScoreArea, extraCol && { marginRight: Spacing.two }]}>
 					<View style={styles.turnScoreRow}>
 						<ThemedText style={[styles.turnScore, largeText && extraCol && { fontSize: 16, minWidth: 36 }]}>
 							{prevTotal}
@@ -254,7 +254,10 @@ export function TurnList({
 				<ThemedText style={styles.turnHeaderCell} themeColor="textSecondary">
 					Player
 				</ThemedText>
-				<ThemedText style={[styles.turnHeaderCell, styles.turnHeaderRight]} themeColor="textSecondary">
+				<ThemedText
+					style={[styles.turnHeaderCell, styles.turnHeaderRight, extraCol && { marginRight: Spacing.two }]}
+					themeColor="textSecondary"
+				>
 					Points
 				</ThemedText>
 				{extraCol && (
@@ -330,11 +333,14 @@ const styles = StyleSheet.create({
 		borderRadius: Spacing.one,
 		paddingHorizontal: Spacing.one,
 		paddingVertical: 2,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	dealerLabel: {
 		fontSize: 10,
 		fontWeight: "700",
 		letterSpacing: 0.5,
+		lineHeight: 12,
 	},
 	turnScoreArea: {
 		alignItems: "flex-end",

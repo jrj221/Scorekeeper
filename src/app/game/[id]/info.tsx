@@ -1,4 +1,4 @@
-import { getDealerHintText, getTurnHintText } from "@/utils/game";
+import { getCurrentRoundIndex, getDealerHintText, getTurnHintText, unfreezeTurnStateForRound } from "@/utils/game";
 import { consumePendingIcon } from "@/utils/icon-picker-state";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -26,7 +26,6 @@ import { usePlayerSearch } from "@/hooks/use-player-search";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnsavedChangesScroll } from "@/hooks/use-unsaved-changes-scroll";
 import { shared } from "@/styles/shared";
-import { getCurrentRoundIndex } from "@/utils/game";
 
 type ActiveDropdown = "player" | "group" | "fixedDealer" | "firstPlayer" | null;
 type FirstPlayerMode = "random" | "left-of-dealer" | "rotation";
@@ -248,7 +247,10 @@ export default function GameInfoScreen() {
 							finished={finished}
 							enabled={dealerEnabled}
 							onToggleEnabled={() => {
-								patch({ dealerEnabled: dealerEnabled ? undefined : true });
+								patch({
+									dealerEnabled: dealerEnabled ? undefined : true,
+									...unfreezeTurnStateForRound(draft, currentRoundIndex, { dealer: true, firstPlayer: leftOfDealer }),
+								});
 								setActiveDropdown(null);
 							}}
 							mode={dealerMode}
@@ -283,7 +285,10 @@ export default function GameInfoScreen() {
 							finished={finished}
 							enabled={turnsEnabled}
 							onToggleEnabled={() => {
-								patch({ turnOrderEnabled: !turnsEnabled });
+								patch({
+									turnOrderEnabled: !turnsEnabled,
+									...unfreezeTurnStateForRound(draft, currentRoundIndex, { firstPlayer: true }),
+								});
 								setActiveDropdown(null);
 							}}
 							mode={firstPlayerMode}
