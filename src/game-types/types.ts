@@ -44,8 +44,8 @@ export interface GameTypeDefinition {
 
   /**
    * Optional visual status for a scorecard cell (e.g. Phase 10's phased/not-phased
-   * green/red background). Only called for cells that already have a score
-   * (`hasScore` true); return undefined for no special styling.
+   * bookmark icon). Only called for cells that already have a score (`hasScore`
+   * true); return undefined for no special styling.
    */
   cellStatus?(
     game: Game,
@@ -53,7 +53,7 @@ export interface GameTypeDefinition {
     playerId: string,
     theme: ThemeColors,
     hasScore: boolean,
-  ): { background: string } | undefined;
+  ): { color: string } | undefined;
 
   /** Optional extra column in the turn-order view (e.g. Phase 10's "Phased?" checkbox). */
   extraTurnColumn?: {

@@ -1,3 +1,4 @@
+import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Animated as RNAnimated, Dimensions, ScrollView, StyleSheet, View } from "react-native";
@@ -322,15 +323,19 @@ export function Scorecard({
 												style={{ transform: [{ translateX: getColAnim(p.id) }] }}
 											>
 												<Cell
-													style={[
-														styles.scoreCell,
-														{ width: colW, height: ROW_H },
-														status && { backgroundColor: status.background },
-													]}
+													style={[styles.scoreCell, { width: colW, height: ROW_H }]}
 													{...(tappable
 														? { onPress: () => openEditCell({ roundIndex: ri, player: p }) }
 														: {})}
 												>
+													{status && (
+														<FontAwesome5
+															name="bookmark"
+															size={10}
+															color={status.color}
+															style={styles.statusBookmark}
+														/>
+													)}
 													<ThemedText
 														style={s === null ? styles.emptyScore : styles.score}
 														themeColor={s === null ? "textSecondary" : "text"}
@@ -418,6 +423,11 @@ const styles = StyleSheet.create({
 	scoreCell: {
 		alignItems: "center",
 		justifyContent: "center",
+		position: "relative",
+	},
+	statusBookmark: {
+		position: "absolute",
+		top: 3,
 	},
 	score: {
 		fontSize: 13,

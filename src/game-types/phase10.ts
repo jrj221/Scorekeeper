@@ -7,21 +7,6 @@ import { GameTypeDefinition } from './types';
 
 const PHASED_COLOR = '#22C55E';
 
-// Blends `fg` over `bg` at `amount` opacity, returning an opaque hex color. Used so the
-// Phase 10 cell tint reads as a flat, consistent color regardless of the alternating
-// row stripe underneath, instead of letting that stripe show through a transparent tint.
-function mixHex(fg: string, bg: string, amount: number): string {
-  const parse = (hex: string) => {
-    const h = hex.replace('#', '');
-    return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
-  };
-  const [fr, fg2, fb] = parse(fg);
-  const [br, bgG, bb] = parse(bg);
-  const mix = (f: number, b: number) => Math.round(f * amount + b * (1 - amount));
-  const toHex = (n: number) => n.toString(16).padStart(2, '0');
-  return `#${toHex(mix(fr, br))}${toHex(mix(fg2, bgG))}${toHex(mix(fb, bb))}`;
-}
-
 /** The ordered phase numbers a game plays — all 10, or just the odd/even half for a shorter game. */
 export function getPhaseSequence(game: Game): number[] {
   if (game.phaseSubset === 'odd') return [1, 3, 5, 7, 9];
@@ -98,8 +83,7 @@ export const phase10: GameTypeDefinition = {
   cellStatus(game, roundIndex, playerId, theme: ThemeColors, hasScore) {
     if (!hasScore) return undefined;
     const phased = game.phasedRounds?.[roundIndex]?.[playerId];
-    const color = phased ? PHASED_COLOR : theme.danger;
-    return { background: mixHex(color, theme.background, 0.32) };
+    return { color: phased ? PHASED_COLOR : theme.danger };
   },
 
   extraTurnColumn: {
