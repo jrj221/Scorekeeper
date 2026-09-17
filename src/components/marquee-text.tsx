@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
 	container: {
 		overflow: "hidden",
 		flexShrink: 1,
+		flexGrow: 1,
 	},
 	noShrink: {
 		flexShrink: 0,

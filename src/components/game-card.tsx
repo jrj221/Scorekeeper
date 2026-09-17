@@ -94,5 +94,6 @@ const styles = StyleSheet.create({
 	winnerRow: {
 		flexDirection: "row",
 		alignItems: "center",
+		alignSelf: "stretch",
 	},
 });
