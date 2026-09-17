@@ -8,6 +8,7 @@ import { homeStyles } from "@/styles/home";
 import { getCurrentRoundIndex, getGameWinnerLabel } from "@/utils/game";
 import { ThemedText } from "./themed-text";
 import { HapticButton } from "@/components/haptic-button";
+import { MarqueeText } from "@/components/marquee-text";
 
 type Props = {
 	game: Game;
@@ -17,7 +18,8 @@ type Props = {
 
 const DEFAULT_ICON = "users";
 
-const fmt = (ts: number) => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const fmt = (ts: number) =>
+	new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 const sameDay = (a: number, b: number) => {
 	const da = new Date(a), db = new Date(b);
@@ -62,15 +64,15 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 				{winner && (
 					<View style={styles.winnerRow}>
 						<FontAwesome5 name={winner.icon as any} size={10} color={theme.textSecondary} />
-						<ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+						<MarqueeText type="small" themeColor="textSecondary" style={{ flexShrink: 1 }}>
 							{"  "}{winner.label}{"  ·  "}{subtitle}
-						</ThemedText>
+						</MarqueeText>
 					</View>
 				)}
 				{!winner && (
-					<ThemedText type="small" themeColor="textSecondary">
+					<MarqueeText type="small" themeColor="textSecondary">
 						{subtitle}
-					</ThemedText>
+					</MarqueeText>
 				)}
 			</View>
 			<HapticButton onPress={onDelete} hitSlop={8}>
