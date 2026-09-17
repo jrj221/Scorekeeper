@@ -8,7 +8,6 @@ import { homeStyles } from "@/styles/home";
 import { getCurrentRoundIndex, getGameWinnerLabel } from "@/utils/game";
 import { ThemedText } from "./themed-text";
 import { HapticButton } from "@/components/haptic-button";
-import { MarqueeText } from "@/components/marquee-text";
 
 type Props = {
 	game: Game;
@@ -40,10 +39,14 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 	const winner = winnerInfo(game);
 
 	const subtitle = finished
-		? sameDay(game.createdAt, game.finishedAt!)
-			? `${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
-			: `${fmt(game.createdAt)} – ${fmt(game.finishedAt!)}  ·  ${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
+		? `${game.players.length} player${game.players.length !== 1 ? "s" : ""}`
 		: `${game.players.length} player${game.players.length !== 1 ? "s" : ""}  ·  Round ${getCurrentRoundIndex(game) + 1}`;
+
+	const dateLabel = finished
+		? sameDay(game.createdAt, game.finishedAt!)
+			? fmt(game.finishedAt!)
+			: `${fmt(game.createdAt)} – ${fmt(game.finishedAt!)}`
+		: null;
 
 	return (
 		<HapticButton
@@ -60,19 +63,24 @@ export function GameCard({ game, onPress, onDelete }: Props) {
 			<View style={homeStyles.cardContent}>
 				<ThemedText type="default" style={finished ? { opacity: 0.75 } : undefined} numberOfLines={1}>
 					{game.name}
+					{dateLabel && (
+						<ThemedText type="default" themeColor="textSecondary">
+							{" "}| {dateLabel}
+						</ThemedText>
+					)}
 				</ThemedText>
 				{winner && (
 					<View style={styles.winnerRow}>
 						<FontAwesome5 name={winner.icon as any} size={10} color={theme.textSecondary} />
-						<MarqueeText type="small" themeColor="textSecondary" style={{ flexShrink: 1 }}>
+						<ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
 							{"  "}{winner.label}{"  ·  "}{subtitle}
-						</MarqueeText>
+						</ThemedText>
 					</View>
 				)}
 				{!winner && (
-					<MarqueeText type="small" themeColor="textSecondary">
+					<ThemedText type="small" themeColor="textSecondary">
 						{subtitle}
-					</MarqueeText>
+					</ThemedText>
 				)}
 			</View>
 			<HapticButton onPress={onDelete} hitSlop={8}>
@@ -94,6 +102,5 @@ const styles = StyleSheet.create({
 	winnerRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		alignSelf: "stretch",
 	},
 });
