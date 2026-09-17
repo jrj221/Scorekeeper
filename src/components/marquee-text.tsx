@@ -21,13 +21,17 @@ const PX_PER_SEC = 40;
  * its container (e.g. a long subtitle in large-text mode), instead of being
  * clipped or wrapping. Sits still — and looks like ordinary static text —
  * whenever it already fits.
+ *
+ * The text itself is rendered with `alignSelf: "flex-start"` and no width
+ * constraint of its own, so `onLayout` reports its true intrinsic width even
+ * though the outer container is bounded — that gap is what drives `overflow`.
  */
 export function MarqueeText({ style, ...rest }: ThemedTextProps) {
 	const [containerW, setContainerW] = useState(0);
 	const [textW, setTextW] = useState(0);
 	const offset = useSharedValue(0);
 
-	const overflow = textW > containerW && containerW > 0;
+	const overflow = textW > 0 && containerW > 0 && textW > containerW;
 	const distance = Math.max(0, textW - containerW);
 
 	const onContainerLayout = (e: LayoutChangeEvent) => {
@@ -54,18 +58,13 @@ export function MarqueeText({ style, ...rest }: ThemedTextProps) {
 	}, [overflow, distance, offset]);
 
 	const animatedStyle = useAnimatedStyle(() => ({
-		transform: [{ translateX: offset.value }],
+		transform: [{ translateX: overflow ? offset.value : 0 }],
 	}));
 
 	return (
 		<View style={styles.container} onLayout={onContainerLayout}>
-			<Animated.View style={[{ flexDirection: "row" }, overflow && animatedStyle]}>
-				<ThemedText
-					{...rest}
-					numberOfLines={1}
-					onLayout={onTextLayout}
-					style={[style, overflow && styles.noShrink]}
-				>
+			<Animated.View style={[styles.track, animatedStyle]}>
+				<ThemedText {...rest} onLayout={onTextLayout} style={[style, styles.text]}>
 					{rest.children}
 				</ThemedText>
 			</Animated.View>
@@ -78,8 +77,14 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 		flexShrink: 1,
 		flexGrow: 1,
+		flexBasis: 0,
 	},
-	noShrink: {
+	track: {
+		alignSelf: "flex-start",
+		flexDirection: "row",
+	},
+	text: {
 		flexShrink: 0,
+		flexGrow: 0,
 	},
 });
